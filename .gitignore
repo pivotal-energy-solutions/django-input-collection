@@ -1,0 +1,11 @@
+# Language
+__pycache__
+*.pyc
+
+# Framework
+node_modules
+
+# Local
+.env
+.pycharm
+.python-version
