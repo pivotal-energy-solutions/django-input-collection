@@ -4,7 +4,7 @@
 Below are the high-level dev promises for our use of this package in Axis and elsewhere.
 
 * Replacement for checklists annotations
-* Support for Django 1.11 and 2.0 (Tensor)
+* Support for Django 1.11 and 2.0
 * Build off of base questions concepts
 * Supports parent / child questions (conditional)
 * Understands single source of truth for a point in time.
