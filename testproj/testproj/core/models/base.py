@@ -8,7 +8,7 @@ class Survey(models.Model):
     end_time = models.DateTimeField(blank=True, null=True)
 
     # CollectionRequest is guaranteed to be unique to this Survey
-    collection_request = models.OneToOneField('input.CollectionRequest')
+    collection_request = models.OneToOneField('input.CollectionRequest', on_delete=models.CASCADE)
 
 
 # Multi-stage collection example driven by some kind of business logic for the segmentation
@@ -32,11 +32,11 @@ class RallyPoll(models.Model):
     The ``through`` model which tracks one CollectionRequest for a given PoliticalRally
     """
     # The rally that is offering more than one RallyPoll
-    rally = models.ForeignKey('PoliticalRally')
+    rally = models.ForeignKey('PoliticalRally', on_delete=models.CASCADE)
 
     # Associate uniquely to a CollectionRequest.  Both OneToOne and ForeignKey(unique=True) are
     # allowable.
-    collection_request = models.OneToOneField('input.CollectionRequest')
+    collection_request = models.OneToOneField('input.CollectionRequest', on_delete=models.CASCADE)
 
     # Arbitrary other constraints for the business logic that may justify having multiple
     # CollectionRequests in play on a single PoliticalRally.
