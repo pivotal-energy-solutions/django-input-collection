@@ -62,7 +62,6 @@ class AbstractCollectedInput(models.Model):
     """
     collection_request = models.ForeignKey('CollectionRequest', on_delete=models.CASCADE)
     instrument = models.ForeignKey('CollectionInstrument', on_delete=models.CASCADE)
-    group = models.ForeignKey('CollectionGroup', on_delete=models.CASCADE)
 
     class Meta:
         abstract = True
