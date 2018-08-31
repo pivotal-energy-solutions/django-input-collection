@@ -22,9 +22,9 @@ INSTALLED_APPS = [
 
     # Third-party
     'rest_framework',
+    'input',
 
     # Project
-    'input',  # name NOT scoped to testproj; it lives alongside this standalone project
 ]
 DATABASES = {
     'default': {
