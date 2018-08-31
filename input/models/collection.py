@@ -1,6 +1,9 @@
 from django.db import models
 
-__all__ = ['CollectionRequest', 'CollectionGroup', 'CollectionInstrument', 'CollectedInput']
+import swapper
+
+__all__ = ['CollectionRequest', 'CollectionGroup', 'CollectionInstrument', 'CollectedInput',
+           'get_input_model']
 
 
 class CollectionGroup(models.Model):
@@ -63,3 +66,21 @@ class AbstractCollectedInput(models.Model):
 
     class Meta:
         abstract = True
+
+
+MODEL_SWAP_SETTING = swapper.swappable_setting('input', 'CollectedInput')
+
+class CollectedInput(AbstractCollectedInput):
+    """
+    A single point of data collected for a given Measure, related to the CollectionInstrument used
+    to gather it.  Many CollectedInputs are gathered in a CollectionRequest.
+    """
+
+    data = models.CharField(max_length=512)
+
+    class Meta:
+        swappable = MODEL_SWAP_SETTING  # 'INPUT_COLLECTEDINPUT_MODEL'
+
+
+def get_input_model():
+    return swapper.load_model('input', 'CollectedInput')
