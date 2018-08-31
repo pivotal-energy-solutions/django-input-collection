@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'input',
 
     # Project
+    'testproj.core',
 ]
 DATABASES = {
     'default': {
