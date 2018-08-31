@@ -1,5 +1,3 @@
-from django.db import models
-
 from django_mysql.models import JSONField, QuerySet as JsonAware_QuerySet
 from input.models import AbstractCollectedInput
 
