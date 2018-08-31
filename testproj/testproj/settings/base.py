@@ -7,6 +7,7 @@ from . import env
 # Things available to override in settings modules
 DEBUG = True
 ALLOWED_HOSTS = []
+INPUT_COLLECTEDINPUT_MODEL = 'input.CollectedInput'  # Explicit use of the default value
 
 
 # Things overridden at your own peril
