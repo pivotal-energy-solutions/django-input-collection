@@ -7,6 +7,9 @@ from . import api
 urlpatterns = [
     path('', include('testproj.core.urls')),
 
+    # API
+    path('api/', api.router.urls),
+
     # Temporary
     path('admin/', admin.site.urls),
 ]
