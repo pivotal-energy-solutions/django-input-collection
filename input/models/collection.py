@@ -2,8 +2,8 @@ from django.db import models
 
 import swapper
 
-__all__ = ['CollectionRequest', 'CollectionGroup', 'CollectionInstrument', 'CollectedInput',
-           'get_input_model']
+__all__ = ['CollectionRequest', 'CollectionGroup', 'CollectionInstrument', 'AbstractCollectedInput',
+           'CollectedInput', 'get_input_model']
 
 
 class CollectionGroup(models.Model):
