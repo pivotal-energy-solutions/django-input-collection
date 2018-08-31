@@ -80,7 +80,3 @@ class CollectedInput(AbstractCollectedInput):
 
     class Meta:
         swappable = MODEL_SWAP_SETTING  # 'INPUT_COLLECTEDINPUT_MODEL'
-
-
-def get_input_model():
-    return swapper.load_model('input', 'CollectedInput')
