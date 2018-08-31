@@ -25,7 +25,7 @@ class CollectionRequest(models.Model):
     # Also available:
     #
     # self.instruments.all()
-    # self.collectedinput_set.all()
+    # self.collectedinput_set.all()  [default, changes if swapped]
 
     def __str__(self):
         return str(self.id)
@@ -46,7 +46,7 @@ class CollectionInstrument(models.Model):
 
     # Also available:
     #
-    # self.collectedinput_set.all()
+    # self.collectedinput_set.all()  [default, changes if swapped]
 
     def __str__(self):
         return self.text
