@@ -1,12 +1,12 @@
 from django.db import models
 
 from django_mysql.models import QuerySet as JsonAware_QuerySet
-from input.models import CollectedInput
+from input.models import AbstractCollectedInput
 
 __all__ = ['CollectedInput_Postgres_JSON']
 
 
-class CollectedInput_MySQL_JSON(CollectedInput):
+class CollectedInput_MySQL_JSON(AbstractCollectedInput):
     objects = JsonAware_QuerySet.as_manager()
 
     data = JSONField()
