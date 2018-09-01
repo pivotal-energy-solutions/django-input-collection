@@ -69,6 +69,9 @@ class AbstractCollectedInput(models.Model):
     class Meta:
         abstract = True
 
+    def __str__(self):
+        return str(self.data)
+
 
 MODEL_SWAP_SETTING = swapper.swappable_setting('input', 'CollectedInput')
 
