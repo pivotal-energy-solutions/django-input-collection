@@ -8,7 +8,7 @@ urlpatterns = [
     path('', include('testproj.core.urls')),
 
     # API
-    path('api/', include(api.router.urls)),
+    path('api/', include((api.router.urls, 'api'), namespace='api')),
 
     # Temporary
     path('admin/', admin.site.urls),
