@@ -12,6 +12,9 @@ class Survey(models.Model):
     # CollectionRequest is guaranteed to be unique to this Survey
     collection_request = models.OneToOneField('input.CollectionRequest', on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.title
+
 
 # Multi-stage collection example driven by some kind of business logic for the segmentation
 class PoliticalRally(models.Model):
@@ -27,6 +30,9 @@ class PoliticalRally(models.Model):
     # Multiple CollectionRequests allowed, but tracked via a ``through`` model to ensure we can't
     # accidentally associate the same CollectionRequest to more than one PoliticalRally.
     collection_requests = models.ManyToManyField('input.CollectionRequest', through='RallyPoll')
+
+    def __str__(self):
+        return self.title
 
 
 class RallyPoll(models.Model):
@@ -44,3 +50,6 @@ class RallyPoll(models.Model):
     # CollectionRequests in play on a single PoliticalRally.
     start_time = models.DateTimeField(auto_now=True)
     end_time = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return self.rally.title
