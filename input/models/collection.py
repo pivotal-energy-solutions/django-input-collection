@@ -2,6 +2,7 @@ from django.db import models
 
 import swapper
 
+from .. import collection
 from .utils import DatesMixin
 
 __all__ = ['CollectionRequest', 'CollectionGroup', 'CollectionInstrument', 'AbstractCollectedInput',
@@ -52,6 +53,9 @@ class CollectionInstrument(DatesMixin, models.Model):
 
     def __str__(self):
         return self.text
+
+    def receive(self, data):
+        return collection.store(self, data)
 
 
 class AbstractCollectedInput(DatesMixin, models.Model):
