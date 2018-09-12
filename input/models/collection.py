@@ -47,8 +47,11 @@ class CollectionInstrument(DatesMixin, models.Model):
 
     text = models.TextField()
 
+    suggested_responses = models.ManyToManyField('SuggestedResponse')
+
     # Also available:
     #
+    # self.suggestedresponse_set.all()
     # self.collectedinput_set.all()  [default, changes if swapped]
 
     def __str__(self):
@@ -56,6 +59,16 @@ class CollectionInstrument(DatesMixin, models.Model):
 
     def receive(self, data):
         return collection.store(self, data)
+
+class SuggestedResponse(DatesMixin, models.Model):
+    """
+    A pre-identified valid response for a CollectionInstrument.
+    """
+    data = models.CharField(max_length=512)
+
+    # Also available:
+    #
+    # self.collectioninstrument_set.all()
 
 
 class AbstractCollectedInput(DatesMixin, models.Model):
