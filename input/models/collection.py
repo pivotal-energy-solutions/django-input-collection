@@ -55,6 +55,8 @@ class CollectionInstrument(DatesMixin, models.Model):
     measure = models.ForeignKey('Measure', on_delete=models.CASCADE)
     group = models.ForeignKey('CollectionGroup', on_delete=models.CASCADE)
 
+    order = models.IntegerField(default=0)
+
     text = models.TextField()
 
     response_policy = models.ForeignKey('ResponsePolicy', on_delete=models.CASCADE)
@@ -64,6 +66,9 @@ class CollectionInstrument(DatesMixin, models.Model):
     #
     # self.suggestedresponse_set.all()
     # self.collectedinput_set.all()  [default, changes if swapped]
+
+    class Meta:
+        ordering = ('order', 'pk')
 
     def __str__(self):
         return self.text
