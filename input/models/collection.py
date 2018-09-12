@@ -47,6 +47,7 @@ class CollectionInstrument(DatesMixin, models.Model):
 
     text = models.TextField()
 
+    response_policy = models.ForeignKey('ResponsePolicy', on_delete=models.CASCADE)
     suggested_responses = models.ManyToManyField('SuggestedResponse')
 
     # Also available:
@@ -59,6 +60,25 @@ class CollectionInstrument(DatesMixin, models.Model):
 
     def receive(self, data):
         return collection.store(self, data)
+
+
+
+class ResponsePolicy(DatesMixin, models.Model):
+    """
+    Flags that define an archetypical way to respond to a category of CollectionInstruments.
+    CollectionInstruments may point to a common ResponsePolicy, or define separate instances for
+    finer control over a specific CollectionInstrument's policy flags.
+    """
+    # Internal references
+    nickname = models.CharField(max_length=100, null=True)
+
+    # Flags for related CollectionInstrument(s)
+    restrict = models.BooleanField()  # must supply answer matching a SuggestedResponse
+
+    def get_flags(self):
+        return {
+            'restrict': self.restrict,
+        }
 
 class SuggestedResponse(DatesMixin, models.Model):
     """
