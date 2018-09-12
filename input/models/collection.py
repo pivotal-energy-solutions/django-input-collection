@@ -73,11 +73,16 @@ class ResponsePolicy(DatesMixin, models.Model):
     nickname = models.CharField(max_length=100, null=True)
 
     # Flags for related CollectionInstrument(s)
+    # NOTE: 'multiple' should be treated like a hint suggesting that a CollectedInput for an
+    # instrument will be serialized to fit into the ``input.data`` field, and that it must be
+    # deserialized later.
     restrict = models.BooleanField()  # must supply answer matching a SuggestedResponse
+    multiple = models.BooleanField()  # allows multiple selections
 
     def get_flags(self):
         return {
             'restrict': self.restrict,
+            'multiple': self.multiple,
         }
 
 class SuggestedResponse(DatesMixin, models.Model):
