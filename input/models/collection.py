@@ -62,7 +62,6 @@ class CollectionInstrument(DatesMixin, models.Model):
         return collection.store(self, data)
 
 
-
 class ResponsePolicy(DatesMixin, models.Model):
     """
     Flags that define an archetypical way to respond to a category of CollectionInstruments.
@@ -84,6 +83,7 @@ class ResponsePolicy(DatesMixin, models.Model):
             'restrict': self.restrict,
             'multiple': self.multiple,
         }
+
 
 class SuggestedResponse(DatesMixin, models.Model):
     """
