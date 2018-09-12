@@ -58,6 +58,8 @@ class CollectionInstrument(DatesMixin, models.Model):
     order = models.IntegerField(default=0)
 
     text = models.TextField()
+    description = models.TextField(blank=True)  # short text, always displayed
+    help = models.TextField(blank=True)  # long text, always hidden unless requested
 
     response_policy = models.ForeignKey('ResponsePolicy', on_delete=models.CASCADE)
     suggested_responses = models.ManyToManyField('SuggestedResponse')
