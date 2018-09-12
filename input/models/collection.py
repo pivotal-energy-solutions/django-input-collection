@@ -2,11 +2,13 @@ from django.db import models
 
 import swapper
 
+from .utils import DatesMixin
+
 __all__ = ['CollectionRequest', 'CollectionGroup', 'CollectionInstrument', 'AbstractCollectedInput',
            'CollectedInput']
 
 
-class CollectionGroup(models.Model):
+class CollectionGroup(DatesMixin, models.Model):
     """
     A canonical grouping label for deployed questions to relate to, for business-logic purposes.
     """
@@ -16,7 +18,7 @@ class CollectionGroup(models.Model):
         return self.id
 
 
-class CollectionRequest(models.Model):
+class CollectionRequest(DatesMixin, models.Model):
     """
     A contextual grouping that calls for some number of questions to be put forward for a data
     collection step.
@@ -31,7 +33,7 @@ class CollectionRequest(models.Model):
         return str(self.id)
 
 
-class CollectionInstrument(models.Model):
+class CollectionInstrument(DatesMixin, models.Model):
     """
     The presentation of a Measure with all relevant contextual information to scope it to a specific
     data-gathering effort, regardless of any commonalities with other gathering efforts (such as
@@ -52,7 +54,7 @@ class CollectionInstrument(models.Model):
         return self.text
 
 
-class AbstractCollectedInput(models.Model):
+class AbstractCollectedInput(DatesMixin, models.Model):
     """
     Abstract definition of a single point of data collected for a given Measure, related to the
     CollectionInstrument used to gather it. Many CollectedInputs are gathered in a
