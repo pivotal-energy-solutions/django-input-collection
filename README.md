@@ -16,3 +16,20 @@ Below are the high-level dev promises for our use of this package in Axis and el
   * Initial support for choices via API (Users)
 * May support scoping choices based on stimulus (simulation data)
 * May support the notion of signal handling - 'program_recalculate'
+
+
+
+Implementation concepts:
+* top-level optionals
+* dependent optionals ("always" required)
+* dependents can hook a specific answer from the parent question
+* questions pull from a source, initialize 
+* questions enabled based on that source
+* "confirmation" questions based on that source, expected to match, but needs explicit user input
+* system questions
+* qa collectionrequests
+
+program settings:
+
+* initialize question answers
+* auto-accept initialized answers
