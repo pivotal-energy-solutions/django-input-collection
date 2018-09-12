@@ -25,6 +25,16 @@ class CollectionRequest(DatesMixin, models.Model):
     collection step.
     """
 
+    # Global data integrity settings
+
+    # NOTE: An Instrument that allows select-multiple answers that should counted as only a single
+    # submission must serialize that plural data for strorage on a single CollectedInput, to be
+    # unserialized later.
+    max_instrument_inputs_per_user = models.PositiveIntegerField(default=1)
+
+    # Maximum inputs across all users for any single Instrument.
+    max_instrument_inputs = models.PositiveIntegerField(null=True)
+
     # Also available:
     #
     # self.instruments.all()
