@@ -54,9 +54,9 @@ class InputMethod(object):
         return result
 
 
-def interact(inputmethod, instrument):
-    if callable(inputmethod):
-        inputmethod = inputmethod()
-
-    result = inputmethod.petition(instrument)
-    inputmethod.recieve(instrument, result)
+# def interact(inputmethod, instrument):
+#     if callable(inputmethod):
+#         inputmethod = inputmethod()
+#
+#     result = inputmethod.petition(instrument)
+#     inputmethod.recieve(instrument, result)
