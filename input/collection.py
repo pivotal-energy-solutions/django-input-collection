@@ -10,9 +10,11 @@ def store(instrument, data, **create_kwargs):
     CollectedInput = get_input_model()
 
     kwargs = {
-        'collection_request': instrument.collection_request,
         'instrument': instrument,
         'data': data,
+
+        # Disallow data integrity funnybusiness
+        'collection_request': instrument.collection_request,
     }
     kwargs.update(create_kwargs)
 
