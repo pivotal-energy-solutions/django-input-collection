@@ -95,6 +95,10 @@ class ResponsePolicy(DatesMixin, models.Model):
     restrict = models.BooleanField()  # must supply answer matching a SuggestedResponse
     multiple = models.BooleanField()  # allows multiple selections
 
+    # Also available:
+    #
+    # self.collectioninstrument_set.all()
+
     def get_flags(self):
         return {
             'restrict': self.restrict,
