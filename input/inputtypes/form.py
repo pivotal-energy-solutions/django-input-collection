@@ -1,5 +1,7 @@
 from .base import InputMethod
 
+__all__ = ['FormMethod', 'FormFieldMethod']
+
 
 class FormMethod(InputMethod):
     """ Requests input through an HTML-rendered Django form, returns a dict of cleaned_data. """
