@@ -137,6 +137,19 @@ class AbstractCollectedInput(DatesMixin, models.Model):
     def __str__(self):
         return str(self.data)
 
+    # These default implementations trust the type to match whatever modelfield is in use for the
+    # ``data`` field on the concrete model.
+    def serialize_data(self, data):
+        """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
+        return data
+
+    def deserialize_data(self, data):
+        """
+        Coerces retrieved ``data`` from the active input model (CollectedInput or swapped) to an
+        appropriate object for its type.
+        """
+        return data
+
 
 MODEL_SWAP_SETTING = swapper.swappable_setting('input', 'CollectedInput')
 
@@ -150,3 +163,11 @@ class CollectedInput(AbstractCollectedInput):
 
     class Meta:
         swappable = MODEL_SWAP_SETTING  # 'INPUT_COLLECTEDINPUT_MODEL'
+
+    def serialize_data(self, data):
+        """ Enforce strings for CharField compatibility. """
+        return str(data)
+
+    def deserialize_data(self, data):
+        """ Pass data straight out as a string. """
+        return data
