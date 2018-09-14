@@ -16,11 +16,14 @@ class DatesMixin(object):
 def isolate_response_policy(instrument):
     """
     Ensures the response_policy instance is unique to this CollectionInstrument and marked for
-    disallowing future reuse.
+    disallowing future reuse.  If ``instrument`` is the only instance related to its
+    ResponsePolicy (i.e., the policy is already isolated), then no work is performed.
     """
     policy = instrument.response_policy
-    instrument.response_policy = clone_response_policy(policy)
-    instrument.save()
+    has_other_uses = policy.collectioninstrument_set.exclude(pk=instrument.pk).exists()
+    if has_other_uses:
+        instrument.response_policy = clone_response_policy(policy)
+        instrument.save()
 
 
 def clone_response_policy(response_policy, **kwargs):
