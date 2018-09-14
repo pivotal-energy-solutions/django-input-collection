@@ -9,9 +9,11 @@ def store(instrument, data, **create_kwargs):
     """
     CollectedInput = get_input_model()
 
+    db_data = CollectedInput().serialize_data(data)  # FIXME: classmethod/staticmethod?
+
     kwargs = {
         'instrument': instrument,
-        'data': data,
+        'data': db_data,
 
         # Disallow data integrity funnybusiness
         'collection_request': instrument.collection_request,
