@@ -36,3 +36,11 @@ CollectionInput = models.get_input_model()
 class CollectionInputViewSet(viewsets.ModelViewSet):
     queryset = CollectionInput.objects.all()
     serializer_class = serializers.CollectionInputSerializer
+
+    def get_serializer_context(self):
+        context = super(CollectionInputViewSet, self).get_serializer_context()
+
+        if self.request.method in ['PUT', 'POST']:
+            context['write_mode'] = True
+
+        return context
