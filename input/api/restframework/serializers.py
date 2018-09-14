@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ... import models
+from ... import models, collection
 
 
 class ReadWriteToggleMixin(object):
@@ -47,3 +47,9 @@ class CollectionInputSerializer(ReadWriteToggleMixin, serializers.ModelSerialize
         model = models.get_input_model()
         fields = '__all__'
         exclude_write = ('collection_request',)
+
+    def create(self, validated_data):
+        return collection.store(instance=None, **validated_data)
+
+    def update(self, instance, validated_data):
+        return collection.store(instance=instance, **validated_data)
