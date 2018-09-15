@@ -6,7 +6,28 @@ suggested_responses = [
     factories.SuggestedResponseFactory.create(data='Maybe'),
 ]
 
-factories.CollectedInputFactory.create_batch(size=10, **{
+instrument_kwargs = {
     'collection_request__id': 1,
-    'instrument__suggested_responses': suggested_responses,
-})
+    'response_policy__nickname': 'default',
+}
+
+factories.CollectionInstrumentFactory.create(**instrument_kwargs)
+factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'response_policy__nickname': 'restrict',
+    'response_policy__restrict': True,
+    'suggested_responses': suggested_responses,
+}))
+factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'response_policy__nickname': 'multiple-restrict',
+    'response_policy__multiple': True,
+    'response_policy__restrict': True,
+    'suggested_responses': suggested_responses,
+}))
+factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'response_policy__nickname': 'multiple',
+    'response_policy__multiple': True,
+    'suggested_responses': suggested_responses,
+}))
+factories.CollectionInstrumentFactory.create_batch(size=6, **dict(instrument_kwargs, **{
+    'suggested_responses': suggested_responses,
+}))
