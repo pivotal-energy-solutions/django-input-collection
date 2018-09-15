@@ -43,9 +43,8 @@ class ResponsePolicyFactory(factory.django.DjangoModelFactory):
 class SuggestedResponseFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'input.SuggestedResponse'
-        django_get_or_create = ('id',)
+        django_get_or_create = ('data',)
 
-    id = factory.Sequence(lambda n: n + 1)
     data = factory.Sequence(lambda n: 'response %d' % n)
 
 
