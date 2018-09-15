@@ -44,13 +44,59 @@
             </div>
 
             <div class="card mt-3 mb-3">
-                <ul class="list-group list-group-flush">
-                    {% for suggested_response in instrument.response_info.suggested_responses %}
-                        <li class="list-group-item">
-                            {{ suggested_response.data }}
-                        </li>
-                    {% endfor %}
-                </ul>
+                {% if instrument.response_info.suggested_responses %}
+                    <ul class="list-group list-group-flush btn-group-toggle" data-toggle="buttons">
+                        {% for suggested_response in instrument.response_info.suggested_responses %}
+                            <label class="btn btn-outline-primary list-group-item text-left">
+                                <input name="instrument-{{ instrument.id }}"
+                                       {% if instrument.response_info.response_policy.multiple %}
+                                       type="checkbox"
+                                       {% else %}
+                                       type="radio"
+                                       {% endif %}
+                                       checked {# TODO: auto select when configured to do so #}
+                                       >
+                                {{ suggested_response.data }}
+                            </label>
+                        {% endfor %}
+                        {% if not instrument.response_info.response_policy.restrict %}
+                            <label class="btn btn-outline-primary list-group-item text-left">
+                                {# TODO: allow addition of more unbounded custom inputs #}
+                                <input name="instrument-{{ instrument.id }}"
+                                       {% if instrument.response_info.response_policy.multiple %}
+                                       type="checkbox"
+                                       {% else %}
+                                       type="radio"
+                                       {% endif %}
+                                       >
+                                Other
+                            </label>
+                            <input class="form-control list-group-item"
+                                   name="instrument-{{ instrument.id }}"
+                                   type="text"
+                                   placeholder="(Please specify)">
+                        {% endif %}
+                    </ul>
+                {% else %}
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            {# <div class="input-group-prepend"> #}
+                            {#     <span class="input-group-text">Number:</span> #}
+                            {# </div> #}
+                            <input class="form-control"
+                                   name="instrument-{{ instrument.id }}"
+                                   type="text"
+                                   {# placeholder="Number" #}
+                                   >
+                            {# <div class="input-group-append"> #}
+                            {#     <span class="input-group-text">MMbtu</span> #}
+                            {# </div> #}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="card-footer text-monospace">
+                    &nbsp;
+                </div>
             </div>
 
         </div>
