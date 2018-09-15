@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Poll {{ object.pk }}{% endblock title %}
+
+{% block content %}
+    <h1>Poll {{ object.pk }}</h1>
+
+    {# <div class="card"> #}
+    {#     <div class="card-header">Raw collector info</div> #}
+    {#     <div class="card-body"> #}
+    {#         <code>{{ payload|pprint }}</code> #}
+    {#     </div> #}
+    {# </div> #}
+
+    {% for instrument in payload.instruments %}
+        <div class="card-group">
+            <div class="card mt-3 mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ instrument.text }}</h5>
+                    {% if instrument.description %}
+                        <div class="card-text text-muted">{{ instrument.description }}</div>
+                    {% endif %}
+                    {% if instrument.help %}
+                        <div class="card-text">
+                            <button class="btn btn-sm btn-outline-primary" data-toggle="button">
+                                <a data-target=".help-{{ instrument.id }}" data-toggle="collapse">
+                                    Show additional help
+                                </a>
+                            </button>
+                            <div class="collapse help-{{ instrument.id }}">
+                                {{ instrument.help }}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if user.is_staff %}
+                    <div class="card-footer text-monospace">
+                        [pk={{ instrument.id }}]
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="card mt-3 mb-3">
+                <ul class="list-group list-group-flush">
+                    {% for suggested_response in instrument.response_info.suggested_responses %}
+                        <li class="list-group-item">
+                            {{ suggested_response.data }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+    {% endfor %}
+
+{% endblock content %}
