@@ -6,7 +6,7 @@ from .. import collection
 from .utils import DatesMixin
 
 __all__ = ['CollectionRequest', 'CollectionGroup', 'CollectionInstrument', 'AbstractCollectedInput',
-           'CollectedInput']
+           'CollectedInput', 'ResponsePolicy', 'SuggestedResponse']
 
 
 class CollectionGroup(DatesMixin, models.Model):
