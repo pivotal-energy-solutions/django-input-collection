@@ -23,11 +23,11 @@
                     {% if instrument.help %}
                         <div class="card-text">
                             <button class="btn btn-sm btn-outline-primary" data-toggle="button">
-                                <a data-target=".help-{{ instrument.id }}" data-toggle="collapse">
+                                <a data-target=".instrument-{{ instrument.id }}-help" data-toggle="collapse">
                                     Show additional help
                                 </a>
                             </button>
-                            <div class="collapse help-{{ instrument.id }}">
+                            <div class="collapse instrument-{{ instrument.id }}-help">
                                 {{ instrument.help }}
                             </div>
                         </div>
