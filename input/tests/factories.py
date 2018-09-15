@@ -58,7 +58,7 @@ class CollectionInstrumentFactory(factory.django.DjangoModelFactory):
     collection_request = factory.SubFactory(CollectionRequestFactory)
     measure = factory.SubFactory(MeasureFactory)
     group = factory.SubFactory(CollectionGroupFactory, id='default')
-    response_policy = factory.SubFactory(ResponsePolicyFactory)
+    response_policy = factory.SubFactory(ResponsePolicyFactory, nickname='default')
 
     order = factory.Sequence(lambda n: n)
     text = factory.Sequence(lambda n: 'text %d' % n)
