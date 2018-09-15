@@ -62,7 +62,7 @@ class CollectionInstrument(DatesMixin, models.Model):
     help = models.TextField(blank=True)  # long text, always hidden unless requested
 
     response_policy = models.ForeignKey('ResponsePolicy', on_delete=models.CASCADE)
-    suggested_responses = models.ManyToManyField('SuggestedResponse')
+    suggested_responses = models.ManyToManyField('SuggestedResponse')  # FIXME: ordering?
 
     # Also available:
     #
@@ -87,6 +87,7 @@ class ResponsePolicy(DatesMixin, models.Model):
     """
     # Internal references
     nickname = models.CharField(max_length=100, null=True)
+    is_singleton = models.BooleanField(default=False)
 
     # Flags for related CollectionInstrument(s)
     # NOTE: 'multiple' should be treated like a hint suggesting that a CollectedInput for an
@@ -106,7 +107,7 @@ class ResponsePolicy(DatesMixin, models.Model):
         }
 
 
-class SuggestedResponse(DatesMixin, models.Model):
+class SuggestedResponse(DatesMixin, models.Model):  # FIXME: swappable core for 'data'
     """
     A pre-identified valid response for a CollectionInstrument.
     """
