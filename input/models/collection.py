@@ -37,7 +37,7 @@ class CollectionRequest(DatesMixin, models.Model):
 
     # Also available:
     #
-    # self.instruments.all()
+    # self.collectioninstrument_set.all()
     # self.collectedinput_set.all()  [default, changes if swapped]
 
     def __str__(self):
@@ -51,7 +51,7 @@ class CollectionInstrument(DatesMixin, models.Model):
     phrasing, etc).
     """
 
-    collection_request = models.ForeignKey('CollectionRequest', related_name='instruments', on_delete=models.CASCADE)
+    collection_request = models.ForeignKey('CollectionRequest', on_delete=models.CASCADE)
     measure = models.ForeignKey('Measure', on_delete=models.CASCADE)
     group = models.ForeignKey('CollectionGroup', on_delete=models.CASCADE)
 
