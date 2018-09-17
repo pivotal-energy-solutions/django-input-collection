@@ -48,13 +48,14 @@
                     {% endif %}
                 </div>
 
-                {# {% if user.is_staff %} #}
-                    <div class="card-footer text-monospace">
-                        [pk={{ instrument.id }},
-                         {% if instrument.response_info.response_policy.multiple %}multiple={{ instrument.response_info.response_policy.multiple }},{% endif %}
-                         {% if instrument.response_info.response_policy.restrict %}restrict={{ instrument.response_info.response_policy.restrict }},{% endif %}]
-                    </div>
-                {# {% endif %} #}
+                <div class="card-footer text-monospace">
+                    [pk={{ instrument.id }},
+                     {% if instrument.response_info.response_policy.multiple %}multiple={{ instrument.response_info.response_policy.multiple }},{% endif %}
+                     {% if instrument.response_info.response_policy.restrict %}restrict={{ instrument.response_info.response_policy.restrict }},{% endif %}]
+
+                     {# hacking for equal size to the right-side card #}
+                     <button class="btn btn-sm invisible">&nbsp;</button>
+                </div>
             </div>
 
             <div class="card mt-3 mb-3">
