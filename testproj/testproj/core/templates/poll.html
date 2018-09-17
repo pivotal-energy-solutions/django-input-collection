@@ -8,9 +8,45 @@
     <script src="{% static "input/data-api.js" %}"></script>
     <script>
         var polls = {
+            serialize: {
+                unknown: function(elements) {
+                    var data = undefined;
+
+                    if (elements.length > 1) {
+                        var checked = elements.filter('[checked]')
+                        return polls.serialize.single(checked);
+                    }
+
+                    var options = elements.find('option[selected]');
+                    if (options.length > 0 && el.is('[multiple]')) {
+                        return polls.serialize.multiple(options);
+                    }
+
+                    return polls.serialize.single(elements);
+                },
+                single: function(el) {
+                    return el.val(); 
+                },
+                multiple: function(elements) {
+                    var data = {}
+                    $.each(elements, function(i, el){
+                        data[i] = polls.serialize.single(el);
+                    });
+                }
+            },
+            isEmpty: function(value) {
+                var emptyValues = new Set([undefined, null, '']);
+                return (emptyValues.has(value));
+            },
             submit: function(instrumentId) {
-                var data = $('#instrument-' + instrumentId).val();
-                DjangoInputCollection.api.submit(instrumentId, data);
+                var el = $('[name="instrument-' + instrumentId + '"]');
+                var data = polls.serialize.unknown(el);
+                if (polls.isEmpty(data)) {
+                    console.log("[%s] Nothing to submit <%s:%s>", instrumentId, typeof(data), data);
+                } else {
+                    console.log("[%s] Submitting: <%s:%s>", instrumentId, typeof(data), data);
+                    DjangoInputCollection.api.submit(instrumentId, data);
+                }
             }
         }
     </script>
