@@ -108,8 +108,18 @@
                         </div>
                     </div>
                 {% endif %}
-                <div class="card-footer text-monospace">
-                    &nbsp;
+                <div class="card-footer">
+                    <div class="float-right">
+                        <button class="btn btn-primary btn-sm"
+                                onclick="polls.submit({{ instrument.id }})">
+                            Submit
+                        </button>
+                    </div>
+
+                    <div class="text-monospace">
+                        [answer_pk=,
+                         ]
+                    </div>
                 </div>
             </div>
 
