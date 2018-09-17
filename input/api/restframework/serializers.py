@@ -13,7 +13,7 @@ class ReadWriteToggleMixin(object):
         super(ReadWriteToggleMixin, self).__init__(*args, **kwargs)
 
         if write_mode:
-            exclude = getattr(self.Meta, 'exclude_write', [])
+            exclude_fields = getattr(self.Meta, 'exclude_write', [])
             for name in exclude_fields:
                 del self.fields[name]
 
