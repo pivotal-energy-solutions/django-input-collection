@@ -1,3 +1,5 @@
+import django; django.setup()
+
 from input.tests import factories
 
 suggested_responses = [
