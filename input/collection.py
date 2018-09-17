@@ -1,7 +1,7 @@
 from .models.utils import get_input_model
 
 
-def store(instrument, data, **create_kwargs):
+def store(instrument, data, instance=None, **model_kwargs):
     """
     Creates a new CollectedInput instance for the given data.  Any additional kwargs are sent to
     the manager's ``create()`` method, in case the CollectedInput model has been swapped and
@@ -18,8 +18,11 @@ def store(instrument, data, **create_kwargs):
         # Disallow data integrity funnybusiness
         'collection_request': instrument.collection_request,
     }
-    kwargs.update(create_kwargs)
+    kwargs.update(model_kwargs)
 
-    instance = CollectedInput.objects.create(**kwargs)
+    pk = None
+    if instance is not None:
+        pk = instance.pk
+    instance, created = CollectedInput.objects.update_or_create(pk=pk, defaults=kwargs)
 
     return instance
