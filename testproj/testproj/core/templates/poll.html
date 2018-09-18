@@ -48,7 +48,10 @@
                         console.log("[%s] Nothing to submit <%s:%s>", instrumentId, typeof(data), data);
                     } else {
                         console.log("[%s] Submitting: <%s:%s>", instrumentId, typeof(data), data);
-                        collector.api.addInput(instrumentId, data);
+                        collector.api.addInput({
+                            instrument: instrumentId,
+                            data: data
+                        });
                     }
                 }
             }

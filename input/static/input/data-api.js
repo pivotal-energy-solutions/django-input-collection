@@ -58,6 +58,33 @@ var DjangoInputCollection = (function(){
     };
 
     var internals = {
+        generateApi: function(specification){
+            // Expose one-liners for accomplishing work via requests
+
+            var api = {};
+
+            for (var type of utils.locals(specification.endpoints)) {
+                for (var operation of utils.locals(specification.endpoints[type])) {
+                    var endpointInfo = specification.endpoints[type][operation];
+                    var emptyContext = utils.extractEmptyContext(endpointInfo.url);
+                    var name = operation + type.charAt(0).toUpperCase() + type.substr(1);
+
+                    api[name] = internals.buildAction(type, operation, emptyContext);
+                }
+            }
+
+            return api;
+        },
+        buildAction: function(type, operation, emptyContext) {
+            return function(payload, extraContext) {
+                var context = Object.assign({}, emptyContext);
+                utils.fillObject(context, extraContext);
+                if (payload !== undefined) {
+                    utils.fillObject(context, payload);
+                }
+                internals.doAction(type, operation, context, payload);
+            };
+        },
         doAction: function(type, operation, context, payload) {
             return api.sendRequest(type, operation, context, payload);
         }
@@ -65,17 +92,7 @@ var DjangoInputCollection = (function(){
 
     var api = {
         specification: undefined,
-        api: {
-            // Exposed one-liners for accomplishing work via requests
-
-            // TODO: Generate these automatically via the spec
-            addInput: function(instrumentId, data) {
-                var parent = 'instrument';
-                var payload = {instrument: instrumentId, data: data};
-                var context = {pk: payload[parent]};
-                return internals.doAction('input', 'add', context, payload);
-            }
-        },
+        api: undefined,
         getRequestArgs: function(type, operation, context, payload) {
             var endpointInfo = api.specification.endpoints[type][operation];
             var url = utils.interpolate(endpointInfo.url, context);
@@ -105,6 +122,7 @@ var DjangoInputCollection = (function(){
 
     return (function constructor(collectorSpecification) {
         api.specification = collectorSpecification;  // TODO: deep copy this
+        api.api = internals.generateApi(api.specification);
         return api;
     })
 })();
