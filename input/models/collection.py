@@ -44,6 +44,13 @@ class CollectionRequest(DatesMixin, models.Model):
         return str(self.id)
 
 
+class CollectionInstrumentType(DatesMixin, models.Model):
+    id = models.CharField(max_length=100, primary_key=True)
+
+    def __str__(self):
+        return self.id
+
+
 class CollectionInstrument(DatesMixin, models.Model):
     """
     The presentation of a Measure with all relevant contextual information to scope it to a specific
@@ -54,6 +61,8 @@ class CollectionInstrument(DatesMixin, models.Model):
     collection_request = models.ForeignKey('CollectionRequest', on_delete=models.CASCADE)
     measure = models.ForeignKey('Measure', on_delete=models.CASCADE)
     group = models.ForeignKey('CollectionGroup', on_delete=models.CASCADE)
+    type = models.ForeignKey('CollectionInstrumentType', blank=True, null=True,
+                             on_delete=models.SET_NULL)
 
     order = models.IntegerField(default=0)
 
