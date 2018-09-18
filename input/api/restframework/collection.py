@@ -11,7 +11,7 @@ class RestFrameworkCollector(BaseAPICollector):
         input_detail = reverse('api:input-detail', kwargs=placeholder_pk_kwargs)
 
         return {
-            'content_type': 'json',
+            'content_type': 'application/json',
             'endpoints': {
                 'input': {
                     'list': {'url': input_list, 'method': 'GET'},
