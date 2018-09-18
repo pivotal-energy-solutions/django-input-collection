@@ -109,6 +109,7 @@
                         {% for suggested_response in instrument.response_info.suggested_responses %}
                             <label class="btn btn-outline-primary list-group-item text-left">
                                 <input name="instrument-{{ instrument.id }}"
+                                       value="{{ suggested_response.data }}"
                                        {% if instrument.response_info.response_policy.multiple %}
                                        type="checkbox"
                                        {% else %}
