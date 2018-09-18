@@ -29,6 +29,10 @@
                         var isRadio = elements.is('[type="radio"]');
                         if (isRadio) {
                             elements = elements.filter(':checked');
+                            var deferredSource = elements.attr('data-source');
+                            if (deferredSource !== undefined) {
+                                elements = $(deferredSource);
+                            }
                         }
 
                         return polls.serialize.single(elements);
@@ -126,9 +130,11 @@
                             </label>
                         {% endfor %}
                         {% if not instrument.response_info.response_policy.restrict %}
-                            <label class="btn btn-outline-primary list-group-item text-left">
+                            <label class="btn btn-outline-primary list-group-item text-left"
+                                   for="instrument-{{ instrument.id }}-other">
                                 {# TODO: allow addition of more unbounded custom inputs #}
                                 <input name="instrument-{{ instrument.id }}"
+                                       data-source="#instrument-{{ instrument.id }}-other"
                                        {% if instrument.response_info.response_policy.multiple %}
                                        type="checkbox"
                                        {% else %}
@@ -138,6 +144,7 @@
                                 Other
                             </label>
                             <input class="form-control list-group-item"
+                                   id="instrument-{{ instrument.id }}-other"
                                    name="instrument-{{ instrument.id }}"
                                    type="text"
                                    placeholder="(Please specify)">
