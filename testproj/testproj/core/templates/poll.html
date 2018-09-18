@@ -41,7 +41,7 @@
                     multiple: function(elements) {
                         var data = {}
                         $.each(elements, function(i, el){
-                            data[i] = polls.serialize.single(el);
+                            data[i] = polls.serialize.single($(el));
                         });
                         return data;
                     }
