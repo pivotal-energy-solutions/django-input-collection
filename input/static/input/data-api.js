@@ -68,7 +68,7 @@ var DjangoInputCollection = (function(){
             var xhr = api.getRequest(type, requestArgs.method, requestArgs.url);
             var postString = undefined;
             if (requestArgs.method == 'post' || requestArgs.method == 'put') {
-                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('Content-Type', api.specification.content_type);
                 postString = JSON.stringify(data);
             }
             xhr.send(postString);
