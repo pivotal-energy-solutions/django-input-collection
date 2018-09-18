@@ -38,7 +38,7 @@ class CollectionRequest(DatesMixin, models.Model):
     # Also available:
     #
     # self.collectioninstrument_set.all()
-    # self.collectedinput_set.all()  [default, changes if swapped]
+    # self.collectedinput_set.all()
 
     def __str__(self):
         return str(self.id)
@@ -76,7 +76,7 @@ class CollectionInstrument(DatesMixin, models.Model):
     # Also available:
     #
     # self.suggestedresponse_set.all()
-    # self.collectedinput_set.all()  [default, changes if swapped]
+    # self.collectedinput_set.all()
 
     class Meta:
         ordering = ('order', 'pk')
