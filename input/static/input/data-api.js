@@ -38,9 +38,10 @@ var DjangoInputCollection = (function(){
         },
         interpolate: function(string, context, tokenPattern) {
             var tokenPattern = tokenPattern || /__(\w+)__/;
-            for (var property in context) {
-                if (context.hasOwnProperty(property)) {
-                    string = string.replace(tokenPattern, context[property]);
+            for (var property of utils.locals(context)) {
+                var value = context[property];
+                if (value !== undefined && value !== null) {
+                    string = string.replace(tokenPattern, value);
                 }
             }
             return string;
