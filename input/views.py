@@ -1,5 +1,8 @@
+import json
+
 from django.views.generic import DetailView
 
+from .json import ModelJSONEncoder
 from . import models
 
 
@@ -24,5 +27,6 @@ class CollectorView(DetailView):
         collector = collector_class(**collector_kwargs)
 
         context['payload'] = collector.info
+        context['payload_json'] = json.dumps(collector.info, cls=ModelJSONEncoder)
 
         return context
