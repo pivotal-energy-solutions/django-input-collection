@@ -11,4 +11,5 @@ router.register(r'collection-request', api.CollectionRequestViewSet, base_name='
 router.register(r'instrument', api.CollectionInstrumentViewSet, base_name='instrument')
 router.register(r'input', api.CollectedInputViewSet, base_name='input')
 
+app_name = 'api'  # FIXME: too generic?  Not interested in having drf in the name, though
 urlpatterns = router.urls
