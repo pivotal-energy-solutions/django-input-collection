@@ -41,10 +41,11 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
         model = models.CollectionInstrument
         fields = '__all__'
 
+CollectedInput = models.get_input_model()
 
 class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     class Meta:
-        model = models.get_input_model()
+        model = CollectedInput
         fields = '__all__'
         exclude_write = ('collection_request',)
 
