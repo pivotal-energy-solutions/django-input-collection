@@ -11,6 +11,8 @@
             var specification = {{ payload_json|safe }};
             var collector = DjangoInputCollection(specification.meta.api);
             return {
+                collector: collector,
+                specification: specification,
                 serialize: {
                     unknown: function(elements) {
                         var data = undefined;
