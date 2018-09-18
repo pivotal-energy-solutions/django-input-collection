@@ -26,6 +26,11 @@
                             return polls.serialize.multiple(elements);
                         }
 
+                        var isRadio = elements.is('[type="radio"]');
+                        if (isRadio) {
+                            elements = elements.filter(':checked');
+                        }
+
                         return polls.serialize.single(elements);
                     },
                     single: function(el) {
