@@ -22,7 +22,20 @@ var DjangoInputCollection = (function(){
      *      }
      *  }
      */
-    var internals = {
+    var utils = {
+        extractEmptyContext: function(string, tokenPattern) {
+            var tokenPattern = tokenPattern || /__(\w+)__/;
+            var tokens = {};
+            string.replace(tokenPattern, function(match, name){
+                tokens[name] = undefined;
+            });
+            return tokens;
+        },
+        fillObject: function(object, source) {
+            for (name of utils.locals(object)) {
+                object[name] = source[name];
+            }
+        },
         interpolate: function(string, context, tokenPattern) {
             var tokenPattern = tokenPattern || /__(\w+)__/;
             for (var property in context) {
@@ -32,6 +45,18 @@ var DjangoInputCollection = (function(){
             }
             return string;
         },
+        locals: function(o) {
+            var properties = new Set([]);
+            for (var name in o) {
+                if (o.hasOwnProperty(name)) {
+                    properties.add(name);
+                }
+            }
+            return properties.values();
+        }
+    };
+
+    var internals = {
         doAction: function(type, operation, context, payload) {
             return api.sendRequest(type, operation, context, payload);
         }
@@ -52,7 +77,7 @@ var DjangoInputCollection = (function(){
         },
         getRequestArgs: function(type, operation, context, payload) {
             var endpointInfo = api.specification.endpoints[type][operation];
-            var url = internals.interpolate(endpointInfo.url, context);
+            var url = utils.interpolate(endpointInfo.url, context);
             return {
                 url: url,
                 method: endpointInfo.method.toLowerCase(),
