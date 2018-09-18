@@ -7,49 +7,52 @@
 {% block script %}
     <script src="{% static "input/data-api.js" %}"></script>
     <script>
-        var polls = {
-            specification: {{ payload_json|safe }},
-            serialize: {
-                unknown: function(elements) {
-                    var data = undefined;
+        var polls = (function(){
+            var specification = {{ payload_json|safe }};
+            var collector = DjangoInputCollection(specification.meta.api);
+            return {
+                serialize: {
+                    unknown: function(elements) {
+                        var data = undefined;
 
-                    var isSelectMultiple = elements.is('[multiple]');
-                    var isCheckbox = elements.is('[type="checkbox"]');
-                    if (isSelectMultiple || isCheckbox) {
-                        if (isSelectMultiple) {
-                            elements = elements.filter('option[selected]');
+                        var isSelectMultiple = elements.is('[multiple]');
+                        var isCheckbox = elements.is('[type="checkbox"]');
+                        if (isSelectMultiple || isCheckbox) {
+                            if (isSelectMultiple) {
+                                elements = elements.filter('option[selected]');
+                            }
+                            return polls.serialize.multiple(elements);
                         }
-                        return polls.serialize.multiple(elements);
-                    }
 
-                    return polls.serialize.single(elements);
+                        return polls.serialize.single(elements);
+                    },
+                    single: function(el) {
+                        return el.val(); 
+                    },
+                    multiple: function(elements) {
+                        var data = {}
+                        $.each(elements, function(i, el){
+                            data[i] = polls.serialize.single(el);
+                        });
+                        return data;
+                    }
                 },
-                single: function(el) {
-                    return el.val(); 
+                isEmpty: function(value) {
+                    var emptyValues = new Set([undefined, null, '']);
+                    return (emptyValues.has(value));
                 },
-                multiple: function(elements) {
-                    var data = {}
-                    $.each(elements, function(i, el){
-                        data[i] = polls.serialize.single(el);
-                    });
-                    return data;
-                }
-            },
-            isEmpty: function(value) {
-                var emptyValues = new Set([undefined, null, '']);
-                return (emptyValues.has(value));
-            },
-            submit: function(instrumentId) {
-                var el = $('[name="instrument-' + instrumentId + '"]');
-                var data = polls.serialize.unknown(el);
-                if (polls.isEmpty(data)) {
-                    console.log("[%s] Nothing to submit <%s:%s>", instrumentId, typeof(data), data);
-                } else {
-                    console.log("[%s] Submitting: <%s:%s>", instrumentId, typeof(data), data);
-                    DjangoInputCollection.api.submit(instrumentId, data);
+                submit: function(instrumentId) {
+                    var el = $('[name="instrument-' + instrumentId + '"]');
+                    var data = polls.serialize.unknown(el);
+                    if (polls.isEmpty(data)) {
+                        console.log("[%s] Nothing to submit <%s:%s>", instrumentId, typeof(data), data);
+                    } else {
+                        console.log("[%s] Submitting: <%s:%s>", instrumentId, typeof(data), data);
+                        collector.api.addInput(instrumentId, data);
+                    }
                 }
             }
-        }
+        })();
     </script>
 {% endblock script %}
 
