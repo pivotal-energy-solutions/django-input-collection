@@ -42,7 +42,7 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
         fields = '__all__'
 
 
-class CollectionInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
+class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     class Meta:
         model = models.get_input_model()
         fields = '__all__'

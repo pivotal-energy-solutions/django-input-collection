@@ -31,14 +31,14 @@ class CollectionInstrumentViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-CollectionInput = models.get_input_model()
+CollectedInput = models.get_input_model()
 
-class CollectionInputViewSet(viewsets.ModelViewSet):
-    queryset = CollectionInput.objects.all()
-    serializer_class = serializers.CollectionInputSerializer
+class CollectedInputViewSet(viewsets.ModelViewSet):
+    queryset = CollectedInput.objects.all()
+    serializer_class = serializers.CollectedInputSerializer
 
     def get_serializer_context(self):
-        context = super(CollectionInputViewSet, self).get_serializer_context()
+        context = super(CollectedInputViewSet, self).get_serializer_context()
 
         if self.request.method in ['PUT', 'POST']:
             context['write_mode'] = True
