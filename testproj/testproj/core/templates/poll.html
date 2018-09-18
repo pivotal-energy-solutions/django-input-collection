@@ -56,7 +56,7 @@
                     if (polls.isEmpty(data)) {
                         console.log("[%s] Nothing to submit <%s:%s>", instrumentId, typeof(data), data);
                     } else {
-                        console.log("[%s] Submitting: <%s:%s>", instrumentId, typeof(data), data);
+                        console.log("[%s] Submitting: <%s:%s>", instrumentId, typeof(data), JSON.stringify(data));
                         collector.api.addInput({
                             instrument: instrumentId,
                             data: data
