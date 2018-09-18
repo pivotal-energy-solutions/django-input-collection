@@ -44,8 +44,9 @@ var DjangoInputCollection = (function(){
 
             // TODO: Generate these automatically via the spec
             addInput: function(instrumentId, data) {
-                var context = {pk: instrumentId};
+                var parent = 'instrument';
                 var payload = {instrument: instrumentId, data: data};
+                var context = {pk: payload[parent]};
                 return internals.doAction('input', 'add', context, payload);
             }
         },
