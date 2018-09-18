@@ -40,9 +40,13 @@ var DjangoInputCollection = (function(){
     var api = {
         specification: undefined,
         api: {
-            // One-liners for sending archetypical requests
-            submit: function(instrumentId, data) {
-                return api.sendRequest('submit', instrumentId, data);
+            // Exposed one-liners for accomplishing work via requests
+
+            // TODO: Generate these automatically via the spec
+            addInput: function(instrumentId, data) {
+                var context = {pk: instrumentId};
+                var payload = {instrument: instrumentId, data: data};
+                return internals.doAction('input', 'add', context, payload);
             }
         },
 
