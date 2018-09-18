@@ -49,12 +49,13 @@ var DjangoInputCollection = (function(){
                 return internals.doAction('input', 'add', context, payload);
             }
         },
-
-        getRequestArgs: function(type, data) {
+        getRequestArgs: function(type, operation, context, payload) {
+            var endpointInfo = api.specification.endpoints[type][operation];
+            var url = internals.interpolate(endpointInfo.url, context);
             return {
-                url: api.endpointPrefix + api.endpointPaths[type],
-                method: api.endpointMethods[type],
-                data: data
+                url: url,
+                method: endpointInfo.method.toLowerCase(),
+                data: payload
             };
         },
         getRequest: function(type, method, url) {
