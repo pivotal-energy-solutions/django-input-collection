@@ -92,10 +92,15 @@ class Collector(object):
 
 
 class BaseAPICollector(Collector):
+    content_type = 'application/json'
+
     def get_meta(self):
         meta_info = super(BaseAPICollector, self).get_meta()
         meta_info['api'] = self.get_api_info()
         return meta_info
 
     def get_api_info(self):
-        return {}
+        return {
+            'content_type': self.content_type,
+            'endpoints': {},
+        }
