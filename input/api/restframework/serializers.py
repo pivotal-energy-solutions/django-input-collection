@@ -51,6 +51,30 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         fields = '__all__'
         exclude_write = ('collection_request',)
 
+    def validate(self, data):
+        instrument = data['instrument']
+
+        if instrument.suggested_responses.exists():
+            data['data'] = self.transform_responses_to_data(instrument, data['data'])
+
+        return data
+
+    def transform_responses_to_data(self, instrument, responses):
+        # The sophisticated case for us is that the response policy allowed multiple responses in a
+        # single input, therefore a list of those is sent to the utility to sort out the real data
+        # underlying them.
+        is_single = (not isinstance(responses, list))
+
+        if is_single:
+            responses = [responses]
+
+        results = collection.get_data_for_suggested_responses(instrument, *responses)
+
+        if is_single:
+            results = results[0]
+
+        return results
+
     def create(self, validated_data):
         return collection.store(instance=None, **validated_data)
 
