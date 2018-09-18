@@ -36,7 +36,13 @@
                         return polls.serialize.single(elements);
                     },
                     single: function(el) {
-                        return el.val(); 
+                        var data = el.val();
+                        if (el.is('[data-suggested]')) {
+                            data = {
+                                _suggested_response: data
+                            }
+                        }
+                        return data;
                     },
                     multiple: function(elements) {
                         var data = {}
@@ -116,7 +122,8 @@
                         {% for suggested_response in instrument.response_info.suggested_responses %}
                             <label class="btn btn-outline-primary list-group-item text-left">
                                 <input name="instrument-{{ instrument.id }}"
-                                       value="{{ suggested_response.data }}"
+                                       value="{{ suggested_response.id }}"
+                                       data-suggested
                                        {% if instrument.response_info.response_policy.multiple %}
                                        type="checkbox"
                                        {% else %}
