@@ -130,7 +130,8 @@ class AbstractCollectedInput(DatesMixin, models.Model):
     # Note that these fk references MUST include this app's label, since otherwise, anyone
     # inheriting from this abstract base will end up with ForeignKey references that appear local.
     collection_request = models.ForeignKey('input.CollectionRequest', on_delete=models.CASCADE)
-    instrument = models.ForeignKey('input.CollectionInstrument', on_delete=models.CASCADE)
+    instrument = models.ForeignKey('input.CollectionInstrument', related_name='collectedinput_set',
+                                   on_delete=models.CASCADE)
 
     class Meta:
         abstract = True
