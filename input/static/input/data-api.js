@@ -1,5 +1,27 @@
 var DjangoInputCollection = (function(){
 
+    /* A valid specification is laid out like this:
+     *  {
+     *      content_type: 'application/json',
+     *      endpoints: {
+     *          input: {
+     *              list: {
+     *                  method: 'GET',
+     *                  url: '/api/input/'
+     *              },
+     *              add: {
+     *                  method: 'POST',
+     *                  url: '/api/input/'
+     *              },
+     *              get: {
+     *                  method: 'GET',
+     *                  url: '/api/input/__pk__/'
+     *              }
+     *          },
+     *          // ...etc
+     *      }
+     *  }
+     */
     var internals = {
         interpolate: function(string, context, tokenPattern) {
             var tokenPattern = tokenPattern || /__(\w+)__/;
