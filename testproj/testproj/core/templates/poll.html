@@ -12,14 +12,13 @@
                 unknown: function(elements) {
                     var data = undefined;
 
-                    if (elements.length > 1) {
-                        var checked = elements.filter('[checked]')
-                        return polls.serialize.single(checked);
-                    }
-
-                    var options = elements.find('option[selected]');
-                    if (options.length > 0 && el.is('[multiple]')) {
-                        return polls.serialize.multiple(options);
+                    var isSelectMultiple = elements.is('[multiple]');
+                    var isCheckbox = elements.is('[type="checkbox"]');
+                    if (isSelectMultiple || isCheckbox) {
+                        if (isSelectMultiple) {
+                            elements = elements.filter('option[selected]');
+                        }
+                        return polls.serialize.multiple(elements);
                     }
 
                     return polls.serialize.single(elements);
@@ -32,6 +31,7 @@
                     $.each(elements, function(i, el){
                         data[i] = polls.serialize.single(el);
                     });
+                    return data;
                 }
             },
             isEmpty: function(value) {
