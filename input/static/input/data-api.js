@@ -15,7 +15,7 @@ var DjangoInputCollection = (function(){
      *              },
      *              get: {
      *                  method: 'GET',
-     *                  url: '/api/input/__pk__/'
+     *                  url: '/api/input/__id__/',
      *              }
      *          },
      *          // ...etc

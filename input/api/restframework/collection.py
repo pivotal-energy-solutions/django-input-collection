@@ -5,10 +5,8 @@ from ...collection import BaseAPICollector
 
 class RestFrameworkCollector(BaseAPICollector):
     def get_api_info(self):
-        placeholder_pk_kwargs = {'pk': '__id__'}
-
         input_list = reverse('api:input-list')
-        input_detail = reverse('api:input-detail', kwargs=placeholder_pk_kwargs)
+        input_detail = reverse('api:input-detail', kwargs={'pk': '__id__'})
 
         return {
             'content_type': 'application/json',
