@@ -20,9 +20,7 @@
                         var isSelectMultiple = elements.is('[multiple]');
                         var isCheckbox = elements.is('[type="checkbox"]');
                         if (isSelectMultiple || isCheckbox) {
-                            if (isSelectMultiple) {
-                                elements = elements.filter('option[selected]');
-                            }
+                            elements = elements.filter(':checked');
                             return polls.serialize.multiple(elements);
                         }
 
