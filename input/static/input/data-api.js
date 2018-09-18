@@ -1,20 +1,21 @@
 var DjangoInputCollection = (function(){
-    var api = {
-        endpointPrefix: '/api',
-        endpointPaths: {
-            submit: '/input/'
-        },
-        endpointMethods: {
-            submit: 'post'
-        },
-        payloadGetters: {
-            submit: function(instrumentId, data) {
-                return {
-                    instrument: instrumentId,
-                    data: data
-                };
+
+    var internals = {
+        interpolate: function(string, context, tokenPattern) {
+            var tokenPattern = tokenPattern || /__(\w+)__/;
+            for (var property in context) {
+                if (context.hasOwnProperty(property)) {
+                    string = string.replace(tokenPattern, context[property]);
+                }
             }
+            return string;
         },
+        doAction: function(type, operation, context, payload) {
+            return api.sendRequest(type, operation, context, payload);
+        }
+    };
+
+    var api = {
         specification: undefined,
         api: {
             // One-liners for sending archetypical requests
