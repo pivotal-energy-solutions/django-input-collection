@@ -23,8 +23,9 @@ var DjangoInputCollection = (function(){
      *  }
      */
     var utils = {
+        tokenPattern: /__(\w+)__/g,
         extractEmptyContext: function(string, tokenPattern) {
-            var tokenPattern = tokenPattern || /__(\w+)__/;
+            var tokenPattern = tokenPattern || utils.tokenPattern;
             var tokens = {};
             string.replace(tokenPattern, function(match, name){
                 tokens[name] = undefined;
@@ -37,7 +38,7 @@ var DjangoInputCollection = (function(){
             }
         },
         interpolate: function(string, context, tokenPattern) {
-            var tokenPattern = tokenPattern || /__(\w+)__/;
+            var tokenPattern = tokenPattern || utils.tokenPattern;
             for (var property of utils.locals(context)) {
                 var value = context[property];
                 if (value !== undefined && value !== null) {
