@@ -39,7 +39,9 @@ class CollectionRequestSerializer(ReadWriteToggleMixin, serializers.ModelSeriali
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     class Meta:
         model = models.CollectionInstrument
-        fields = '__all__'
+        fields = ['collection_request', 'measure', 'group', 'order', 'text', 'description', 'help',
+                  'response_policy', 'suggested_responses', 'collectedinput_set']
+
 
 CollectedInput = models.get_input_model()
 
