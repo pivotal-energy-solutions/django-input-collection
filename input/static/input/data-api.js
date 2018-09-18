@@ -63,8 +63,8 @@ var DjangoInputCollection = (function(){
             xhr.open(method, url);
             return xhr;
         },
-        sendRequest: function(type, payload) {
-            var requestArgs = api.getRequestArgs(type, payload);
+        sendRequest: function(type, operation, context, payload) {
+            var requestArgs = api.getRequestArgs(type, operation, context, payload);
             var xhr = api.getRequest(type, requestArgs.method, requestArgs.url);
             var postString = undefined;
             if (requestArgs.method == 'post' || requestArgs.method == 'put') {
