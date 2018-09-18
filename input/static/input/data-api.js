@@ -15,6 +15,7 @@ var DjangoInputCollection = (function(){
                 };
             }
         },
+        specification: undefined,
         api: {
             // One-liners for sending archetypical requests
             submit: function(instrumentId, data) {
@@ -48,5 +49,8 @@ var DjangoInputCollection = (function(){
         },
     };
 
-    return api;
+    return (function constructor(collectorSpecification) {
+        api.specification = collectorSpecification;  // TODO: deep copy this
+        return api;
+    })
 })();
