@@ -8,6 +8,7 @@
     <script src="{% static "input/data-api.js" %}"></script>
     <script>
         var polls = {
+            specification: {{ payload_json|safe }},
             serialize: {
                 unknown: function(elements) {
                     var data = undefined;
