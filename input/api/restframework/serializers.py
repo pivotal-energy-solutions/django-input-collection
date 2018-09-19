@@ -54,26 +54,32 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
     def validate(self, data):
         instrument = data['instrument']
 
+        context = {
+            'user': self.request.user,
+        }
+
+        at_capacity = (not self.allows_new_input(instrument, **context))
+        if at_capacity:
+            raise serializers.ValidationError("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
+                instrument.pk,
+                self.request.user,
+                data['data'],
+            ))
+
         if instrument.suggested_responses.exists():
-            data['data'] = self.transform_responses_to_data(instrument, data['data'])
+            try:
+                data['data'] = self.transform_responses_to_data(instrument, data['data'], **context)
+            except ValueError as e:
+                raise serializers.ValidationError(str(e))
 
         return data
 
-    def transform_responses_to_data(self, instrument, responses):
-        # The sophisticated case for us is that the response policy allowed multiple responses in a
-        # single input, therefore a list of those is sent to the utility to sort out the real data
-        # underlying them.
-        is_single = (not instrument.response_policy.multiple)
+    # Validation helpers
+    def allows_new_input(self, instrument, **context):
+        return CollectedInput.allowed_for_instrument(instrument, **context)
 
-        if is_single:
-            responses = [responses]
-
-        results = collection.get_data_for_suggested_responses(instrument, *responses)
-
-        if is_single:
-            results = results[0]
-
-        return results
+    def transform_responses_to_data(self, instrument, responses, **context):
+        return CollectedInput.clean_data_for_instrument(instrument, responses, **context)
 
     def create(self, validated_data):
         return collection.store(instance=None, **validated_data)
