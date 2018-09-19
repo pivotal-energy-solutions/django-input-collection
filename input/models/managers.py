@@ -66,6 +66,8 @@ class UserLatestCollectedInputQuerySet(ContextualCollectedInputQuerySet):
         queryset = super(UserLatestCollectedInputQuerySet, self).filter_for_context(**extra)
 
         # Subquery for latest id per unique 'instrument' fk reference
+        # This is kind of like what a Window() function would do for us, except we're not interested
+        # in annotating ALL inputs, only plucking out the subset that apply.
         recent_inputs = self.filter(instrument=OuterRef('instrument')) \
                             .order_by('-date_created') \
                             .values('id')[:1]
