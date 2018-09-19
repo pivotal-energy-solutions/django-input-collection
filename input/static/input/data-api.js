@@ -77,17 +77,17 @@ var DjangoInputCollection = (function(){
             return api;
         },
         buildAction: function(type, operation, emptyContext) {
-            return function(payload, extraContext) {
+            return function(payload, extraContext, csrfToken) {
                 var context = Object.assign({}, emptyContext);
                 utils.fillObject(context, extraContext);
                 if (payload !== undefined) {
                     utils.fillObject(context, payload);
                 }
-                internals.doAction(type, operation, context, payload);
+                internals.doAction(type, operation, context, payload, csrfToken);
             };
         },
-        doAction: function(type, operation, context, payload) {
-            return api.sendRequest(type, operation, context, payload);
+        doAction: function(type, operation, context, payload, csrfToken) {
+            return api.sendRequest(type, operation, context, payload, csrfToken);
         }
     };
 
@@ -108,12 +108,13 @@ var DjangoInputCollection = (function(){
             xhr.open(method, url);
             return xhr;
         },
-        sendRequest: function(type, operation, context, payload) {
+        sendRequest: function(type, operation, context, payload, csrfToken) {
             var requestArgs = api.getRequestArgs(type, operation, context, payload);
             var xhr = api.getRequest(type, requestArgs.method, requestArgs.url);
             var postString = undefined;
             if (requestArgs.method == 'post' || requestArgs.method == 'put') {
                 xhr.setRequestHeader('Content-Type', api.specification.content_type);
+                xhr.setRequestHeader('X-CSRFToken', csrfToken);
                 postString = JSON.stringify(requestArgs.data);
             }
             xhr.send(postString);
