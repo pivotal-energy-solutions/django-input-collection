@@ -49,9 +49,9 @@
                         return data;
                     },
                     multiple: function(elements) {
-                        var data = {}
+                        var data = []
                         $.each(elements, function(i, el){
-                            data[i] = polls.serialize.single($(el));
+                            data.push(polls.serialize.single($(el)));
                         });
                         return data;
                     }
