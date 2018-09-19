@@ -31,15 +31,16 @@
                         var isRadio = elements.is('[type="radio"]');
                         if (isRadio) {
                             elements = elements.filter(':checked');
-                            var deferredSource = elements.attr('data-source');
-                            if (deferredSource !== undefined) {
-                                elements = $(deferredSource);
-                            }
                         }
 
                         return polls.serialize.single(elements);
                     },
                     single: function(el) {
+                        var deferredSource = el.attr('data-source');
+                        if (deferredSource !== undefined) {
+                            el = $(deferredSource);
+                        }
+
                         var data = el.val();
                         if (el.is('[data-suggested]')) {
                             data = {
