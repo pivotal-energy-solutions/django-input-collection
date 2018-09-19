@@ -51,13 +51,15 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
     class Meta:
         model = CollectedInput
         fields = '__all__'
-        exclude_write = ('collection_request',)
+        exclude_write = ('collection_request', 'user')
 
     def validate(self, data):
         instrument = data['instrument']
 
+        data['user'] = self.context['request'].user
+
         context = {
-            'user': self.context['request'].user,
+            'user': data['user'],
         }
 
         at_capacity = (not self.allows_new_input(instrument, **context))
