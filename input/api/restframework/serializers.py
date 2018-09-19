@@ -55,14 +55,14 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         instrument = data['instrument']
 
         context = {
-            'user': self.request.user,
+            'user': self.context['request'].user,
         }
 
         at_capacity = (not self.allows_new_input(instrument, **context))
         if at_capacity:
             raise serializers.ValidationError("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
                 instrument.pk,
-                self.request.user,
+                context['user'],
                 data['data'],
             ))
 
