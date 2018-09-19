@@ -20,6 +20,7 @@ class CollectorView(DetailView):
     def get_collector_kwargs(self, **kwargs):
         kwargs.update({
             'collection_request': self.object,
+            'user': self.request.user,
         })
         return kwargs
 
