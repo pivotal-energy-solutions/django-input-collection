@@ -71,8 +71,11 @@
                         collector.api.addInput({
                             instrument: instrumentId,
                             data: data
-                        });
+                        }, {}, polls.getCsrfToken());
                     }
+                },
+                getCsrfToken: function() {
+                    return $('[name="csrfmiddlewaretoken"').val();
                 }
             }
         })();
@@ -88,6 +91,8 @@
     {#         <code>{{ payload|pprint }}</code> #}
     {#     </div> #}
     {# </div> #}
+
+    {% csrf_token %}
 
     {% for instrument in payload.instruments %}
         <div class="card-group">
