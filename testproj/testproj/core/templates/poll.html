@@ -21,7 +21,11 @@
                         var isCheckbox = elements.is('[type="checkbox"]');
                         if (isSelectMultiple || isCheckbox) {
                             elements = elements.filter(':checked');
-                            return polls.serialize.multiple(elements);
+                            if (elements.length > 0) {
+                                return polls.serialize.multiple(elements);
+                            } else {
+                                return null;
+                            }
                         }
 
                         var isRadio = elements.is('[type="radio"]');
