@@ -53,6 +53,7 @@ def get_data_for_suggested_responses(instrument, *responses):
                 except ValueError as e:
                     pass  # It's going to raise again shortly anyway with a better message
 
+                # Verify the coded SuggestedResponse id is valid for this instrument
                 data = lookups.get(suggested_response_id, missing)
                 if data is missing:
                     raise ValueError("[CollectionInstrument id=%r] Invalid SuggestedResponse id=%r in choices: %r" % (
