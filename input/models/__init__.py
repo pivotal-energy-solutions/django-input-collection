@@ -1,3 +1,2 @@
-from .base import *
-from .collection import *
-from .utils import *
+from .models import *
+from .utils import get_input_model
