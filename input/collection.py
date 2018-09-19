@@ -118,7 +118,8 @@ class Collector(object):
     def get_collected_inputs_info(self):
         inputs_info = defaultdict(list)
 
-        queryset = list(self.collection_request.collectedinput_set.all())
+        queryset = self.collection_request.collectedinput_set(manager='filtered_objects') \
+                                          .filter_for_context(user=self.user)
         for input in queryset:
             inputs_info[input.instrument_id].append(model_to_dict(input))
 

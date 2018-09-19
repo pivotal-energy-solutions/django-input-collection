@@ -197,19 +197,21 @@ class AbstractCollectedInput(DatesModel, models.Model):
         available, CollectionRequest.max_instrument_inputs_per_user CANNOT be respected.
         """
 
+        manager = instrument.collectedinput_set(manager='filtered_objects')
+
         user = context.get('user')
         if user and not isinstance(user, AnonymousUser):
             user_max = instrument.collection_request.max_instrument_inputs_per_user
             if user_max is not None:
-                existing_inputs = instrument.collectedinput_set.filter_for_context(**context)
+                existing_inputs = manager.filter_for_context(**context)
                 input_count = existing_inputs.count()
                 if input_count >= user_max:
                     return False
 
         total_max = instrument.collection_request.max_instrument_inputs
-        if input_max is not None:
+        if total_max is not None:
             no_user_context = dict(context, user=None)
-            existing_inputs = instrument.collectedinput_set.filter_for_context(**no_user_context)
+            existing_inputs = manager.filter_for_context(**no_user_context)
             input_count = existing_inputs.count()
             if input_count >= total_max:
                 return False
