@@ -71,7 +71,7 @@ class Collector(object):
     __version__ = (0, 0, 0, 'dev')
     group = 'default'
 
-    def __init__(self, collection_request, user=None, **kwargs):
+    def __init__(self, collection_request, user, **kwargs):
         self.collection_request = collection_request
         self.user = user
 
