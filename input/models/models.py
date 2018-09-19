@@ -200,12 +200,18 @@ class AbstractCollectedInput(DatesModel, models.Model):
         user = context.get('user')
         if user and not isinstance(user, AnonymousUser):
             user_max = instrument.collection_request.max_instrument_inputs_per_user
-            user_count = instrument.collectedinput_set.filter_for_user(user).count()
-            if user_count >= user_count:
+            if user_max is not None:
+                user_count = instrument.collectedinput_set.filter_for_user(user).count()
+                if user_count >= user_count:
+                    return False
+
+        input_max = instrument.collection_request.max_instrument_inputs
+        if input_max is not None:
+            input_count = instrument.collectedinput_set.all().count()
+            if input_count >= input_max:
                 return False
 
-        instrument.collectedinput_set.all().count()
-        instrument.collection_request.max_instrument_inputs
+        return True
 
     @classmethod
     def clean_data_for_instrument(cls, instrument, data, **context):
