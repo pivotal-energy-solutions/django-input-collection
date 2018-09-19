@@ -210,7 +210,7 @@ class AbstractCollectedInput(DatesModel, models.Model):
     @classmethod
     def clean_data_for_instrument(cls, instrument, data, **context):
         # Clean coded ids
-        has_suggested_responses = instrument.suggested_responses.exist()
+        has_suggested_responses = instrument.suggested_responses.exists()
         if has_suggested_responses:
             is_single = (not instrument.response_policy.multiple)
 
