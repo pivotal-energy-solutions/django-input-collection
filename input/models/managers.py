@@ -57,7 +57,7 @@ class UserLatestCollectedInputQuerySet(ContextualCollectedInputQuerySet):
         """
         if user is not None:  # Allows an explicit None to avoid user references
             extra['user'] = user
-        return super(LatestCollectedInputQuerySet, self).get_context_query(**extra)
+        return super(UserLatestCollectedInputQuerySet, self).get_context_query(**extra)
 
     def filter_for_context(self, user, **extra):
         if user is not None:  # Allows an explicit None to avoid user references
