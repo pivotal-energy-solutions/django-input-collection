@@ -1,3 +1,5 @@
+from django.core.exceptions import PermissionDenied
+
 from rest_framework import serializers
 
 from ... import models, collection
@@ -60,7 +62,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
 
         at_capacity = (not self.allows_new_input(instrument, **context))
         if at_capacity:
-            raise serializers.ValidationError("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
+            raise PermissionDenied("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
                 instrument.pk,
                 context['user'],
                 data['data'],
