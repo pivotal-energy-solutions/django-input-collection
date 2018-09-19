@@ -1,6 +1,8 @@
 import json
 
 from django.views.generic import DetailView
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 
 from .json import ModelJSONEncoder
 from . import models
@@ -9,6 +11,8 @@ from . import models
 class CollectorView(DetailView):
     model = models.CollectionRequest
     collector_class = None
+
+    dispatch = method_decorator(ensure_csrf_cookie)(DetailView.dispatch)
 
     def get_collector_class(self):
         return self.collector_class
