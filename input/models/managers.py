@@ -55,12 +55,14 @@ class UserLatestCollectedInputQuerySet(ContextualCollectedInputQuerySet):
         Uses a required ``user`` runtime context kwarg, used for finding only the most recent
         instances per CollectionInstrument.
         """
-        extra['user'] = user
+        if user is not None:  # Allows an explicit None to avoid user references
+            extra['user'] = user
         return super(LatestCollectedInputQuerySet, self).get_context_query(**extra)
 
     def filter_for_context(self, user, **extra):
-        
-        extra['user'] = user
+        if user is not None:  # Allows an explicit None to avoid user references
+            extra['user'] = user
+
         queryset = super(UserLatestCollectedInputQuerySet, self).filter_for_context(**extra)
         # queryset = queryset.aggregate(latest)
         return queryset
