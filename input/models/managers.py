@@ -67,7 +67,7 @@ class UserLatestCollectedInputQuerySet(ContextualCollectedInputQuerySet):
 
         # Subquery for latest id per unique 'instrument' fk reference
         recent_inputs = self.filter(instrument=OuterRef('instrument')) \
-                            .order_by('-date_created')
+                            .order_by('-date_created') \
                             .values('id')[:1]
         queryset = self.filter(id=Subquery(recent_inputs))
         return queryset
