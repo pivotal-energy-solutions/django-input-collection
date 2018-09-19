@@ -185,7 +185,7 @@
 
                     <div class="text-monospace">
                         {% for input_info in instrument.collected_inputs %}
-                            [{{ input_info.data }}]
+                            {{ input_info.data }},
                         {% endfor %}
                     </div>
                 </div>
