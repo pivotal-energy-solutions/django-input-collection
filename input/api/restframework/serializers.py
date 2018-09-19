@@ -63,7 +63,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         # The sophisticated case for us is that the response policy allowed multiple responses in a
         # single input, therefore a list of those is sent to the utility to sort out the real data
         # underlying them.
-        is_single = (not isinstance(responses, list))
+        is_single = (not instrument.response_policy.multiple)
 
         if is_single:
             responses = [responses]
