@@ -49,6 +49,9 @@ class CollectionRequest(DatesModel, models.Model):
     # Global data integrity settings
 
     # Maximum inputs for a single user for a single Instrument.
+    # NOTE: If the CollectedInput model's ``filtered_objects`` manager returns fewer items in its
+    # queryset than specified in this setting, it will be impossible for this setting to be enforced
+    # at runtime.
     max_instrument_inputs_per_user = models.PositiveIntegerField(blank=True, null=True)
 
     # Maximum inputs across all users for a single Instrument.
