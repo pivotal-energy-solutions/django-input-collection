@@ -106,7 +106,7 @@ class Collector(object):
 
         queryset = self.collection_request.collectioninstrument_set.filter(condition=None)
         for instrument in queryset:
-            info = model_to_dict(instrument)
+            info = model_to_dict(instrument, exclude=['suggested_responses'])
             info['response_info'] = self.get_instrument_input_info(instrument)
             info['collected_inputs'] = inputs_info.get(instrument.pk)
             instruments_info.append(info)
