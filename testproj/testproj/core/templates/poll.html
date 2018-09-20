@@ -117,7 +117,8 @@
                 </div>
 
                 <div class="card-footer text-monospace">
-                    [pk={{ instrument.id }},
+                    [{{ instrument.measure }},
+                     pk={{ instrument.id }},
                      {% if instrument.response_info.response_policy.multiple %}multiple={{ instrument.response_info.response_policy.multiple }},{% endif %}
                      {% if instrument.response_info.response_policy.restrict %}restrict={{ instrument.response_info.response_policy.restrict }},{% endif %}]
 
