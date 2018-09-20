@@ -88,7 +88,7 @@ class Collector(object):
             'meta': meta_info,
             'collection_request': collection_request_info,
             'group': self.group,
-            'instruments': instruments_info,
+            'instruments_info': instruments_info,
             'collected_inputs': inputs_info,
         }
         return info
@@ -99,7 +99,12 @@ class Collector(object):
         }
 
     def get_instruments_info(self, inputs_info=None):
-        instruments_info = []
+        ordering = list(self.collection_request.collectioninstrument_set.filter(conditions=None) \
+                                               .values_list('id', flat=True))
+        instruments_info = {
+            'instruments': {},
+            'ordering': ordering,
+        }
 
         if inputs_info is None:
             inputs_info = {}
@@ -109,7 +114,8 @@ class Collector(object):
             info = model_to_dict(instrument, exclude=['suggested_responses'])
             info['response_info'] = self.get_instrument_input_info(instrument)
             info['collected_inputs'] = inputs_info.get(instrument.pk)
-            instruments_info.append(info)
+
+            instruments_info['instruments'][instrument.id] = info
 
         return instruments_info
 
