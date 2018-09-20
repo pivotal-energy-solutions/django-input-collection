@@ -99,7 +99,7 @@ class Case(DatesModel, models.Model):
 
     # Also available:
     #
-    # self.conditiongroup_set.all()
+    # self.casegroup_set.all()
 
     def __str__(self):
         return self.id
