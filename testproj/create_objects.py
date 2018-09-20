@@ -80,26 +80,26 @@ factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
 }))
 
 # Dependents (must be defined in reverse--inner 'instrument' reference is the parent)
-factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
-    'text': "Free response A (depends on above)",
-    'condition_set': [factories.ConditionFactory.create(**{
-        'condition_group__id': 'gimme-only-suggested',
-        'instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
-            'text': "Free response (with suggestions) (suggestions trigger more)",
-            'suggested_responses': suggested_responses,
-        })),
-    })],
-}))
-factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
-    'text': "Free response B (depends on above)",
-    'condition_set': [factories.ConditionFactory.create(**{
-        'condition_group__id': 'gimme-only-custom',
-        'instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
-            'text': "Free response (with suggestions) (custom triggers more)",
-            'suggested_responses': suggested_responses,
-        })),
-    })],
-}))
+factories.ConditionFactory.create(**{
+    'parent_instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+        'text': "Free response A (depends on above)",
+    })),
+    'condition_group__id': 'gimme-only-suggested',
+    'instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+        'text': "Free response (with suggestions) (suggestions trigger more)",
+        'suggested_responses': suggested_responses,
+    })),
+})
+factories.ConditionFactory.create(**{
+    'parent_instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+        'text': "Free response B (depends on above)",
+    })),
+    'condition_group__id': 'gimme-only-custom',
+    'instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+        'text': "Free response (with suggestions) (custom triggers more)",
+        'suggested_responses': suggested_responses,
+    })),
+})
 
 # Multiple choice, no "Other" answer
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
