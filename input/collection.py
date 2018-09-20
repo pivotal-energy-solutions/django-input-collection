@@ -71,12 +71,10 @@ class Collector(object):
     __version__ = (0, 0, 0, 'dev')
     group = 'default'
 
-    def __init__(self, collection_request, user, **kwargs):
+    def __init__(self, collection_request, group='default', **context):
         self.collection_request = collection_request
-        self.user = user
-
-        if 'group' in kwargs:
-            self.group = kwargs['group']
+        self.context = context
+        self.group = group
 
     @property
     def info(self):
@@ -119,7 +117,7 @@ class Collector(object):
         inputs_info = defaultdict(list)
 
         queryset = self.collection_request.collectedinput_set(manager='filtered_objects') \
-                                          .filter_for_context(user=self.user)
+                                          .filter_for_context(**self.context)
         for input in queryset:
             inputs_info[input.instrument_id].append(model_to_dict(input))
 
