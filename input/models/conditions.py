@@ -90,5 +90,3 @@ class ConditionCase(DatesModel, models.Model):
 
     def test(self, instrument, inputs):
         return False  # TODO
-
-
