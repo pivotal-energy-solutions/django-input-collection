@@ -8,7 +8,7 @@ __all__ = ['Condition', 'ConditionGroup', 'ConditionCase']
 class Condition(DatesModel, models.Model):
     """ The control point for offering a CollectionInstrument under the correct conditions. """
     instrument = models.ForeignKey('CollectionInstrument', on_delete=models.CASCADE)
-    case_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE)
+    condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE)
 
     def test(self, instrument, **context):
         inputs = instrument.collectedinput_set(manager='filtered_objects') \
