@@ -104,7 +104,7 @@ class Collector(object):
         if inputs_info is None:
             inputs_info = {}
 
-        queryset = self.collection_request.collectioninstrument_set.all()  # FIXME: valuesqueryset
+        queryset = self.collection_request.collectioninstrument_set.filter(condition=None)
         for instrument in queryset:
             info = model_to_dict(instrument)
             info['response_info'] = self.get_instrument_input_info(instrument)
