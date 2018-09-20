@@ -92,14 +92,6 @@ class CollectedInputFactory(factory.django.DjangoModelFactory):
     data = factory.Sequence(lambda n: {'answer': n})  # FIXME: Assumes json
 
 
-class ConditionFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = 'input.Condition'
-
-    instrument = factory.SubFactory(CollectionInstrumentFactory)
-    condition_group = factory.SubFactory(CollectionGroupFactory)
-
-
 class ConditionGroupFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'input.ConditionGroup'
@@ -121,6 +113,14 @@ class ConditionGroupFactory(factory.django.DjangoModelFactory):
             return
         if extracted:
             self.casegroup_set.add(*extracted)
+
+
+class ConditionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'input.Condition'
+
+    instrument = factory.SubFactory(CollectionInstrumentFactory)
+    condition_group = factory.SubFactory(ConditionGroupFactory)
 
 
 class CaseGroupFactory(factory.django.DjangoModelFactory):
