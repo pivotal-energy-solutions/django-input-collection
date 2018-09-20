@@ -71,6 +71,13 @@ class CollectionInstrumentFactory(factory.django.DjangoModelFactory):
         if extracted:
             self.suggested_responses.add(*extracted)
 
+    @factory.post_generation
+    def condition_set(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            self.condition_set.add(*extracted)
+
 
 class CollectedInputFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -83,3 +90,63 @@ class CollectedInputFactory(factory.django.DjangoModelFactory):
         'collection_request': factory.SelfAttribute('..collection_request'),
     })
     data = factory.Sequence(lambda n: {'answer': n})  # FIXME: Assumes json
+
+
+class ConditionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'input.Condition'
+
+    instrument = factory.SubFactory(CollectionInstrumentFactory)
+    condition_group = factory.SubFactory(CollectionGroupFactory)
+
+
+class ConditionGroupFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'input.ConditionGroup'
+        django_get_or_create = ('id',)
+
+    id = factory.Sequence(lambda n: 'conditiongroup-%d' % n)
+    require_all = True
+
+    @factory.post_generation
+    def child_groups(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            self.child_groups.add(*extracted)
+
+    @factory.post_generation
+    def casegroup_set(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            self.casegroup_set.add(*extracted)
+
+
+class CaseGroupFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'input.CaseGroup'
+        django_get_or_create = ('id',)
+
+    id = factory.Sequence(lambda n: 'casegroup-%d' % n)
+    condition_group = factory.SubFactory(ConditionGroupFactory)
+    require_all = True
+
+    @factory.post_generation
+    def cases(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            self.cases.add(*extracted)
+
+
+class CaseFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = 'input.Case'
+        django_get_or_create = ('id',)
+
+    id = factory.Sequence(lambda n: 'case-%d' % n)
+    has_response = 'any'
+    has_response_type = None
+    has_matching_data = None
+    data = ''
