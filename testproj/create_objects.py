@@ -70,31 +70,38 @@ instrument_kwargs = {
 
 # Default, no suggestions
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'text': "Free response",
 }))
 
 # Open response with suggestions
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'text': "Free response (with suggestions)",
     'suggested_responses': suggested_responses,
 }))
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'text': "Free response (with suggestions) (suggestions trigger more)",
     'suggested_responses': suggested_responses,
     'condition_set': [factories.ConditionFactory.create(**{
         'condition_group__id': 'gimme-only-suggested',
         'instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+            'text': "Free response (depends on above)",
         })),
     })],
 }))
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'text': "Free response (with suggestions) (custom triggers more)",
     'suggested_responses': suggested_responses,
     'condition_set': [factories.ConditionFactory.create(**{
         'condition_group__id': 'gimme-only-custom',
         'instrument': factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+            'text': "Free response (depends on above)",
         })),
     })],
 }))
 
 # Multiple choice, no "Other" answer
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'text': "Multiple choice",
     'response_policy__nickname': 'restrict',
     'response_policy__restrict': True,
     'suggested_responses': suggested_responses,
@@ -102,6 +109,7 @@ factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
 
 # Multiple choice, select-multiple
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'text': "Multiple choice (pick all that apply)",
     'response_policy__nickname': 'multiple-restrict',
     'response_policy__multiple': True,
     'response_policy__restrict': True,
@@ -110,6 +118,7 @@ factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
 
 # Multiple choice, select-multiple, "Other" allowed
 factories.CollectionInstrumentFactory.create(**dict(instrument_kwargs, **{
+    'text': "Multiple choice (pick all that apply or enter custom)",
     'response_policy__nickname': 'multiple',
     'response_policy__multiple': True,
     'suggested_responses': suggested_responses,
