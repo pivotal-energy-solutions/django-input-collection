@@ -147,7 +147,7 @@ class ResponsePolicy(DatesModel, models.Model):
         }
 
 
-class SuggestedResponse(DatesModel, models.Model):  # FIXME: swappable core for 'data'
+class SuggestedResponse(DatesModel, models.Model):
     """
     A pre-identified valid response for a CollectionInstrument.
     """
