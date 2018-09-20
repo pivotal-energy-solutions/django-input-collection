@@ -53,6 +53,9 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
         return data
 
     def patch_collectedinput_set_data(self, obj):
+        # The logic I wish I could just put on a custom field and have it respected in a plural data
+        # situation.  ``Meta.list_serializer_class`` has no control because ManyRelatedField is not
+        # a ListSerializer.
         context = {
             'user': self.context['request'].user,
         }
