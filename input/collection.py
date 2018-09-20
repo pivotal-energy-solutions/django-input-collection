@@ -109,7 +109,8 @@ class Collector(object):
         if inputs_info is None:
             inputs_info = {}
 
-        queryset = self.collection_request.collectioninstrument_set.filter(condition=None)
+        queryset = self.collection_request.collectioninstrument_set.all()
+
         for instrument in queryset:
             info = model_to_dict(instrument, exclude=['suggested_responses'])
             info['response_info'] = self.get_instrument_input_info(instrument)
