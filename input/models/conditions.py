@@ -73,7 +73,7 @@ class CaseGroup(DatesModel, models.Model):
         return True
 
 
-class ConditionCase(DatesModel, models.Model):
+class Case(DatesModel, models.Model):
     id = models.CharField(max_length=100, primary_key=True)
 
     has_response = models.CharField(max_length=20, default='any', null=True, choices=(
