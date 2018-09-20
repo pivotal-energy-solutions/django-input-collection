@@ -44,6 +44,22 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
         fields = ['collection_request', 'measure', 'group', 'type', 'order', 'text', 'description',
                   'help', 'response_policy', 'suggested_responses', 'collectedinput_set']
 
+    def to_representation(self, obj):
+        # restframework is so impossible to customize for this behavior anywhere else.  The
+        # inefficiency of having to do the normal behavior and then overwrite it with additional
+        # queries bothers me a lot.  Help.  I've tried everything.
+        data = super(CollectionInstrumentSerializer, self).to_representation(obj)
+        data['collectedinput_set'] = self.patch_collectedinput_set_data(obj)
+        return data
+
+    def patch_collectedinput_set_data(self, obj):
+        context = {
+            'user': self.context['request'].user,
+        }
+        queryset = obj.collectedinput_set(manager='filtered_objects').filter_for_context(**context)
+        pklist_field = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+        return pklist_field.to_representation(queryset)
+
 
 CollectedInput = models.get_input_model()
 
