@@ -14,9 +14,6 @@ class CollectorView(DetailView):
 
     dispatch = method_decorator(ensure_csrf_cookie)(DetailView.dispatch)
 
-    def get_collector_class(self):
-        return self.collector_class
-
     def get_collector_kwargs(self, **kwargs):
         kwargs.update({
             'collection_request': self.object,
@@ -24,12 +21,19 @@ class CollectorView(DetailView):
         })
         return kwargs
 
-    def get_context_data(self, **kwargs):
-        context = super(CollectorView, self).get_context_data(**kwargs)
+    def get_collector_class(self):
+        return self.collector_class
 
+    def get_collector(self):
         collector_class = self.get_collector_class()
         collector_kwargs = self.get_collector_kwargs()
         collector = collector_class(**collector_kwargs)
+        return collector
+
+    def get_context_data(self, **kwargs):
+        context = super(CollectorView, self).get_context_data(**kwargs)
+
+        collector = self.get_collector()
 
         context['payload'] = collector.info
         context['payload_json'] = json.dumps(collector.info, cls=ModelJSONEncoder)
