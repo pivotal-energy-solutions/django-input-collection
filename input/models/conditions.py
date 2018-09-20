@@ -28,6 +28,11 @@ class ConditionGroup(DatesModel, models.Model):
         ('all-fail', "All cases must fail"),
     ))
 
+    # Also available:
+    #
+    # self.condition_set.all()
+    # self.conditiongroup_set.all()  # child groupings
+
     def __str__(self):
         return self.id
 
@@ -67,6 +72,10 @@ class ConditionCase(DatesModel, models.Model):
         (None, "(No requirement)"),
     ))
     data = models.CharField(max_length=512)
+
+    # Also available:
+    #
+    # self.conditiongroup_set.all()
 
     def __str__(self):
         return self.id
