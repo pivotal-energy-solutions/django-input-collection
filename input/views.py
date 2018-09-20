@@ -4,7 +4,6 @@ from django.views.generic import DetailView
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 
-from .json import ModelJSONEncoder
 from . import models
 
 
@@ -36,6 +35,6 @@ class CollectorView(DetailView):
         collector = self.get_collector()
 
         context['payload'] = collector.info
-        context['payload_json'] = json.dumps(collector.info, cls=ModelJSONEncoder)
+        context['payload_json'] = json.dumps(collector.info)
 
         return context
