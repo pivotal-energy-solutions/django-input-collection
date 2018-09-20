@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from django.forms.models import model_to_dict
 
-from .models.utils import get_input_model
+from . import models
 
 __all__ = ['Collector', 'store']
 
@@ -13,7 +13,7 @@ def store(instrument, data, instance=None, **model_kwargs):
     the manager's ``create()`` method, in case the CollectedInput model has been swapped and
     requires additional fields to successfully save.
     """
-    CollectedInput = get_input_model()
+    CollectedInput = models.get_input_model()
 
     db_data = CollectedInput().serialize_data(data)  # FIXME: classmethod/staticmethod?
 
