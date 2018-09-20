@@ -6,7 +6,7 @@ __all__ = ['Condition', 'ConditionGroup', 'ConditionCase']
 
 
 class Condition(DatesModel, models.Model):
-    """ The control point for offering a CollectionInstrument under the correct conditions. """
+    """ The control point for checking CollectionInstrument availability. """
     instrument = models.ForeignKey('CollectionInstrument', on_delete=models.CASCADE)
     condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE)
 
