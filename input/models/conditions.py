@@ -2,7 +2,7 @@ from django.db import models
 
 from .base import DatesModel
 
-__all__ = ['Condition', 'ConditionGroup', 'ConditionCase']
+__all__ = ['Condition', 'ConditionGroup', 'CaseGroup', 'Case']
 
 
 class Condition(DatesModel, models.Model):
@@ -13,14 +13,38 @@ class Condition(DatesModel, models.Model):
     def test(self, instrument, **context):
         inputs = instrument.collectedinput_set(manager='filtered_objects') \
                            .filter_for_context(**context)
-        return self.case_group.test(instrument, inputs)
+        return self.condition_group.test(instrument, inputs)
 
 
 class ConditionGroup(DatesModel, models.Model):
+    """ Recusive grouping mechanism for controlling AND/OR/NONE logic between other groups. """
     id = models.CharField(max_length=100, primary_key=True)
 
-    parent_group = models.ForeignKey('self', blank=True, null=True, on_delete=models.CASCADE)
-    cases = models.ManyToManyField('ConditionCase')
+    child_groups = models.ManyToManyField('self', symmetrical=False)
+    require_all = models.CharField(max_length=20, default=True, choices=(
+        ('all-pass', "All cases must pass"),
+        ('one-pass', "At least one case must pass"),
+        ('all-fail', "All cases must fail"),
+    ))
+
+    # Also available:
+    #
+    # self.condition_set.all()
+    # self.casegroup_set.all()
+
+    def __str__(self):
+        return self.id
+
+
+class CaseGroup(DatesModel, models.Model):
+    """
+    Grouping of specific Case requirements.  Uses AND/OR/NONE logic like ConditionGroup, but only
+    for the leaf Cases it contains.
+    """
+    id = models.CharField(max_length=100, primary_key=True)
+
+    condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE)
+    cases = models.ManyToManyField('Case', symmetrical=False)
 
     require_all = models.CharField(max_length=20, default=True, choices=(
         ('all-pass', "All cases must pass"),
