@@ -94,8 +94,8 @@ class CollectionInstrument(DatesModel, models.Model):
     response_policy = models.ForeignKey('ResponsePolicy', on_delete=models.CASCADE)
     suggested_responses = models.ManyToManyField('SuggestedResponse')  # FIXME: ordering?
 
-    # TODO: Consider response count limits here, allowing per-instrument overrides to the
-    # CollectionRequest limits.
+    # TODO: Consider extra flags for response count limits here, allowing per-instrument overrides
+    # to the CollectionRequest limits.
 
     # Also available:
     #
