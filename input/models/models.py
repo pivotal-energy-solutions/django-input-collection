@@ -6,17 +6,10 @@ import swapper
 
 from .. import collection
 from . import managers
+from .base import DatesModel
 
 __all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrument',
            'ResponsePolicy', 'SuggestedResponse', 'AbstractCollectedInput', 'CollectedInput']
-
-
-class DatesModel(models.Model):
-    date_created = models.DateTimeField(auto_now_add=True)
-    date_modified = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
 
 
 class Measure(DatesModel, models.Model):
