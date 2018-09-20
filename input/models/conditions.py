@@ -7,7 +7,10 @@ __all__ = ['Condition', 'ConditionGroup', 'CaseGroup', 'Case']
 
 class Condition(DatesModel, models.Model):
     """ The control point for checking CollectionInstrument availability. """
-    instrument = models.ForeignKey('CollectionInstrument', on_delete=models.CASCADE)
+    parent_instrument = models.ForeignKey('CollectionInstrument', related_name='child_conditions',
+                                          on_delete=models.CASCADE)
+    instrument = models.ForeignKey('CollectionInstrument', related_name='conditions',
+                                   on_delete=models.CASCADE)
     condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE)
 
     def test(self, instrument, **context):
