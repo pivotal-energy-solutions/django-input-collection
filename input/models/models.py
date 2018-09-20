@@ -99,6 +99,7 @@ class CollectionInstrument(DatesModel, models.Model):
 
     # Also available:
     #
+    # self.condition_set.all()
     # self.suggestedresponse_set.all()
     # self.collectedinput_set.all()
 
