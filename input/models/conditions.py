@@ -106,29 +106,32 @@ class Case(DatesModel, models.Model):
             'data': self.data,
         }
 
-        if self.match_type == 'any' and data:
-            return True
-        if self.match_type == 'none' and not data:
-            return True
-        if self.match_type == 'all-suggested' and self._all_suggested(data, instrument):
-            return True
-        if self.match_type == 'one-suggested' and self._one_suggested(data, instrument):
-            return True
-        if self.match_type == 'all-custom' and self._all_custom(data, instrument):
-            return True
-        if self.match_type == 'one-custom' and self._one_custom(data, instrument):
-            return True
-        if self.match_type == 'match' and self._match(data):
-            return True
-        if self.match_type == 'mismatch' and not self._match(data):
-            return True
-        if self.match_type == 'contains' and self._contains(data):
-            return True
-        if self.match_type == 'not_contains' and not self._contains(data):
-            return True
-
-        return False
     def test(self, instrument, **context):
+        inverse_types = {
+            'none': 'any',
+            'mismatch': 'match',
+            'not_contains': 'contains',
+        }
+        testers = {
+            'any': lambda d, **kw: bool(d),
+            'all-suggested': self._all_suggested,
+            'one-suggested': self._one_suggested,
+            'all-custom': self._all_custom,
+            'one-custom': self._one_custom,
+            'match': self._match,
+            'contains': self._contains,
+        }
+
+        if self.match_type in inverse_types:
+            f = testers[inverse_types[self.match_type]]
+        else:
+            f = testers[self.match_type]
+
+        data = list(instrument.collectedinput_set(manager='filtered_objects') \
+                              .filter_for_context(**context) \
+                              .values_list('data', flat=True))
+
+        return f(data, instrument=instrument)
 
     # Match helpers
     def _all_suggested(self, data, instrument):
@@ -157,8 +160,8 @@ class Case(DatesModel, models.Model):
         is_not_suggested = (not instrument.suggested_responses.filter(data__in=data).exists())
         return is_not_suggested
 
-    def _match(self, data):
+    def _match(self, data, **kwargs):
         return self.data == data
 
-    def _contains(self, data):
+    def _contains(self, data, **kwargs):
         return self.data in data
