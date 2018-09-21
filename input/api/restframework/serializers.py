@@ -81,6 +81,14 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
             'user': data['user'],
         }
 
+        is_unavailable = (not self.is_available(instrument, data['data']))
+        if is_unavailable:
+            raise PermissionDenied("[CollectionInstrument=%r] Availability conditions failed. (user=%r, data=%r)" % (
+                instrument.pk,
+                context['user'],
+                data['data'],
+            ))
+
         at_capacity = (not self.allows_new_input(instrument, **context))
         if at_capacity:
             raise PermissionDenied("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
@@ -98,6 +106,9 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         return data
 
     # Validation helpers
+    def is_available(self, instrument, data):
+        return instrument.test_conditions(data)
+
     def allows_new_input(self, instrument, **context):
         return CollectedInput.allowed_for_instrument(instrument, **context)
 
