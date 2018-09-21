@@ -3,6 +3,7 @@ from collections import defaultdict
 from django.forms.models import model_to_dict
 
 from . import models
+from . import widgets
 
 __all__ = ['Collector', 'store']
 
@@ -72,6 +73,16 @@ class SpecificationSerializer(object):
 
     def __init__(self, collector):
         self.collector = collector
+
+    def get_type_widgets(self):
+        if not hasattr(self, '_type_widgets'):
+            self._type_widgets = self.collector.type_widgets or {}
+        return self._type_widgets
+
+    def get_measure_widgets(self):
+        if not hasattr(self, '_measure_widgets'):
+            self._measure_widgets = self.collector.measure_widgets or {}
+        return self._measure_widgets
 
     @property
     def data(self):
@@ -161,10 +172,12 @@ class SpecificationSerializer(object):
         """ Returns input specifications for data this instruments wants to collect. """
         policy_info = model_to_dict(instrument.response_policy)
         suggested_responses_info = self.get_suggested_responses_info(instrument)
+        widget_info = self.get_widget_info(instrument)
 
         input_info = {
             'response_policy': policy_info,
             'suggested_responses': suggested_responses_info,
+            'widget': widget_info,
         }
         return input_info
 
@@ -173,6 +186,29 @@ class SpecificationSerializer(object):
         suggested_responses_info = list(map(model_to_dict, queryset))
         return suggested_responses_info
 
+    def get_widget_kwargs(self, instrument):
+        kwargs = {
+            
+        }
+        return kwargs
+
+    def get_widget_info(self, instrument):
+        """
+        Resolve a widget for the given instrument based on self.measure_widgets, or
+        self.type_widgets, whichever is resolvable first.
+        """
+        widget = None
+
+        if instrument.measure_id in self.measure_widgets:
+            widget = self.measure_widgets[instrument.measure_id]
+        elif instrument.type_id in self.type_widgets:
+            widget = self.type_widgets[instrument.type_id]
+
+        widget_kwargs = self.get_widget_kwargs(instrument)
+        widget = widget(**widget_kwargs)
+
+        widget_info = widgets.serialize_widget(widget)
+        return widget_info
 
 
 class BaseAPISpecificationSerializer(SpecificationSerializer):
