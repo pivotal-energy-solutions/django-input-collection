@@ -110,6 +110,13 @@ class CollectionInstrument(DatesModel, models.Model):
     def __str__(self):
         return self.text
 
+    def test_conditions(self, data):
+        """ Checks data all Conditions gating this instrument. """
+        for condition in self.condition_set.all():
+            if not condition.test(data):
+                return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
+        return True
+
     def receive(self, data):
         return collection.store(self, data)
 
