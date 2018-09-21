@@ -196,7 +196,7 @@ class SpecificationSerializer(object):
             widget = widget()
 
         widget_kwargs = self.collector.get_widget_kwargs(instrument)
-        widget = widget.update_kwargs(**widget_kwargs)
+        widget.update_kwargs(**widget_kwargs)
 
         widget_info = widgets.serialize_widget(widget)
         return widget_info
