@@ -1,5 +1,3 @@
-import json
-
 from django.views.generic import DetailView
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
@@ -34,7 +32,7 @@ class CollectorView(DetailView):
 
         collector = self.get_collector()
 
-        context['payload'] = collector.info
-        context['payload_json'] = json.dumps(context['payload'])
+        context['payload'] = collector.specification
+        context['payload_json'] = collector.specification_json
 
         return context

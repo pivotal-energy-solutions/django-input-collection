@@ -1,8 +1,10 @@
 from collections import defaultdict
 from inspect import isclass
+import json
 
 from django.forms.models import model_to_dict
 
+from .json import CollectionSpecificationJSONEncoder
 from . import models
 from . import widgets
 
@@ -256,9 +258,13 @@ class Collector(object):
 
     # Main properties
     @property
-    def info(self):
-        serializer = self.get_specification_serializer()
+    def specification(self):
+        serializer = self.get_specification()
         return serializer.data
+
+    @property
+    def specification_json(self):
+        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder, indent=4)
 
     # Instrument/Input runtime checks
     def is_instrument_allowed(self, instrument, **context):
