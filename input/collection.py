@@ -241,10 +241,10 @@ class Collector(object):
     def get_widget(self, instrument):
         widget = widgets.Widget
 
-        if instrument.measure_id in self.collector.measure_widgets:
-            widget = self.collector.measure_widgets[instrument.measure_id]
-        elif instrument.type_id in self.collector.type_widgets:
-            widget = self.collector.type_widgets[instrument.type_id]
+        if instrument.measure_id in self.measure_widgets:
+            widget = self.measure_widgets[instrument.measure_id]
+        elif instrument.type_id in self.type_widgets:
+            widget = self.type_widgets[instrument.type_id]
 
         if isclass(widget):
             widget = widget()
