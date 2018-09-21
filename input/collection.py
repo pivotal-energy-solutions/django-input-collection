@@ -1,4 +1,5 @@
 from collections import defaultdict
+from inspect import isclass
 
 from django.forms.models import model_to_dict
 
@@ -74,16 +75,6 @@ class SpecificationSerializer(object):
     def __init__(self, collector):
         self.collector = collector
 
-    def get_type_widgets(self):
-        if not hasattr(self, '_type_widgets'):
-            self._type_widgets = self.collector.type_widgets or {}
-        return self._type_widgets
-
-    def get_measure_widgets(self):
-        if not hasattr(self, '_measure_widgets'):
-            self._measure_widgets = self.collector.measure_widgets or {}
-        return self._measure_widgets
-
     @property
     def data(self):
         """ Returns a JSON-safe spec for another tool to correctly supply inputs. """
@@ -95,7 +86,7 @@ class SpecificationSerializer(object):
         info = {
             'meta': meta_info,
             'collection_request': collection_request_info,
-            'group': self.group,
+            'group': self.collector.group,
             'instruments_info': instruments_info,
             'collected_inputs': inputs_info,
         }
@@ -162,7 +153,7 @@ class SpecificationSerializer(object):
         inputs_info = defaultdict(list)
 
         queryset = self.collector.collection_request.collectedinput_set(manager='filtered_objects') \
-                                                    .filter_for_context(**self.context)
+                                                    .filter_for_context(**self.collector.context)
         for input in queryset:
             inputs_info[input.instrument_id].append(model_to_dict(input))
 
@@ -186,12 +177,6 @@ class SpecificationSerializer(object):
         suggested_responses_info = list(map(model_to_dict, queryset))
         return suggested_responses_info
 
-    def get_widget_kwargs(self, instrument):
-        kwargs = {
-            
-        }
-        return kwargs
-
     def get_widget_info(self, instrument):
         """
         Resolve a widget for the given instrument based on self.measure_widgets, or
@@ -199,13 +184,19 @@ class SpecificationSerializer(object):
         """
         widget = None
 
-        if instrument.measure_id in self.measure_widgets:
-            widget = self.measure_widgets[instrument.measure_id]
-        elif instrument.type_id in self.type_widgets:
-            widget = self.type_widgets[instrument.type_id]
+        if instrument.measure_id in self.collector.measure_widgets:
+            widget = self.collector.measure_widgets[instrument.measure_id]
+        elif instrument.type_id in self.collector.type_widgets:
+            widget = self.collector.type_widgets[instrument.type_id]
 
-        widget_kwargs = self.get_widget_kwargs(instrument)
-        widget = widget(**widget_kwargs)
+        if widget is None:
+            return {}
+
+        if isclass(widget):
+            widget = widget()
+
+        widget_kwargs = self.collector.get_widget_kwargs(instrument)
+        widget = widget.update_kwargs(**widget_kwargs)
 
         widget_info = widgets.serialize_widget(widget)
         return widget_info
@@ -215,7 +206,7 @@ class BaseAPISpecificationSerializer(SpecificationSerializer):
     content_type = 'application/json'
 
     def get_meta(self):
-        meta_info = super(BaseAPICollector, self).get_meta()
+        meta_info = super(BaseAPISpecificationSerializer, self).get_meta()
         meta_info['api'] = self.get_api_info()
         return meta_info
 
@@ -244,6 +235,22 @@ class Collector(object):
     # Resolution utils
     def get_specification_serializer(self):
         return self.specification_serializer_class(self)
+
+    def get_type_widgets(self):
+        if not hasattr(self, '_type_widgets'):
+            self._type_widgets = self.type_widgets or {}
+        return self._type_widgets
+
+    def get_measure_widgets(self):
+        if not hasattr(self, '_measure_widgets'):
+            self._measure_widgets = self.measure_widgets or {}
+        return self._measure_widgets
+
+    def get_widget_kwargs(self, instrument):
+        kwargs = {
+            
+        }
+        return kwargs
 
     # Main properties
     @property
