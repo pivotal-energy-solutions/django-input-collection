@@ -3,6 +3,7 @@ from inspect import isclass
 import json
 
 from django.forms.models import model_to_dict
+from django.contrib.auth.models import AnonymousUser
 
 from .json import CollectionSpecificationJSONEncoder
 from . import models
