@@ -38,6 +38,7 @@ class ResponsePolicyFactory(factory.django.DjangoModelFactory):
     nickname = 'default'
     restrict = False
     multiple = False
+    required = False
 
 
 class SuggestedResponseFactory(factory.django.DjangoModelFactory):

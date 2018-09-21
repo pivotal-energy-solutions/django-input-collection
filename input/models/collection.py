@@ -131,6 +131,7 @@ class ResponsePolicy(DatesModel, models.Model):
     # deserialized later.
     restrict = models.BooleanField()  # must supply answer matching a SuggestedResponse
     multiple = models.BooleanField()  # allows multiple selections
+    required = models.BooleanField()  # validation hint
 
     # TODO: Consider extra flags for response count limits here, allowing overrides to the
     # CollectionRequest limits.
@@ -143,6 +144,7 @@ class ResponsePolicy(DatesModel, models.Model):
         return {
             'restrict': self.restrict,
             'multiple': self.multiple,
+            'required': self.required,
         }
 
 
