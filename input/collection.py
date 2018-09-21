@@ -316,6 +316,10 @@ class Collector(object):
             if is_single:
                 data = data[0]
 
+        # Let the widget clean and do type coercion
+        widget = self.get_widget(instrument)
+        data = widget.clean(data)
+
         return data
 
     # These default implementations trust the type to match whatever modelfield is in use for the
