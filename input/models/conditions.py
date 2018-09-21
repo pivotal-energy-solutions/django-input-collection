@@ -14,8 +14,10 @@ class Condition(DatesModel, models.Model):
     condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE,
                                         limit_choices_to={'parent_groups': None})
 
-    def test(self, data):
-        return self.condition_group.test(self.parent_instrument, data)
+    def test(self, **context):
+        # Testing the availability of ``instrument`` relies on ``parent_instrument`` conditions.
+        test = self.condition_group.test(self.parent_instrument, **context)
+        return test
 
 
 class ConditionGroup(DatesModel, models.Model):
@@ -49,15 +51,15 @@ class ConditionGroup(DatesModel, models.Model):
             'requirement_type': self.requirement_type,
         }
 
-    def test(self, instrument, data):
+    def test(self, instrument, **context):
         has_failed = False
         has_passed = False
         testables = self.child_groups.all() or self.cases.all()
         for item in testables:
-            if item.test(instrument, data):
-                has_failed = True
-            else:
+            if item.test(instrument, **context):
                 has_passed = True
+            else:
+                has_failed = True
 
             if has_failed and self.requirement_type == 'all-pass':
                 return False
@@ -104,7 +106,6 @@ class Case(DatesModel, models.Model):
             'data': self.data,
         }
 
-    def test(self, instrument, data):
         if self.match_type == 'any' and data:
             return True
         if self.match_type == 'none' and not data:
@@ -127,6 +128,7 @@ class Case(DatesModel, models.Model):
             return True
 
         return False
+    def test(self, instrument, **context):
 
     # Match helpers
     def _all_suggested(self, data, instrument):
