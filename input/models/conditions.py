@@ -1,5 +1,6 @@
 from django.db import models
 
+from .. import collection
 from .base import DatesModel
 
 __all__ = ['Condition', 'ConditionGroup', 'Case']
@@ -114,61 +115,6 @@ class Case(DatesModel, models.Model):
         }
 
     def test(self, instrument, **context):
-        inverse_types = {
-            'none': 'any',
-            'mismatch': 'match',
-            'not_contains': 'contains',
-        }
-        testers = {
-            'any': lambda d, **kw: bool(d),
-            'all-suggested': self._all_suggested,
-            'one-suggested': self._one_suggested,
-            'all-custom': self._all_custom,
-            'one-custom': self._one_custom,
-            'match': self._match,
-            'contains': self._contains,
-        }
-
-        if self.match_type in inverse_types:
-            f = testers[inverse_types[self.match_type]]
-        else:
-            f = testers[self.match_type]
-
-        data = list(instrument.collectedinput_set(manager='filtered_objects') \
-                              .filter_for_context(**context) \
-                              .values_list('data', flat=True))
-
-        return f(data, instrument=instrument)
-
-    # Match helpers
-    def _all_suggested(self, data, instrument):
-        if not isinstance(data, list):
-            data = [data]
-        suggested_data = instrument.suggested_responses.values_list('data', flat=True)
-        all_suggested = set(data).issubset(set(suggested_data))
-        return all_suggested
-
-    def _one_suggested(self, data, instrument):
-        if not isinstance(data, list):
-            data = [data]
-        is_suggested = instrument.suggested_responses.filter(data__in=data).exists()
-        return is_suggested
-
-    def _all_custom(self, data, instrument):
-        if not isinstance(data, list):
-            data = [data]
-        suggested_data = list(instrument.suggested_responses.values_list('data', flat=True))
-        overlaps = set(data).intersection(suggested_data)
-        return len(overlaps) == 0
-
-    def _one_custom(self, data, instrument):
-        if not isinstance(data, list):
-            data = [data]
-        is_not_suggested = (not instrument.suggested_responses.filter(data__in=data).exists())
-        return is_not_suggested
-
-    def _match(self, data, **kwargs):
-        return self.data == data
-
-    def _contains(self, data, **kwargs):
-        return self.data in data
+        kwargs = self.get_flags()
+        kwargs.update(context)
+        return collection.test_condition_case(instrument, **kwargs)

@@ -1,6 +1,6 @@
 from .. import models
 
-__all__ = ['store', 'get_data_for_suggested_responses']
+__all__ = ['store', 'get_data_for_suggested_responses', 'test_condition_case']
 
 
 def store(instrument, data, instance=None, **model_kwargs):
@@ -61,3 +61,73 @@ def get_data_for_suggested_responses(instrument, *responses):
         values.append(data)
 
     return values
+
+
+def test_condition_case(instrument, match_type, data=None, **context):
+    """
+    Tests a case described by ``match_type`` (and optional partial ``data`` helper) on a parent
+    ``instrument``'s current inputs.
+    """
+
+    matcher = getattr(matchers, match_type.replace('-', '_'))
+
+    input_data = list(instrument.collectedinput_set(manager='filtered_objects') \
+                                .filter_for_context(**context) \
+                                .values_list('data', flat=True))
+
+    status = matcher(input_data, test_data=data, instrument=instrument)
+
+    return status
+
+
+class CaseMatchers(object):
+    def any(self, data, **kwargs):
+        return bool(data)
+
+    def none(self, data, **kwargs):
+        return not data
+
+    def all_suggested(self, data, test_data, instrument):
+        if not len(data):
+            return False
+        if not isinstance(data, list):
+            data = [data]
+        suggested_data = instrument.suggested_responses.values_list('data', flat=True)
+        all_suggested = set(data).issubset(set(suggested_data))
+        return all_suggested
+
+    def one_suggested(self, data, test_data, instrument):
+        if not isinstance(data, list):
+            data = [data]
+        is_suggested = instrument.suggested_responses.filter(data__in=data).exists()
+        return is_suggested
+
+    def all_custom(self, data, test_data, instrument):
+        if not len(data):
+            return False
+        if not isinstance(data, list):
+            data = [data]
+        suggested_data = list(instrument.suggested_responses.values_list('data', flat=True))
+        overlaps = set(data).intersection(suggested_data)
+        return len(overlaps) == 0
+
+    def one_custom(self, data, test_data, instrument):
+        if not isinstance(data, list):
+            data = [data]
+        is_not_suggested = (not instrument.suggested_responses.filter(data__in=data).exists())
+        return is_not_suggested
+
+    def match(self, data, test_data, **kwargs):
+        return data == test_data
+
+    def mismatch(self, data, test_data, **kwargs):
+        return data != test_data
+
+    def contains(self, data, test_data, **kwargs):
+        return test_data in data
+
+    def not_contains(self, data, test_data, **kwargs):
+        return test_data not in data
+
+
+matchers = CaseMatchers()
