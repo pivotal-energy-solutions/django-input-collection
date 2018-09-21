@@ -39,7 +39,8 @@ class ConditionGroup(DatesModel, models.Model):
     # Also available:
     #
     # self.condition_set.all()
-    # self.conditiongroup_set.all()  # These are parent groups; use ``child_groups`` for going down
+    # self.parent_groups.all()
+    # self.cases.all()
 
     def __str__(self):
         return self.id
@@ -95,7 +96,7 @@ class Case(DatesModel, models.Model):
 
     # Also available:
     #
-    # self.casegroup_set.all()
+    # self.conditiongroup_set.all()
 
     def __str__(self):
         return self.id
