@@ -97,11 +97,10 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
                 data['data'],
             ))
 
-        if instrument.suggested_responses.exists():
-            try:
-                data['data'] = self.transform_responses_to_data(instrument, data['data'], **context)
-            except ValueError as e:
-                raise serializers.ValidationError(str(e))
+        try:
+            data['data'] = self.transform_responses_to_data(instrument, data['data'], **context)
+        except ValueError as e:
+            raise serializers.ValidationError(str(e))
 
         return data
 
