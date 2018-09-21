@@ -49,7 +49,8 @@ condition_group_any_custom = factories.ConditionGroupFactory.create(**{
 
 instrument_kwargs = {
     'collection_request__id': 1,
-    'response_policy__nickname': 'default',
+    'response_policy__nickname': 'optional',
+    'response_policy__required': False,
 }
 
 # Default, no suggestions
