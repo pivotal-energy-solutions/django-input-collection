@@ -9,9 +9,10 @@ class Condition(DatesModel, models.Model):
     """ The control point for checking CollectionInstrument availability. """
     instrument = models.ForeignKey('CollectionInstrument', related_name='conditions',
                                    on_delete=models.CASCADE)
-    condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE)
     parent_instrument = models.ForeignKey('CollectionInstrument', related_name='child_conditions',
                                           on_delete=models.CASCADE)
+    condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE,
+                                        limit_choices_to={'parent_groups': None})
 
     def test(self, instrument, **context):
         inputs = instrument.collectedinput_set(manager='filtered_objects') \
