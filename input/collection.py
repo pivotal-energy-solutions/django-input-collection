@@ -67,20 +67,17 @@ def get_data_for_suggested_responses(instrument, *responses):
     return values
 
 
-class Collector(object):
+class SpecificationSerializer(object):
     __version__ = (0, 0, 0, 'dev')
-    group = 'default'
 
-    def __init__(self, collection_request, group='default', **context):
-        self.collection_request = collection_request
-        self.context = context
-        self.group = group
+    def __init__(self, collector):
+        self.collector = collector
 
     @property
-    def info(self):
+    def data(self):
         """ Returns a JSON-safe spec for another tool to correctly supply inputs. """
         meta_info = self.get_meta()
-        collection_request_info = model_to_dict(self.collection_request)
+        collection_request_info = model_to_dict(self.collector.collection_request)
         inputs_info = self.get_collected_inputs_info()
         instruments_info = self.get_instruments_info(inputs_info)
 
@@ -95,12 +92,14 @@ class Collector(object):
 
     def get_meta(self):
         return {
-            'version': self.__version__,
+            'version': self.collector.__version__,
+            'serializer_version': self.__version__,
         }
 
     def get_instruments_info(self, inputs_info=None):
-        ordering = list(self.collection_request.collectioninstrument_set.filter(conditions=None) \
-                                               .values_list('id', flat=True))
+        ordering = list(self.collector.collection_request.collectioninstrument_set \
+                                      .filter(conditions=None) \
+                                      .values_list('id', flat=True))
         instruments_info = {
             'instruments': {},
             'ordering': ordering,
@@ -109,7 +108,7 @@ class Collector(object):
         if inputs_info is None:
             inputs_info = {}
 
-        queryset = self.collection_request.collectioninstrument_set.all()
+        queryset = self.collector.collection_request.collectioninstrument_set.all()
 
         for instrument in queryset:
             info = model_to_dict(instrument, exclude=['suggested_responses'])
@@ -151,8 +150,8 @@ class Collector(object):
     def get_collected_inputs_info(self):
         inputs_info = defaultdict(list)
 
-        queryset = self.collection_request.collectedinput_set(manager='filtered_objects') \
-                                          .filter_for_context(**self.context)
+        queryset = self.collector.collection_request.collectedinput_set(manager='filtered_objects') \
+                                                    .filter_for_context(**self.context)
         for input in queryset:
             inputs_info[input.instrument_id].append(model_to_dict(input))
 
@@ -175,7 +174,8 @@ class Collector(object):
         return suggested_responses_info
 
 
-class BaseAPICollector(Collector):
+
+class BaseAPISpecificationSerializer(SpecificationSerializer):
     content_type = 'application/json'
 
     def get_meta(self):
@@ -188,3 +188,101 @@ class BaseAPICollector(Collector):
             'content_type': self.content_type,
             'endpoints': {},
         }
+
+
+class Collector(object):
+    __version__ = (0, 0, 0, 'dev')
+    group = 'default'
+    type_widgets = None
+    measure_widgets = None
+    specification_serializer_class = SpecificationSerializer
+
+    def __init__(self, collection_request, group='default', **context):
+        self.collection_request = collection_request
+        self.context = context
+        self.group = group
+
+        self.type_widgets = self.get_type_widgets()
+        self.measure_widgets = self.get_measure_widgets()
+
+    # Resolution utils
+    def get_specification_serializer(self):
+        return self.specification_serializer_class(self)
+
+    # Main properties
+    @property
+    def info(self):
+        serializer = self.get_specification_serializer()
+        return serializer.data
+
+    # Instrument/Input runtime checks
+    def is_instrument_allowed(self, instrument, **context):
+        """
+        Returns True when the given instrument passes all related conditions limiting its use.
+        """
+        return instrument.test_conditions(**context)
+
+    def is_input_allowed(self, instrument, **context):
+        """
+        Returns True when the given instrument passes checks against flags on its CollectionRequest.
+        """
+        manager = instrument.collectedinput_set(manager='filtered_objects')
+
+        user = context.get('user')
+        if user and not isinstance(user, AnonymousUser):
+            user_max = instrument.collection_request.max_instrument_inputs_per_user
+            if user_max is not None:
+                existing_inputs = manager.filter_for_context(**context)
+                input_count = existing_inputs.count()
+                if input_count >= user_max:
+                    return False
+
+        total_max = instrument.collection_request.max_instrument_inputs
+        if total_max is not None:
+            no_user_context = dict(context, user=None)
+            existing_inputs = manager.filter_for_context(**no_user_context)
+            input_count = existing_inputs.count()
+            if input_count >= total_max:
+                return False
+
+        return True
+
+    def clean_data(self, instrument, data, **context):
+        """
+        Return cleaned/validated data based on a speculative input ``data``.  Data coded for
+        representing SuggestedResponse instance ids are translated to the concrete data that
+        SuggestedResponse implies, thus making the final data safe to send for serialization and
+        storage on the active CollectedInput model.
+        """
+
+        # Clean coded ids if needed
+        has_suggested_responses = instrument.suggested_responses.exists()
+        if has_suggested_responses:
+            is_single = (not instrument.response_policy.multiple)
+
+            if is_single:
+                data = [data]
+
+            data = get_data_for_suggested_responses(instrument, *data)
+
+            if is_single:
+                data = data[0]
+
+        return data
+
+    # These default implementations trust the type to match whatever modelfield is in use for the
+    # ``data`` field on the concrete model.
+    def serialize_data(self, data):
+        """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
+        return data
+
+    def deserialize_data(self, data):
+        """
+        Coerces retrieved ``data`` from the active input model (CollectedInput or swapped) to an
+        appropriate object for its type.
+        """
+        return data
+
+
+class BaseAPICollector(Collector):
+    specification_serializer_class = BaseAPISpecificationSerializer
