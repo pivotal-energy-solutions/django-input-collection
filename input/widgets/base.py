@@ -15,6 +15,12 @@ class InputMethod(object):
     that external methodology has complete.
     """
 
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            if not hasattr(self, k):
+                raise AttributeError("Invalid attribute %r for widget %r" % (k, self))
+            setattr(self, k, v)
+
     def petition(self, instrument):
         raise NotImplemented
 

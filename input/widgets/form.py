@@ -1,9 +1,9 @@
 from .base import InputMethod
 
-__all__ = ['FormMethod', 'FormFieldMethod']
+__all__ = ['FormWidget', 'FormFieldWidget']
 
 
-class FormMethod(InputMethod):
+class FormWidget(InputMethod):
     """ Requests input through an HTML-rendered Django form, returns a dict of cleaned_data. """
 
     # NOTE: This collects multiple data points for a SINGLE CollectionInstrument, and would
@@ -15,7 +15,7 @@ class FormMethod(InputMethod):
     form_class = None
 
 
-class FormFieldMethod(InputMethod):
+class FormFieldWidget(InputMethod):
     """
     Requests input through an HTML-rendered Django field, returns a single python object
     representing the cleaned result.
