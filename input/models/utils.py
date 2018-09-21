@@ -16,17 +16,22 @@ def isolate_response_policy(instrument):
     policy = instrument.response_policy
     has_other_uses = policy.collectioninstrument_set.exclude(pk=instrument.pk).exists()
     if has_other_uses:
-        instrument.response_policy = clone_response_policy(policy)
+        instrument.response_policy = clone_response_policy(policy, isolate=True)
         instrument.save()
 
 
-def clone_response_policy(response_policy, **kwargs):
+def clone_response_policy(response_policy, isolate=None, **kwargs):
     """
     Creates a new ResponsePolicy with identical flags.  All kwargs are forwarded to the manager's
     create() method to allow for easy overrides.
     """
 
     from .models import ResponsePolicy
+
+    if 'is_singleton' not in kwargs:
+        if isolate is None:
+            isolate = response_policy.is_singleton
+        kwargs['is_singleton'] = isolate
 
     if 'nickname' not in kwargs:
         nickname = 'Cloned pk={pk}, {kwargs!r}'.format(**{
