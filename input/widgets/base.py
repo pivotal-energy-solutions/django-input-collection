@@ -20,6 +20,6 @@ class InputMethod(object):
                 raise AttributeError("Invalid attribute %r for widget %r" % (k, self))
             setattr(self, k, v)
 
-    def validate(self, result):
-        """ Validate the result and perform any necessary type coercion. """
+    def clean(self, result):
+        """ Clean the result and perform any necessary type coercion. """
         return result
