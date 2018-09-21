@@ -22,3 +22,20 @@ class FormFieldWidget(InputMethod):
     """
 
     formfield_class = None
+
+    def get_formfield(self):
+        return self.formfield_class()
+
+    def serialize(self):
+        data = super(FormFieldWidget, self).serialize()
+
+        field = self.get_formfield()
+        info = {
+            'default_error_messages': field.default_error_messages,
+            'empty_values': field.empty_values,
+            'help_text': field.empty_values,
+            'widget_attrs': field.widget_attrs({}),
+        }
+
+        data['formfield_class'] = info
+        return data
