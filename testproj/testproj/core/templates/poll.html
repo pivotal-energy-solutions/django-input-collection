@@ -123,7 +123,9 @@
                      {% if instrument.response_info.response_policy.restrict %}restrict={{ instrument.response_info.response_policy.restrict }},{% endif %}]
 
                     {# Simplified for single conditions #}
-                    {{ instrument.child_conditions.0.condition_group.cases.0 }}
+                    {% if instrument.conditions %}
+                        {{ instrument.conditions.0.parent_instrument }}↑{{ instrument.conditions.0.condition_group.cases.0 }}
+                    {% endif %}
 
                     {# hacking for equal size to the right-side card #}
                     <button class="btn btn-sm invisible">&nbsp;</button>
