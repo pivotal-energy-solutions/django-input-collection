@@ -120,6 +120,7 @@ class ConditionFactory(factory.django.DjangoModelFactory):
         model = 'input.Condition'
 
     instrument = factory.SubFactory(CollectionInstrumentFactory)
+    parent_instrument = factory.SubFactory(CollectionInstrumentFactory)
     condition_group = factory.SubFactory(ConditionGroupFactory)
 
 
