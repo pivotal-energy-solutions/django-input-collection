@@ -35,6 +35,6 @@ class CollectorView(DetailView):
         collector = self.get_collector()
 
         context['payload'] = collector.info
-        context['payload_json'] = json.dumps(collector.info)
+        context['payload_json'] = json.dumps(context['payload'])
 
         return context
