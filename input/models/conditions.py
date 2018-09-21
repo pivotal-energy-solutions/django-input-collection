@@ -45,7 +45,7 @@ class ConditionGroup(DatesModel, models.Model):
 
     def get_flags(self):
         return {
-            'require_all': self.require_all,
+            'requirement_type': self.requirement_type,
         }
 
     def test(self, instrument, inputs):
