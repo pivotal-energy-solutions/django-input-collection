@@ -4,6 +4,7 @@ import json
 from django.contrib.auth.models import AnonymousUser
 
 from ..encoders import CollectionSpecificationJSONEncoder
+from .base import get_data_for_suggested_responses
 from . import specifications
 from . import widgets
 
