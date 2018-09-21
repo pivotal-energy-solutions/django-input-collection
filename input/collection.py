@@ -182,22 +182,8 @@ class SpecificationSerializer(object):
         Resolve a widget for the given instrument based on self.measure_widgets, or
         self.type_widgets, whichever is resolvable first.
         """
-        widget = None
 
-        if instrument.measure_id in self.collector.measure_widgets:
-            widget = self.collector.measure_widgets[instrument.measure_id]
-        elif instrument.type_id in self.collector.type_widgets:
-            widget = self.collector.type_widgets[instrument.type_id]
-
-        if widget is None:
-            return {}
-
-        if isclass(widget):
-            widget = widget()
-
-        widget_kwargs = self.collector.get_widget_kwargs(instrument)
-        widget.update_kwargs(**widget_kwargs)
-
+        widget = self.collector.get_widget(instrument)
         widget_info = widgets.serialize_widget(widget)
         return widget_info
 
@@ -251,6 +237,25 @@ class Collector(object):
             
         }
         return kwargs
+
+    def get_widget(self, instrument):
+        widget = None
+
+        if instrument.measure_id in self.collector.measure_widgets:
+            widget = self.collector.measure_widgets[instrument.measure_id]
+        elif instrument.type_id in self.collector.type_widgets:
+            widget = self.collector.type_widgets[instrument.type_id]
+
+        if widget is None:
+            return {}
+
+        if isclass(widget):
+            widget = widget()
+
+        widget_kwargs = self.get_widget_kwargs(instrument)
+        widget.update_kwargs(**widget_kwargs)
+
+        return widget
 
     # Main properties
     @property
