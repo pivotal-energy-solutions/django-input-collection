@@ -115,10 +115,38 @@ class Collector(object):
             info = model_to_dict(instrument, exclude=['suggested_responses'])
             info['response_info'] = self.get_instrument_input_info(instrument)
             info['collected_inputs'] = inputs_info.get(instrument.pk)
+            info['conditions'] = [
+                self.get_condition_info(condition) for condition in instrument.conditions.all()
+            ]
+            info['child_conditions'] = [
+                self.get_condition_info(condition) for condition in instrument.child_conditions.all()
+            ]
 
             instruments_info['instruments'][instrument.id] = info
 
         return instruments_info
+
+    def get_condition_info(self, condition):
+        condition_info = model_to_dict(condition)
+
+        condition_info['condition_group'] = self.get_condition_group_info(
+            condition.condition_group
+        )
+
+        return condition_info
+
+    def get_condition_group_info(self, group):
+        child_queryset = group.child_groups.prefetch_related('cases')
+
+        group_info = model_to_dict(group)
+        group_info['cases'] = list(map(model_to_dict, group.cases.all()))
+        group_info['child_groups'] = []
+        for child_group in child_queryset:
+            group_info['child_groups'].append(
+                self.get_condition_group_info(child_group)
+            )
+
+        return group_info
 
     def get_collected_inputs_info(self):
         inputs_info = defaultdict(list)
