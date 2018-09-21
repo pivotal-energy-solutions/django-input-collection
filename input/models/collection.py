@@ -189,8 +189,6 @@ class AbstractCollectedInput(DatesModel, models.Model):
     def allowed_for_instrument(cls, instrument, **context):
         """
         Returns True when the given instrument passes checks against flags on its CollectionRequest.
-        Note that if the CollectedInput model has been swapped and a ``user`` ForeignKey is NOT
-        available, CollectionRequest.max_instrument_inputs_per_user CANNOT be respected.
         """
 
         manager = instrument.collectedinput_set(manager='filtered_objects')
