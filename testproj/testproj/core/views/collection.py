@@ -1,7 +1,7 @@
 from django import forms
 
 from input.api.restframework import collection
-from input import widgets
+from input.collection import widgets
 
 
 class PollTemplateViewCollector(collection.RestFrameworkCollector):
