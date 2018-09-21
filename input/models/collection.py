@@ -117,9 +117,6 @@ class CollectionInstrument(DatesModel, models.Model):
                 return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
         return True
 
-    def receive(self, data):
-        return collection.store(self, data)
-
 
 class ResponsePolicy(DatesModel, models.Model):
     """
