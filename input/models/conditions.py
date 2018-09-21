@@ -14,6 +14,13 @@ class Condition(DatesModel, models.Model):
     condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE,
                                         limit_choices_to={'parent_groups': None})
 
+    def __str__(self):
+        return '[instrument=%r depends on instrument=%r via %r]' % (
+            self.instrument_id,
+            self.parent_instrument_id,
+            self.condition_group_id,
+        )
+
     def test(self, **context):
         # Testing the availability of ``instrument`` relies on ``parent_instrument`` conditions.
         test = self.condition_group.test(self.parent_instrument, **context)
