@@ -112,7 +112,7 @@ class CollectionInstrument(DatesModel, models.Model):
 
     def test_conditions(self, data):
         """ Checks data all Conditions gating this instrument. """
-        for condition in self.condition_set.all():
+        for condition in self.conditions.all():
             if not condition.test(data):
                 return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
         return True
