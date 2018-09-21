@@ -105,4 +105,58 @@ class Case(DatesModel, models.Model):
         }
 
     def test(self, instrument, data):
+        if self.match_type == 'any' and data:
+            return True
+        if self.match_type == 'none' and not data:
+            return True
+        if self.match_type == 'all-suggested' and self._all_suggested(data, instrument):
+            return True
+        if self.match_type == 'one-suggested' and self._one_suggested(data, instrument):
+            return True
+        if self.match_type == 'all-custom' and self._all_custom(data, instrument):
+            return True
+        if self.match_type == 'one-custom' and self._one_custom(data, instrument):
+            return True
+        if self.match_type == 'match' and self._match(data):
+            return True
+        if self.match_type == 'mismatch' and not self._match(data):
+            return True
+        if self.match_type == 'contains' and self._contains(data):
+            return True
+        if self.match_type == 'not_contains' and not self._contains(data):
+            return True
+
         return False
+
+    # Match helpers
+    def _all_suggested(self, data, instrument):
+        if not isinstance(data, list):
+            data = [data]
+        suggested_data = list(instrument.suggested_responses.values_list('data', flat=True))
+        differences = set(data).symmetric_difference(suggested_data)
+        return len(differences) == 0
+
+    def _one_suggested(self, data, instrument):
+        if not isinstance(data, list):
+            data = [data]
+        is_suggested = instrument.suggested_responses.filter(data__in=data).exists()
+        return is_suggested
+
+    def _all_custom(self, data, instrument):
+        if not isinstance(data, list):
+            data = [data]
+        suggested_data = list(instrument.suggested_responses.values_list('data', flat=True))
+        overlaps = set(data).intersection(suggested_data)
+        return len(overlaps) == 0
+
+    def _one_custom(self, data, instrument):
+        if not isinstance(data, list):
+            data = [data]
+        is_not_suggested = (not instrument.suggested_responses.filter(data__in=data).exists())
+        return is_not_suggested
+
+    def _match(self, data):
+        return self.data == data
+
+    def _contains(self, data):
+        return self.data in data
