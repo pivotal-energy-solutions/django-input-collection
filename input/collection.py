@@ -69,7 +69,7 @@ def get_data_for_suggested_responses(instrument, *responses):
     return values
 
 
-class SpecificationSerializer(object):
+class Specification(object):
     __version__ = (0, 0, 0, 'dev')
 
     def __init__(self, collector):
@@ -188,11 +188,11 @@ class SpecificationSerializer(object):
         return widget_info
 
 
-class BaseAPISpecificationSerializer(SpecificationSerializer):
+class BaseAPISpecification(Specification):
     content_type = 'application/json'
 
     def get_meta(self):
-        meta_info = super(BaseAPISpecificationSerializer, self).get_meta()
+        meta_info = super(BaseAPISpecification, self).get_meta()
         meta_info['api'] = self.get_api_info()
         return meta_info
 
@@ -208,7 +208,7 @@ class Collector(object):
     group = 'default'
     type_widgets = None
     measure_widgets = None
-    specification_serializer_class = SpecificationSerializer
+    specification_class = Specification
 
     def __init__(self, collection_request, group='default', **context):
         self.collection_request = collection_request
@@ -219,8 +219,8 @@ class Collector(object):
         self.measure_widgets = self.get_measure_widgets()
 
     # Resolution utils
-    def get_specification_serializer(self):
-        return self.specification_serializer_class(self)
+    def get_specification(self):
+        return self.specification_class(self)
 
     def get_type_widgets(self):
         if not hasattr(self, '_type_widgets'):
@@ -337,4 +337,4 @@ class Collector(object):
 
 
 class BaseAPICollector(Collector):
-    specification_serializer_class = BaseAPISpecificationSerializer
+    specification_class = BaseAPISpecification
