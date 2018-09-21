@@ -112,7 +112,7 @@ class SpecificationSerializer(object):
 
         for instrument in queryset:
             info = model_to_dict(instrument, exclude=['suggested_responses'])
-            info['response_info'] = self.get_instrument_input_info(instrument)
+            info['response_info'] = self.get_instrument_response_info(instrument)
             info['collected_inputs'] = inputs_info.get(instrument.pk)
             info['conditions'] = [
                 self.get_condition_info(condition) for condition in instrument.conditions.all()
@@ -157,7 +157,7 @@ class SpecificationSerializer(object):
 
         return inputs_info
 
-    def get_instrument_input_info(self, instrument):
+    def get_instrument_response_info(self, instrument):
         """ Returns input specifications for data this instruments wants to collect. """
         policy_info = model_to_dict(instrument.response_policy)
         suggested_responses_info = self.get_suggested_responses_info(instrument)
