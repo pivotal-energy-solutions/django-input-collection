@@ -11,4 +11,9 @@ class PollTemplateViewCollector(collection.RestFrameworkCollector):
         info['instruments_info']['ordered_instruments'] = [
             info['instruments_info']['instruments'][id] for id in info['instruments_info']['ordering']
         ]
+
+        # More shorthand for easily displaying ALL instruments, not just top-level
+        info['instruments_info']['all_ordered_instruments'] = list(
+             sorted(info['instruments_info']['instruments'].values(), key=lambda info: info['order'])
+        )
         return info
