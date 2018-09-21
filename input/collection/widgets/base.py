@@ -40,8 +40,15 @@ class InputMethod(UserDict):
                 raise AttributeError("Invalid attribute %r for widget %r" % (k, self))
             setattr(self, k, v)
 
-    def serialize(self):
-        return self.data.copy()
+    def serialize(self, instrument):
+        """ Serializes a python representation of this input description. """
+        info = self.data.copy()
+
+        info['meta'] = {
+            'method_class': self.__class__.__name__,
+        }
+
+        return info
 
     def clean(self, result):
         """ Clean the result and perform any necessary type coercion. """

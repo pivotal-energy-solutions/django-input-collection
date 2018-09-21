@@ -120,7 +120,7 @@ class Specification(object):
         """
 
         widget = self.collector.get_widget(instrument)
-        widget_info = widgets.serialize_widget(widget)
+        widget_info = widget.serialize(instrument)
         return widget_info
 
 
