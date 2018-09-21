@@ -6,7 +6,10 @@ __all__ = ['serialize_widget']
 def serialize_widget(widget):
     if isclass(widget):
         widget = widget()
-    return {
+
+    info = widget.serialize()
+    info['meta'] = {
         '_class': widget.__class__.__name__,
-        '_repr': repr(widget),
     }
+
+    return info

@@ -40,6 +40,9 @@ class InputMethod(UserDict):
                 raise AttributeError("Invalid attribute %r for widget %r" % (k, self))
             setattr(self, k, v)
 
+    def serialize(self):
+        return self.data.copy()
+
     def clean(self, result):
         """ Clean the result and perform any necessary type coercion. """
         return result
