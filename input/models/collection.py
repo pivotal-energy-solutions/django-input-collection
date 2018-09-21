@@ -8,8 +8,9 @@ from .. import collection
 from . import managers
 from .base import DatesModel
 
-__all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrument',
-           'ResponsePolicy', 'SuggestedResponse', 'AbstractCollectedInput', 'CollectedInput']
+__all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrumentType',
+           'CollectionInstrument', 'ResponsePolicy', 'SuggestedResponse', 'AbstractCollectedInput',
+           'CollectedInput']
 
 
 class Measure(DatesModel, models.Model):
