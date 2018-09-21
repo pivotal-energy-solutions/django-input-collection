@@ -83,7 +83,7 @@ class Case(DatesModel, models.Model):
         ('all-custom', "All custom"),
         ('one-custom', "At least one custom"),
 
-        # Partial
+        # Partial, relies on ``data`` field
         ('match', "Input matches this data"),
         ('mismatch', "Input doesn't match this data"),
         ('contains', "Input contains this data"),
