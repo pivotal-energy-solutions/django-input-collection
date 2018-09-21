@@ -74,24 +74,22 @@ class ConditionGroup(DatesModel, models.Model):
 class Case(DatesModel, models.Model):
     id = models.CharField(max_length=100, primary_key=True)
 
-    has_response = models.CharField(max_length=20, default='any', null=True, choices=(
+    match_type = models.CharField(max_length=20, default=None, null=True, choices=(
+        # Generic
         ('any', "Any input allowed"),
         ('none', "No input allowed"),
-        (None, "(No requirement)"),
-    ))
-    has_response_type = models.CharField(max_length=20, default=None, null=True, choices=(
+
+        # Suggested vs custom
         ('all-suggested', "All suggested"),
         ('one-suggested', "At least one suggested"),
         ('all-custom', "All custom"),
         ('one-custom', "At least one custom"),
-        (None, "(No requirement)"),
-    ))
-    has_matching_data = models.CharField(max_length=20, default=None, null=True, choices=(
+
+        # Partial
         ('match', "Input matches this data"),
+        ('mismatch', "Input doesn't match this data"),
         ('contains', "Input contains this data"),
         ('not-contains', "Input does not contain this data"),
-        ('mismatch', "Input doesn't match this data"),
-        (None, "(No requirement)"),
     ))
     data = models.CharField(max_length=512)
 
@@ -104,9 +102,7 @@ class Case(DatesModel, models.Model):
 
     def get_flags(self):
         return {
-            'has_response': self.has_response,
-            'has_response_type': self.has_response_type,
-            'has_matching_data': self.has_matching_data,
+            'match_type': self.match_type,
             'data': self.data,
         }
 

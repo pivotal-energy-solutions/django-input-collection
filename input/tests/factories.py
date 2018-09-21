@@ -130,7 +130,5 @@ class CaseFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ('id',)
 
     id = factory.Sequence(lambda n: 'case-%d' % n)
-    has_response = 'any'
-    has_response_type = None
-    has_matching_data = None
+    match_type = 'any'
     data = ''
