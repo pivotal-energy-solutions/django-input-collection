@@ -20,43 +20,27 @@ suggested_responses = [
 
 
 # Triggers when suggested responses only
-casegroup_only_suggested = factories.CaseGroupFactory.create(**{
+casegroup_only_suggested = factories.ConditionGroupFactory.create(**{
     'id': 'gimme-only-suggested',
-    'require_all': True,
-    'condition_group': factories.ConditionGroupFactory.create(**{
-        'id': 'gimme-only-suggested',
-        'require_all': True,
-    }),
+    'requirement_type': 'all-pass',
     'cases': [factories.CaseFactory.create(has_response_type='all-suggested')],
 })
 # Triggers when at least one suggested response
-casegroup_any_suggested = factories.CaseGroupFactory.create(**{
+casegroup_any_suggested = factories.ConditionGroupFactory.create(**{
     'id': 'gimme-one-suggested',
-    'require_all': True,
-    'condition_group': factories.ConditionGroupFactory.create(**{
-        'id': 'gimme-one-suggested',
-        'require_all': True,
-    }),
+    'requirement_type': 'all-pass',
     'cases': [factories.CaseFactory.create(has_response_type='one-suggested')],
 })
 # Triggers when custom responses only
-casegroup_only_custom = factories.CaseGroupFactory.create(**{
+casegroup_only_custom = factories.ConditionGroupFactory.create(**{
     'id': 'gimme-only-custom',
-    'require_all': True,
-    'condition_group': factories.ConditionGroupFactory.create(**{
-        'id': 'gimme-only-custom',
-        'require_all': True,
-    }),
+    'requirement_type': 'all-pass',
     'cases': [factories.CaseFactory.create(has_response_type='all-custom')],
 })
 # Triggers when at least one custom response
-casegroup_any_custom = factories.CaseGroupFactory.create(**{
+casegroup_any_custom = factories.ConditionGroupFactory.create(**{
     'id': 'gimme-one-custom',
-    'require_all': True,
-    'condition_group': factories.ConditionGroupFactory.create(**{
-        'id': 'gimme-one-custom',
-        'require_all': True,
-    }),
+    'requirement_type': 'all-pass',
     'cases': [factories.CaseFactory.create(has_response_type='one-custom')],
 })
 

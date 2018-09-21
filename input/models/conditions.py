@@ -2,7 +2,7 @@ from django.db import models
 
 from .base import DatesModel
 
-__all__ = ['Condition', 'ConditionGroup', 'CaseGroup', 'Case']
+__all__ = ['Condition', 'ConditionGroup', 'Case']
 
 
 class Condition(DatesModel, models.Model):
@@ -23,42 +23,22 @@ class ConditionGroup(DatesModel, models.Model):
     """ Recusive grouping mechanism for controlling AND/OR/NONE logic between other groups. """
     id = models.CharField(max_length=100, primary_key=True)
 
-    child_groups = models.ManyToManyField('self', symmetrical=False)
-    require_all = models.CharField(max_length=20, default=True, choices=(
+    requirement_type = models.CharField(max_length=20, default=True, choices=(
         ('all-pass', "All cases must pass"),
         ('one-pass', "At least one case must pass"),
         ('all-fail', "All cases must fail"),
     ))
+
+    # Intermediate groups declare child_groups only
+    child_groups = models.ManyToManyField('self', symmetrical=False)
+
+    # Leaf groups declare cases only
+    cases = models.ManyToManyField('Case', symmetrical=False)
 
     # Also available:
     #
     # self.condition_set.all()
     # self.casegroup_set.all()
-
-    def __str__(self):
-        return self.id
-
-
-class CaseGroup(DatesModel, models.Model):
-    """
-    Grouping of specific Case requirements.  Uses AND/OR/NONE logic like ConditionGroup, but only
-    for the leaf Cases it contains.
-    """
-    id = models.CharField(max_length=100, primary_key=True)
-
-    condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE)
-    cases = models.ManyToManyField('Case', symmetrical=False)
-
-    require_all = models.CharField(max_length=20, default=True, choices=(
-        ('all-pass', "All cases must pass"),
-        ('one-pass', "At least one case must pass"),
-        ('all-fail', "All cases must fail"),
-    ))
-
-    # Also available:
-    #
-    # self.condition_set.all()
-    # self.conditiongroup_set.all()  # child groupings
 
     def __str__(self):
         return self.id
@@ -69,10 +49,22 @@ class CaseGroup(DatesModel, models.Model):
         }
 
     def test(self, instrument, inputs):
-        for case in self.cases.all():
-            if not case.test(instrument, inputs):
-                if self.require_all:
-                    return False
+        has_failed = False
+        has_passed = False
+        testables = self.child_groups.all() or self.cases.all()
+        for item in testables:
+            if item.test(instrument, inputs):
+                has_failed = True
+            else:
+                has_passed = True
+
+            if has_failed and self.requirement_type == 'all-pass':
+                return False
+            elif has_passed and self.requirement_type == 'all-fail':
+                return False
+            elif has_passed and self.requirement_type == 'one-pass':
+                return True
+
         return True
 
 

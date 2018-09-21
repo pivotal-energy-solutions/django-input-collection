@@ -98,7 +98,7 @@ class ConditionGroupFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ('id',)
 
     id = factory.Sequence(lambda n: 'conditiongroup-%d' % n)
-    require_all = True
+    requirement_type = 'all-pass'
 
     @factory.post_generation
     def child_groups(self, create, extracted, **kwargs):
@@ -108,11 +108,11 @@ class ConditionGroupFactory(factory.django.DjangoModelFactory):
             self.child_groups.add(*extracted)
 
     @factory.post_generation
-    def casegroup_set(self, create, extracted, **kwargs):
+    def cases(self, create, extracted, **kwargs):
         if not create:
             return
         if extracted:
-            self.casegroup_set.add(*extracted)
+            self.cases.add(*extracted)
 
 
 class ConditionFactory(factory.django.DjangoModelFactory):
@@ -121,23 +121,6 @@ class ConditionFactory(factory.django.DjangoModelFactory):
 
     instrument = factory.SubFactory(CollectionInstrumentFactory)
     condition_group = factory.SubFactory(ConditionGroupFactory)
-
-
-class CaseGroupFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = 'input.CaseGroup'
-        django_get_or_create = ('id',)
-
-    id = factory.Sequence(lambda n: 'casegroup-%d' % n)
-    condition_group = factory.SubFactory(ConditionGroupFactory)
-    require_all = True
-
-    @factory.post_generation
-    def cases(self, create, extracted, **kwargs):
-        if not create:
-            return
-        if extracted:
-            self.cases.add(*extracted)
 
 
 class CaseFactory(factory.django.DjangoModelFactory):
