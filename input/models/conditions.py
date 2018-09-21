@@ -14,10 +14,8 @@ class Condition(DatesModel, models.Model):
     condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE,
                                         limit_choices_to={'parent_groups': None})
 
-    def test(self, instrument, **context):
-        inputs = instrument.collectedinput_set(manager='filtered_objects') \
-                           .filter_for_context(**context)
-        return self.condition_group.test(instrument, inputs)
+    def test(self, data):
+        return self.condition_group.test(self.parent_instrument, data)
 
 
 class ConditionGroup(DatesModel, models.Model):
@@ -51,12 +49,12 @@ class ConditionGroup(DatesModel, models.Model):
             'requirement_type': self.requirement_type,
         }
 
-    def test(self, instrument, inputs):
+    def test(self, instrument, data):
         has_failed = False
         has_passed = False
         testables = self.child_groups.all() or self.cases.all()
         for item in testables:
-            if item.test(instrument, inputs):
+            if item.test(instrument, data):
                 has_failed = True
             else:
                 has_passed = True
@@ -106,5 +104,5 @@ class Case(DatesModel, models.Model):
             'data': self.data,
         }
 
-    def test(self, instrument, inputs):
-        return False  # TODO
+    def test(self, instrument, data):
+        return False
