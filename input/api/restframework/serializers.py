@@ -81,7 +81,12 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
             'user': data['user'],
         }
 
-        is_unavailable = (not self.is_available(instrument, **context))
+        # FIXME: TEMPORARY
+        # I need to make the Collector resolvable from an external context, like an API view
+        from input.collection import Collector
+        collector = Collector(instrument.collection_request, **context)
+
+        is_unavailable = (not collector.is_instrument_allowed(instrument, **context))
         if is_unavailable:
             raise PermissionDenied("[CollectionInstrument=%r] Availability conditions failed. (user=%r, data=%r)" % (
                 instrument.pk,
@@ -89,7 +94,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
                 data['data'],
             ))
 
-        at_capacity = (not self.allows_new_input(instrument, **context))
+        at_capacity = (not collector.is_input_allowed(instrument, **context))
         if at_capacity:
             raise PermissionDenied("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
                 instrument.pk,
@@ -98,22 +103,13 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
             ))
 
         try:
-            data['data'] = self.transform_responses_to_data(instrument, data['data'], **context)
+            data['data'] = collector.clean_data(instrument, data['data'], **context)
         except ValueError as e:
             raise serializers.ValidationError(str(e))
 
         return data
 
     # Validation helpers
-    def is_available(self, instrument, **context):
-        return instrument.test_conditions(**context)
-
-    def allows_new_input(self, instrument, **context):
-        return CollectedInput.allowed_for_instrument(instrument, **context)
-
-    def transform_responses_to_data(self, instrument, responses, **context):
-        return CollectedInput.clean_data_for_instrument(instrument, responses, **context)
-
     def create(self, validated_data):
         return collection.store(instance=None, **validated_data)
 
