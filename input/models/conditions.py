@@ -144,9 +144,9 @@ class Case(DatesModel, models.Model):
     def _all_suggested(self, data, instrument):
         if not isinstance(data, list):
             data = [data]
-        suggested_data = list(instrument.suggested_responses.values_list('data', flat=True))
-        differences = set(data).symmetric_difference(suggested_data)
-        return len(differences) == 0
+        suggested_data = instrument.suggested_responses.values_list('data', flat=True)
+        all_suggested = set(data).issubset(set(suggested_data))
+        return all_suggested
 
     def _one_suggested(self, data, instrument):
         if not isinstance(data, list):
