@@ -30,7 +30,8 @@ class ConditionGroup(DatesModel, models.Model):
     ))
 
     # Intermediate groups declare child_groups only
-    child_groups = models.ManyToManyField('self', symmetrical=False)
+    child_groups = models.ManyToManyField('self', related_name='parent_groups', blank=True,
+                                          symmetrical=False)
 
     # Leaf groups declare cases only
     cases = models.ManyToManyField('Case', symmetrical=False)
