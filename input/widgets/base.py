@@ -1,5 +1,6 @@
 __all__ = ['InputMethod']
 
+__all__ = ['InputMethod', 'Widget']
 
 
 
@@ -23,3 +24,7 @@ class InputMethod(object):
     def clean(self, result):
         """ Clean the result and perform any necessary type coercion. """
         return result
+
+
+class Widget(InputMethod):
+    pass
