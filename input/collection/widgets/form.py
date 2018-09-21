@@ -42,6 +42,14 @@ class FormFieldWidget(InputMethod):
                 continue
             data[attr] = getattr(field, attr)
 
+        data.update({
+            'html': field.widget.render(**{
+                'name': 'instrument-%s' % (instrument.id),
+                'value': None,
+                'attrs': field.widget_attrs({}),
+            }),
+        })
+
         data['meta'].update({
             'widget_class': field.widget.__class__.__name__,
             'field_class': field.__class__.__name__,
