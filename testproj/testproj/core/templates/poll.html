@@ -163,27 +163,13 @@
                                        >
                                 Other
                             </label>
-                            <input class="form-control list-group-item"
-                                   id="instrument-{{ instrument.id }}-other"
-                                   name="instrument-{{ instrument.id }}"
-                                   type="text"
-                                   placeholder="(Please specify)">
+                            {{ instrument.response_info.widget.html }}
                         {% endif %}
                     </ul>
                 {% else %}
                     <div class="card-body">
                         <div class="input-group mb-3">
-                            {# <div class="input-group-prepend"> #}
-                            {#     <span class="input-group-text">Number:</span> #}
-                            {# </div> #}
-                            <input class="form-control"
-                                   name="instrument-{{ instrument.id }}"
-                                   type="text"
-                                   {# placeholder="Number" #}
-                                   >
-                            {# <div class="input-group-append"> #}
-                            {#     <span class="input-group-text">MMbtu</span> #}
-                            {# </div> #}
+                            {{ instrument.response_info.widget.html }}
                         </div>
                     </div>
                 {% endif %}
