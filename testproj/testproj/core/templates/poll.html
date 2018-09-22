@@ -50,7 +50,7 @@
                         return data;
                     },
                     multiple: function(elements) {
-                        var data = []
+                        var data = [];
                         $.each(elements, function(i, el){
                             data.push(polls.serialize.single($(el)));
                         });
