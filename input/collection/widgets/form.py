@@ -21,10 +21,12 @@ class FormFieldWidget(InputMethod):
     representing the cleaned result.
     """
 
-    formfield_class = None
+    formfield = None
 
     def get_formfield(self):
-        return self.formfield_class()
+        if isclass(self.formfield):
+            return self.formfield()
+        return self.formfield
 
     def serialize(self, instrument):
         # NOTE: If we can ensure an easy design where the <input> names don't need to be scoped by
