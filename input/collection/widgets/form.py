@@ -33,7 +33,7 @@ class FormFieldWidget(InputMethod):
         data = super(FormFieldWidget, self).serialize(instrument)
 
         # Remove hard reference to class and create a reasonable serialization here
-        del data['formfield_class']
+        data.pop('formfield', None)
 
         field = self.get_formfield()
         known_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats']
