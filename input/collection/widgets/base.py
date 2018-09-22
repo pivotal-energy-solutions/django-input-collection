@@ -42,6 +42,8 @@ class InputMethod(UserDict):
 
     def serialize(self, instrument):
         """ Serializes a python representation of this input description. """
+
+        # FIXME: If the defaults aren't shadowed via constructor kwargs, they won't be here
         info = self.data.copy()
 
         info['meta'] = {
