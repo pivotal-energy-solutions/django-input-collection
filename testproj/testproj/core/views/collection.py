@@ -2,8 +2,8 @@ from input.api.restframework import collection
 
 from . import widgets
 
-class PollTemplateViewCollector(collection.RestFrameworkCollector):
 
+class PollTemplateViewCollector(collection.RestFrameworkCollector):
     @property
     def specification(self):
         specification = super(PollTemplateViewCollector, self).specification
@@ -19,3 +19,16 @@ class PollTemplateViewCollector(collection.RestFrameworkCollector):
              sorted(specification['instruments_info']['instruments'].values(), key=lambda info: info['order'])
         )
         return specification
+
+    def get_widget(self, instrument):
+        has_suggested_responses = instrument.suggested_responses.exists()
+        policy = instrument.response_policy.get_flags()
+
+        if has_suggested_responses and not policy['restrict']:
+            # TODO: This widget should encompass the whole list paradigm, including the suggestions
+            return widgets.ListTextOtherWidget()
+
+        if not has_suggested_responses:
+            return widgets.LoneTextWidget()
+
+        return super(PollTemplateViewCollector, self).get_widget(instrument)
