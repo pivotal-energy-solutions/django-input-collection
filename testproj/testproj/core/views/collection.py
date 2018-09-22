@@ -1,13 +1,8 @@
-from django import forms
-
 from input.api.restframework import collection
-from input.collection import widgets
 
+from . import widgets
 
 class PollTemplateViewCollector(collection.RestFrameworkCollector):
-    measure_widgets = {
-        'measure-0': widgets.FormFieldWidget(formfield_class=forms.IntegerField),
-    }
 
     @property
     def specification(self):
