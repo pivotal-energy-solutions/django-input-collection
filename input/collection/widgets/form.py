@@ -1,3 +1,5 @@
+from inspect import isclass
+
 from .base import InputMethod
 
 __all__ = ['FormWidget', 'FormFieldWidget']
