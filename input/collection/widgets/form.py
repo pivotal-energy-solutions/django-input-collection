@@ -46,11 +46,17 @@ class FormFieldWidget(InputMethod):
                 continue
             data[attr] = getattr(field, attr)
 
+        dom_attrs_context = {
+            'instrument': instrument,
+        }
+        dom_attrs = field.widget.build_attrs(field.widget.attrs, field.widget_attrs({}))
+        for k, v in dom_attrs.items():
+            dom_attrs[k] = v.format(**dom_attrs_context)
         data.update({
             'html': field.widget.render(**{
                 'name': 'instrument-%s' % (instrument.id),
                 'value': None,
-                'attrs': field.widget_attrs({}),
+                'attrs': dom_attrs,
             }),
         })
 
