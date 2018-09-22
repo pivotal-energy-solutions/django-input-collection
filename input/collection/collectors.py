@@ -68,7 +68,7 @@ class Collector(object):
 
     @property
     def specification_json(self):
-        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder, indent=4)
+        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
 
     # Instrument/Input runtime checks
     def is_instrument_allowed(self, instrument, **context):
