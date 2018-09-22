@@ -121,7 +121,6 @@
                      pk={{ instrument.id }},
                      {% if instrument.response_info.response_policy.multiple %}multiple={{ instrument.response_info.response_policy.multiple }},{% endif %}
                      {% if instrument.response_info.response_policy.restrict %}restrict={{ instrument.response_info.response_policy.restrict }},{% endif %}
-                     {% if instrument.response_info.widget %}widget={{ instrument.response_info.widget }}{% endif %}]
 
                     {# Simplified for single conditions #}
                     {% if instrument.conditions %}
