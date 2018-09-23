@@ -40,7 +40,13 @@ class FormFieldWidget(InputMethod):
         data.pop('formfield', None)
 
         field = self.get_formfield()
-        known_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats']
+
+        choices = list(instrument.suggested_responses.values_list('id', 'data'))
+        if choices:
+            field.choices = choices
+
+        known_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats',
+                       'choices']
         for attr in known_attrs:
             if not hasattr(field, attr):
                 continue
