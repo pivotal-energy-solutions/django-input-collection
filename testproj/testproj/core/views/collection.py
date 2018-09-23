@@ -24,11 +24,16 @@ class PollTemplateViewCollector(collection.RestFrameworkCollector):
         has_suggested_responses = instrument.suggested_responses.exists()
         policy = instrument.response_policy.get_flags()
 
-        if has_suggested_responses and not policy['restrict']:
-            # TODO: This widget should encompass the whole list paradigm, including the suggestions
-            return widgets.ListTextOtherWidget()
-
-        if not has_suggested_responses:
+        if has_suggested_responses:
+            if policy['multiple']:
+                if policy['restrict']:
+                    return widgets.ListChoiceMultipleWidget()
+                else:
+                    return widgets.ListChoiceMultipleOtherWidget()
+            else:
+                if policy['restrict']:
+                    return widgets.ListChoiceSingleWidget()
+                else:
+                    return widgets.ListChoiceSingleOtherWidget()
+        else:
             return widgets.LoneTextWidget()
-
-        return super(PollTemplateViewCollector, self).get_widget(instrument)
