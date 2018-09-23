@@ -1,5 +1,6 @@
 from inspect import isclass
 
+from django.template.loader import render_to_string
 
 from .base import InputMethod
 
@@ -13,6 +14,7 @@ class FormFieldWidget(InputMethod):
     """
 
     formfield = None
+    template_name = None
 
     def get_formfield(self):
         if isclass(self.formfield):
@@ -92,6 +94,12 @@ class FormWidget(InputMethod):
         for name, field in form.fields.items():
             sub_widget = FormFieldWidget(formfield=field)
             data['fields'][name] = sub_widget.serialize(instrument)
+
+        if self.template_name:
+            data['html'] = render_to_string(self.template_name, context={
+                'form': form,
+                'fields': data['fields'],
+            })
 
         data['meta'].update({
             'form_class': form.__class__.__name__,
