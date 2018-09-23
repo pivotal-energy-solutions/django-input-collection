@@ -1,20 +1,9 @@
 from inspect import isclass
 
+
 from .base import InputMethod
 
-__all__ = ['FormWidget', 'FormFieldWidget']
-
-
-class FormWidget(InputMethod):
-    """ Requests input through an HTML-rendered Django form, returns a dict of cleaned_data. """
-
-    # NOTE: This collects multiple data points for a SINGLE CollectionInstrument, and would
-    # therefore potentially expect all data points to be stored in a SINGLE CollectedInput.  A more
-    # sophisticated CollectedInput user model would need to be swapped in to handle that.
-    # Alternately, data points could be divided and multiple CollectedInputs created for each part
-    # if the save() process is built to allow a sane representation of those disparate data points.
-
-    form_class = None
+__all__ = ['FormFieldWidget', 'FormWidget']
 
 
 class FormFieldWidget(InputMethod):
@@ -77,3 +66,35 @@ class FormFieldWidget(InputMethod):
         """ Let the formfield try to validate it. """
         field = self.get_formfield()
         return field.clean(result)
+
+
+class FormWidget(InputMethod):
+    """ Requests input through an HTML-rendered Django form, returns a dict of cleaned_data. """
+
+    # NOTE: This collects multiple data points for a SINGLE CollectionInstrument, and would
+    # therefore potentially expect all data points to be stored in a SINGLE CollectedInput.  A more
+    # sophisticated CollectedInput user model would need to be swapped in to handle that.
+    # Alternately, data points could be divided and multiple CollectedInputs created for each part
+    # if the save() process is built to allow a sane representation of those disparate data points.
+
+    form_class = None
+    template_name = None
+
+    def get_form(self):
+        return self.form_class()
+
+    def serialize(self, instrument):
+        data = super(FormWidget, self).serialize(instrument)
+        data.pop('form_class', None)
+
+        form = self.get_form()
+        data['fields'] = {}
+        for name, field in form.fields.items():
+            sub_widget = FormFieldWidget(formfield=field)
+            data['fields'][name] = sub_widget.serialize(instrument)
+
+        data['meta'].update({
+            'form_class': form.__class__.__name__,
+        })
+
+        return data
