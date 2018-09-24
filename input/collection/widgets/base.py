@@ -28,15 +28,12 @@ class InputMethod(UserDict):
     def __getattr__(self, k):
         if k == 'data':
             return self.data
-
         return self.data[k]
 
     def __setattr__(self, k, v):
         super(InputMethod, self).__setattr__(k, v)
-
         if k == 'data':
             return
-
         self.data[k] = v
 
     def update_kwargs(self, raise_=True, **kwargs):
