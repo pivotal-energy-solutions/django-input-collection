@@ -15,6 +15,8 @@ class FormFieldWidget(InputMethod):
 
     formfield = None
     template_name = None
+    widget_template_name = None
+    option_template_name = None
 
     def get_formfield(self):
         if isclass(self.formfield):
@@ -101,6 +103,8 @@ class FormWidget(InputMethod):
 
     form_class = None
     template_name = None
+    widget_template_name = None
+    option_template_name = None
 
     def get_form(self):
         return self.form_class()
@@ -111,8 +115,14 @@ class FormWidget(InputMethod):
 
         form = self.get_form()
         data['fields'] = {}
+        widget_templates = data['widget_template_name'] or {}
+        option_templates = data['option_template_name'] or {}
         for name, field in form.fields.items():
-            sub_widget = FormFieldWidget(formfield=field)
+            sub_widget = FormFieldWidget(**{
+                'formfield': field,
+                'widget_template_name': widget_templates.get(name),
+                'option_template_name': option_templates.get(name),
+            })
             data['fields'][name] = sub_widget.serialize(instrument)
 
         if self.template_name:
