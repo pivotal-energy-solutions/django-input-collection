@@ -21,10 +21,20 @@ class FormFieldWidget(InputMethod):
             return self.formfield()
         return self.formfield
 
-    def serialize(self, instrument):
-        # NOTE: If we can ensure an easy design where the <input> names don't need to be scoped by
-        # the [name="instrument-{pk}"], we could potentially drop this ``instrument`` arg.
+    def copy_attrs(self, target, *forward_attrs, **attrs):
+        # Look up values for simple attribute names
+        for attr in forward_attrs:
+            if attr not in attrs:
+                attrs[attr] = self.data[attr]
 
+        # Set attributes on instance
+        for attr, value in attrs.items():
+            if value is not None:  # Avoid clearing good defaults with None values
+                setattr(target, attr, value)
+
+
+
+    def serialize(self, instrument):
         data = super(FormFieldWidget, self).serialize(instrument)
 
         # Remove hard reference to class and create a reasonable serialization here
