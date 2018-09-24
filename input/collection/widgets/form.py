@@ -32,7 +32,20 @@ class FormFieldWidget(InputMethod):
             if value is not None:  # Avoid clearing good defaults with None values
                 setattr(target, attr, value)
 
+    def update_field(self, field, instrument, *forward_attrs, **attrs):
+        self.copy_attrs(field, *forward_attrs, **attrs)
 
+        choices = list(instrument.suggested_responses.values_list('id', 'data'))
+        if choices:
+            field.choices = choices
+
+    def update_widget(self, field, widget, instrument, *forward_attrs, **attrs):
+        choices = getattr(field, 'choices', ())
+        use_default_choices = 'choices' not in (forward_attrs + tuple(attrs.keys()))
+        if use_default_choices and choices:
+            attrs['choices'] = list(choices)
+
+        self.copy_attrs(widget, *forward_attrs, **attrs)
 
     def serialize(self, instrument):
         data = super(FormFieldWidget, self).serialize(instrument)
@@ -42,9 +55,6 @@ class FormFieldWidget(InputMethod):
 
         field = self.get_formfield()
 
-        choices = list(instrument.suggested_responses.values_list('id', 'data'))
-        if choices:
-            field.choices = choices
 
         known_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats',
                        'choices']
