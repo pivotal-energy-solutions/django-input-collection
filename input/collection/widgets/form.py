@@ -58,9 +58,9 @@ class FormFieldWidget(InputMethod):
         field = self.get_formfield()
 
 
-        known_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats',
+        field_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats',
                        'choices']
-        for attr in known_attrs:
+        for attr in field_attrs:
             if not hasattr(field, attr):
                 continue
             data[attr] = getattr(field, attr)
