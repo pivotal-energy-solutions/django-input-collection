@@ -134,7 +134,7 @@
 
             <div class="card mt-3 mb-3">
                 {% if instrument.response_info.suggested_responses %}
-                    {{ instrument.response_info.widget.html }}
+                    {{ instrument.response_info.widget.template }}
                     {# <ul class="list-group list-group-flush btn-group-toggle" data-toggle="buttons"> #}
                     {#     {% for suggested_response in instrument.response_info.suggested_responses %} #}
                     {#         <label class="btn btn-outline-primary list-group-item text-left"> #}
@@ -163,13 +163,13 @@
                     {#                    > #}
                     {#             Other #}
                     {#         </label> #}
-                    {#         {{ instrument.response_info.widget.html }} #}
+                    {#         {{ instrument.response_info.widget.template }} #}
                     {#     {% endif %} #}
                     {# </ul> #}
                 {% else %}
                     <div class="card-body">
                         <div class="input-group mb-3">
-                            {{ instrument.response_info.widget.html }}
+                            {{ instrument.response_info.widget.template }}
                         </div>
                     </div>
                 {% endif %}

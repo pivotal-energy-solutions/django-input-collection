@@ -71,12 +71,10 @@ class FormFieldWidget(InputMethod):
         dom_attrs = field.widget.build_attrs(field.widget.attrs, field.widget_attrs({}))
         for k, v in dom_attrs.items():
             dom_attrs[k] = v.format(**dom_attrs_context)
-        data.update({
-            'html': field.widget.render(**{
-                'name': 'instrument-%s' % (instrument.id),
-                'value': None,
-                'attrs': dom_attrs,
-            }),
+        data['template'] = field.widget.render(**{
+            'name': 'instrument-%s' % (instrument.id),
+            'value': None,
+            'attrs': dom_attrs,
         })
 
         data['meta'].update({
@@ -126,7 +124,7 @@ class FormWidget(InputMethod):
             data['fields'][name] = sub_widget.serialize(instrument)
 
         if data['template_name']:
-            data['html'] = render_to_string(data['template_name'], context={
+            data['template'] = render_to_string(data['template_name'], context={
                 'form': form,
                 'fields': data['fields'],
             })
