@@ -57,6 +57,14 @@ class FormFieldWidget(InputMethod):
 
         field = self.get_formfield()
 
+        # Update field/widget to spec
+        self.update_field(field, instrument, **{
+            'template_name': data['template_name'],
+        })
+        self.update_widget(field, field.widget, instrument, **{
+            'template_name': data['widget_template_name'],
+            'option_template_name': data['option_template_name'],
+        })
 
         field_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats',
                        'choices']
