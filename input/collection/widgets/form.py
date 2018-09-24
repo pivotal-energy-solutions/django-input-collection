@@ -66,6 +66,7 @@ class FormFieldWidget(InputMethod):
             'option_template_name': data['option_template_name'],
         })
 
+        # Main serialization
         field_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats',
                        'choices']
         for attr in field_attrs:
@@ -73,6 +74,7 @@ class FormFieldWidget(InputMethod):
                 continue
             data[attr] = getattr(field, attr)
 
+        # Do a server render of widget to store on the serialization
         dom_attrs_context = {
             'instrument': instrument,
         }
@@ -85,6 +87,7 @@ class FormFieldWidget(InputMethod):
             'attrs': dom_attrs,
         })
 
+        # Extra info
         data['meta'].update({
             'widget_class': field.widget.__class__.__name__,
             'field_class': field.__class__.__name__,
