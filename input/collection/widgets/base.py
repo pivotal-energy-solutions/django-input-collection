@@ -33,11 +33,13 @@ class InputMethod(UserDict):
 
         self.data[k] = v
 
-    def update_kwargs(self, **kwargs):
+    def update_kwargs(self, raise_=True, **kwargs):
         for k, v in kwargs.items():
             attr = getattr(self, k, missing)
             if attr is missing or k.startswith('_') or callable(attr):
-                raise AttributeError("Invalid attribute %r for widget %r" % (k, self))
+                if raise_:
+                    raise AttributeError("Invalid attribute %r for widget %r" % (k, self))
+                continue
             setattr(self, k, v)
 
     def serialize(self, instrument):
