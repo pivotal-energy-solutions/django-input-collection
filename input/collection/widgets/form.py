@@ -125,8 +125,8 @@ class FormWidget(InputMethod):
             })
             data['fields'][name] = sub_widget.serialize(instrument)
 
-        if self.template_name:
-            data['html'] = render_to_string(self.template_name, context={
+        if data['template_name']:
+            data['html'] = render_to_string(data['template_name'], context={
                 'form': form,
                 'fields': data['fields'],
             })
