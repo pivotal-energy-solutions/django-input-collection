@@ -17,6 +17,12 @@ class InputMethod(UserDict):
 
     def __init__(self, **kwargs):
         super(InputMethod, self).__init__(**kwargs)
+
+        # Collect all class-level default attribute values for the initial ``data`` dict
+        for cls in reversed(self.__class__.__mro__):
+            self.update_kwargs(raise_=False, **cls.__dict__)
+
+        # Record new runtime values
         self.update_kwargs(**kwargs)
 
     def __getattr__(self, k):
@@ -45,7 +51,6 @@ class InputMethod(UserDict):
     def serialize(self, instrument):
         """ Serializes a python representation of this input description. """
 
-        # FIXME: If the defaults aren't shadowed via constructor kwargs, they won't be here
         info = self.data.copy()
 
         info['meta'] = {
