@@ -34,21 +34,12 @@ class CollectedInputQuerySet(QuerySet):
 class ContextualCollectedInputQuerySet(ContextualMixin, CollectedInputQuerySet):
     pass
 
-    # def as_manager(cls, context):
-    #     """ Adds required ``context`` arg for initialization. """
-    #     manager = super(ContextualQuerySet, cls).as_manager()
-    #     manager.context = context.copy()
-    #     return manager
-    # as_manager.queryset_only = True
-    # as_manager = classmethod(as_manager)
-
 
 class UserLatestCollectedInputQuerySet(ContextualCollectedInputQuerySet):
     """
     Assumes a runtime context with  a ``user`` reference will always be provided, used to filter for
     only that user's most recent instances per CollectionInstrument.
     """
-    latest = Max('date_created')
 
     def get_context_query(self, user, **extra):
         """
