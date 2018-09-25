@@ -108,30 +108,30 @@ class Collector(object, metaclass=CollectorType):
         return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
 
     # Instrument/Input runtime checks
-    def is_instrument_allowed(self, instrument, **context):
+    def is_instrument_allowed(self, instrument):
         """
         Returns True when the given instrument passes all related conditions limiting its use.
         """
-        return instrument.test_conditions(**context)
+        return instrument.test_conditions(**self.context)
 
-    def is_input_allowed(self, instrument, **context):
+    def is_input_allowed(self, instrument):
         """
         Returns True when the given instrument passes checks against flags on its CollectionRequest.
         """
         manager = instrument.collectedinput_set(manager='filtered_objects')
 
-        user = context.get('user')
+        user = self.context.get('user')
         if user and not isinstance(user, AnonymousUser):
             user_max = instrument.collection_request.max_instrument_inputs_per_user
             if user_max is not None:
-                existing_inputs = manager.filter_for_context(**context)
+                existing_inputs = manager.filter_for_context(**self.context)
                 input_count = existing_inputs.count()
                 if input_count >= user_max:
                     return False
 
         total_max = instrument.collection_request.max_instrument_inputs
         if total_max is not None:
-            no_user_context = dict(context, user=None)
+            no_user_context = dict(self.context, user=None)
             existing_inputs = manager.filter_for_context(**no_user_context)
             input_count = existing_inputs.count()
             if input_count >= total_max:
@@ -139,7 +139,7 @@ class Collector(object, metaclass=CollectorType):
 
         return True
 
-    def clean_data(self, instrument, data, **context):
+    def clean_data(self, instrument, data):
         """
         Return cleaned/validated data based on a speculative input ``data``.  Data coded for
         representing SuggestedResponse instance ids are translated to the concrete data that
