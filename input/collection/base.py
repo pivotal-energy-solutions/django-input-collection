@@ -1,44 +1,4 @@
-from .. import models
-
-__all__ = ['store', 'get_data_for_suggested_responses', 'test_condition_case']
-
-
-CollectedInput = models.get_input_model()
-
-def store(instrument, data, instance=None, **model_kwargs):
-    """
-    Creates a new CollectedInput instance for the given data.  Any additional kwargs are sent to
-    the manager's ``create()`` method, in case the CollectedInput model has been swapped and
-    requires additional fields to successfully save.
-    """
-
-    from . import collectors
-
-    # Resolve Collector class for data prep
-    identifier = 'testproj.core.views.collection.PollTemplateViewCollector'  # FIXME
-    Collector = collectors.Collector.resolve(identifier)
-
-    context = {
-        'user': model_kwargs['user'],
-    }
-    collector = Collector(instrument.collection_request, **context)
-    db_data = collector.serialize_data(data)
-
-    kwargs = {
-        'instrument': instrument,
-        'data': db_data,
-
-        # Disallow data integrity funnybusiness
-        'collection_request': instrument.collection_request,
-    }
-    kwargs.update(model_kwargs)
-
-    pk = None
-    if instance is not None:
-        pk = instance.pk
-    instance, created = CollectedInput.objects.update_or_create(pk=pk, defaults=kwargs)
-
-    return instance
+__all__ = ['get_data_for_suggested_responses', 'test_condition_case']
 
 
 def get_data_for_suggested_responses(instrument, *responses):

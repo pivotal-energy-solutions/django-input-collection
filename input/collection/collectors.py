@@ -5,6 +5,7 @@ import json
 
 from django.contrib.auth.models import AnonymousUser
 
+from .. import models
 from ..encoders import CollectionSpecificationJSONEncoder
 from .base import get_data_for_suggested_responses
 from . import specifications
@@ -12,6 +13,8 @@ from . import methods
 
 __all__ = ['Collector', 'BaseAPICollector']
 
+
+CollectedInput = models.get_input_model()
 
 registry = {}
 
@@ -178,6 +181,34 @@ class Collector(object, metaclass=CollectorType):
         appropriate object for its type.
         """
         return data
+
+    # Data-altering methods
+    def store(self, instrument, data, instance=None, **model_field_values):
+        """
+        Creates a new CollectedInput instance for the given data.  Any additional kwargs are sent to
+        the manager's ``create()`` method, in case the CollectedInput model has been swapped and
+        requires additional fields to successfully save.
+        """
+
+        from . import collectors
+
+        db_data = self.serialize_data(data)
+
+        kwargs = {
+            'instrument': instrument,
+            'data': db_data,
+
+            # Disallow data integrity funnybusiness
+            'collection_request': instrument.collection_request,
+        }
+        kwargs.update(model_field_values)
+
+        pk = None
+        if instance is not None:
+            pk = instance.pk
+        instance, created = CollectedInput.objects.update_or_create(pk=pk, defaults=kwargs)
+
+        return instance
 
 
 class BaseAPICollector(Collector):

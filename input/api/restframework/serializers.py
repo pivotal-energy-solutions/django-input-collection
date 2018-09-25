@@ -119,7 +119,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
 
     # Validation helpers
     def create(self, validated_data):
-        return collection.store(instance=None, **validated_data)
+        return self.collector.store(instance=None, **validated_data)
 
     def update(self, instance, validated_data):
-        return collection.store(instance=instance, **validated_data)
+        return self.collector.store(instance=instance, **validated_data)
