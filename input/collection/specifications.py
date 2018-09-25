@@ -2,8 +2,6 @@ from collections import defaultdict
 
 from django.forms.models import model_to_dict
 
-from . import widgets
-
 
 class Specification(object):
     __version__ = (0, 0, 0, 'dev')

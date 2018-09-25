@@ -6,14 +6,14 @@ from django.contrib.auth.models import AnonymousUser
 from ..encoders import CollectionSpecificationJSONEncoder
 from .base import get_data_for_suggested_responses
 from . import specifications
-from . import widgets
+from . import methods
 
 
 class Collector(object):
     __version__ = (0, 0, 0, 'dev')
     group = 'default'
-    type_widgets = None
-    measure_widgets = None
+    type_methods = None
+    measure_methods = None
     specification_class = specifications.Specification
 
     def __init__(self, collection_request, group='default', **context):
@@ -21,22 +21,22 @@ class Collector(object):
         self.context = context
         self.group = group
 
-        self.type_widgets = self.get_type_widgets()
-        self.measure_widgets = self.get_measure_widgets()
+        self.type_methods = self.get_type_methods()
+        self.measure_methods = self.get_measure_methods()
 
     # Resolution utils
     def get_specification(self):
         return self.specification_class(self)
 
-    def get_type_widgets(self):
-        if not hasattr(self, '_type_widgets'):
-            self._type_widgets = self.type_widgets or {}
-        return self._type_widgets
+    def get_type_methods(self):
+        if not hasattr(self, '_type_methods'):
+            self._type_methods = self.type_methods or {}
+        return self._type_methods
 
-    def get_measure_widgets(self):
-        if not hasattr(self, '_measure_widgets'):
-            self._measure_widgets = self.measure_widgets or {}
-        return self._measure_widgets
+    def get_measure_methods(self):
+        if not hasattr(self, '_measure_methods'):
+            self._measure_methods = self.measure_methods or {}
+        return self._measure_methods
 
     def get_widget_kwargs(self, instrument):
         kwargs = {
@@ -45,12 +45,12 @@ class Collector(object):
         return kwargs
 
     def get_widget(self, instrument):
-        widget = widgets.Widget
+        widget = methods.InputMethod
 
-        if instrument.measure_id in self.measure_widgets:
-            widget = self.measure_widgets[instrument.measure_id]
-        elif instrument.type_id in self.type_widgets:
-            widget = self.type_widgets[instrument.type_id]
+        if instrument.measure_id in self.measure_methods:
+            widget = self.measure_methods[instrument.measure_id]
+        elif instrument.type_id in self.type_methods:
+            widget = self.type_methods[instrument.type_id]
 
         if isclass(widget):
             widget = widget()

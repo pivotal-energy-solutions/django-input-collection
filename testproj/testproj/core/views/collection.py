@@ -1,6 +1,6 @@
 from input.api.restframework import collection
 
-from . import widgets
+from . import methods
 
 
 class PollTemplateViewCollector(collection.RestFrameworkCollector):
@@ -27,13 +27,13 @@ class PollTemplateViewCollector(collection.RestFrameworkCollector):
         if has_suggested_responses:
             if policy['multiple']:
                 if policy['restrict']:
-                    return widgets.ListChoiceMultipleWidget()
+                    return methods.ListChoiceMultipleWidget()
                 else:
-                    return widgets.ListChoiceMultipleOtherWidget()
+                    return methods.ListChoiceMultipleOtherWidget()
             else:
                 if policy['restrict']:
-                    return widgets.ListChoiceSingleWidget()
+                    return methods.ListChoiceSingleWidget()
                 else:
-                    return widgets.ListChoiceSingleOtherWidget()
+                    return methods.ListChoiceSingleOtherWidget()
         else:
-            return widgets.LoneTextWidget()
+            return methods.LoneTextWidget()
