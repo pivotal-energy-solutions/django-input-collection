@@ -22,6 +22,11 @@ class LoneTextWidget(widgets.FormFieldWidget):
 # Multiple choice
 class ListChoiceSingleWidget(widgets.FormFieldWidget):
     formfield = forms.CharField(widget=forms.RadioSelect)
+# Multiple choice, multiple selection
+class ListChoiceMultipleWidget(widgets.FormFieldWidget):
+    formfield = forms.CharField(widget=forms.CheckboxSelectMultiple)
+    widget_template_name = LIST_FIELD_TEMPLATE_NAME
+    option_template_name = LIST_OPTION_TEMPLATE_NAME
 
 
 # Multiple choice with 'Other'
@@ -32,12 +37,6 @@ class ListChoiceSingleOtherForm(forms.Form):
 
 class ListChoiceSingleOtherWidget(widgets.FormWidget):
     form_class = ListChoiceSingleOtherForm
-    template_name = 'poll/widgets/list_form.html'
-
-
-# Multiple choice, multiple selection
-class ListChoiceMultipleWidget(widgets.FormFieldWidget):
-    formfield = forms.CharField(widget=forms.CheckboxSelectMultiple(attrs=list_input_choice_attrs))
 
 
 # Multiple choice with 'Other', multiple selection
@@ -48,4 +47,10 @@ class ListChoiceMultipleOtherForm(forms.Form):
 
 class ListChoiceMultipleOtherWidget(widgets.FormWidget):
     form_class = ListChoiceMultipleOtherForm
-    template_name = 'poll/widgets/list_form.html'
+    template_name = LIST_FORM_TEMPLATE_NAME
+    widget_template_name = {
+        'suggested_responses': LIST_WIDGET_TEMPLATE_NAME,
+    }
+    option_template_name = {
+        'suggested_responses': LIST_OPTION_TEMPLATE_NAME,
+    }
