@@ -1,6 +1,6 @@
 from collections import UserDict
 
-__all__ = ['InputMethod', 'Widget']
+__all__ = ['InputMethod']
 
 
 class missing(object):
@@ -59,7 +59,3 @@ class InputMethod(UserDict):
     def clean(self, result):
         """ Clean the result and perform any necessary type coercion. """
         return result
-
-
-class Widget(InputMethod):
-    pass
