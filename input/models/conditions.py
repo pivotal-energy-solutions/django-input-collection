@@ -1,6 +1,5 @@
 from django.db import models
 
-from .. import collection
 from .base import DatesModel
 
 __all__ = ['Condition', 'ConditionGroup', 'Case']
@@ -115,6 +114,8 @@ class Case(DatesModel, models.Model):
         }
 
     def test(self, instrument, **context):
+        from ..collection import test_condition_case
+
         kwargs = self.get_flags()
         kwargs.update(context)
-        return collection.test_condition_case(instrument, **kwargs)
+        return test_condition_case(instrument, **kwargs)
