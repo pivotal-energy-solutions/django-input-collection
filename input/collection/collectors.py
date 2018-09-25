@@ -8,6 +8,8 @@ from .base import get_data_for_suggested_responses
 from . import specifications
 from . import methods
 
+__all__ = ['Collector', 'BaseAPICollector']
+
 
 class Collector(object):
     __version__ = (0, 0, 0, 'dev')
