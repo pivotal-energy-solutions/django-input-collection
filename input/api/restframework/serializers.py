@@ -85,10 +85,11 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
     def validate(self, data):
         instrument = data['instrument']
 
-        data['user'] = self.context['request'].user
+        user = self.context['request'].user
+        data['user'] = user
 
         context = {
-            'user': data['user'],
+            'user': user,
         }
         collector_class = data.pop('collector')  # 'collector' won't be a valid model field
         self.collector = collector_class(instrument.collection_request, **context)
