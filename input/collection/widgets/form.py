@@ -4,10 +4,10 @@ from django.template.loader import render_to_string
 
 from .base import InputMethod
 
-__all__ = ['FormFieldWidget', 'FormWidget']
+__all__ = ['FormFieldMethod', 'FormMethod']
 
 
-class FormFieldWidget(InputMethod):
+class FormFieldMethod(InputMethod):
     """
     Requests input through an HTML-rendered Django field, returns a single python object
     representing the cleaned result.
@@ -50,7 +50,7 @@ class FormFieldWidget(InputMethod):
         self.copy_attrs(widget, *forward_attrs, **attrs)
 
     def serialize(self, instrument):
-        data = super(FormFieldWidget, self).serialize(instrument)
+        data = super(FormFieldMethod, self).serialize(instrument)
 
         # Remove hard reference to class and create a reasonable serialization here
         data.pop('formfield', None)
@@ -109,7 +109,7 @@ class FormFieldWidget(InputMethod):
         return field.clean(result)
 
 
-class FormWidget(InputMethod):
+class FormMethod(InputMethod):
     """ Requests input through an HTML-rendered Django form, returns a dict of cleaned_data. """
 
     # NOTE: This collects multiple data points for a SINGLE CollectionInstrument, and would
@@ -123,11 +123,13 @@ class FormWidget(InputMethod):
     widget_template_name = None
     option_template_name = None
 
+    field_input_method_class = FormFieldMethod
+
     def get_form(self):
         return self.form_class()
 
     def serialize(self, instrument):
-        data = super(FormWidget, self).serialize(instrument)
+        data = super(FormMethod, self).serialize(instrument)
         data.pop('form_class', None)
 
         form = self.get_form()
@@ -135,7 +137,7 @@ class FormWidget(InputMethod):
         widget_templates = data['widget_template_name'] or {}
         option_templates = data['option_template_name'] or {}
         for name, field in form.fields.items():
-            sub_widget = FormFieldWidget(**{
+            sub_widget = FormFieldMethod(**{
                 'formfield': field,
                 'widget_template_name': widget_templates.get(name),
                 'option_template_name': option_templates.get(name),
