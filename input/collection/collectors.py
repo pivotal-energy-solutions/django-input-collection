@@ -11,6 +11,8 @@ from . import methods
 
 class Collector(object):
     __version__ = (0, 0, 0, 'dev')
+
+    specification_class = specifications.Specification
     group = 'default'
 
     # TODO: Streamline how this will have to work for targetting response_policy settings, too.
@@ -18,7 +20,6 @@ class Collector(object):
     # all settings for the instrument will be used.
     type_methods = None
     measure_methods = None
-    specification_class = specifications.Specification
 
     def __init__(self, collection_request, group='default', **context):
         self.collection_request = collection_request
