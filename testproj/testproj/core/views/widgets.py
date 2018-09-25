@@ -7,6 +7,9 @@ lone_input_attrs = {
     'class': 'form-control',
     'placeholder': '(Enter answer)',
 }
+list_input_suggested_attrs = {
+    'class': 'form-control',
+}
 list_input_other_attrs = {
     'id': 'instrument-{instrument.id}-other',
     'class': 'form-control list-group-item',
@@ -30,21 +33,21 @@ class LoneTextWidget(widgets.FormFieldWidget):
 
 # Multiple choice
 class ListChoiceSingleWidget(widgets.FormFieldWidget):
-    formfield = forms.CharField(widget=forms.RadioSelect)
+    formfield = forms.CharField(widget=forms.RadioSelect(attrs=list_input_suggested_attrs))
     widget_template_name = LIST_FIELD_TEMPLATE_NAME
     option_template_name = LIST_OPTION_TEMPLATE_NAME
 
 
 # Multiple choice, multiple selection
 class ListChoiceMultipleWidget(widgets.FormFieldWidget):
-    formfield = forms.CharField(widget=forms.CheckboxSelectMultiple)
+    formfield = forms.CharField(widget=forms.CheckboxSelectMultiple(attrs=list_input_suggested_attrs))
     widget_template_name = LIST_FIELD_TEMPLATE_NAME
     option_template_name = LIST_OPTION_TEMPLATE_NAME
 
 
 # Multiple choice with 'Other'
 class ListChoiceSingleOtherForm(forms.Form):
-    suggested_responses = forms.CharField(widget=forms.RadioSelect)
+    suggested_responses = forms.CharField(widget=forms.RadioSelect(attrs=list_input_suggested_attrs))
     custom = forms.CharField(widget=forms.TextInput(attrs=list_input_other_attrs))
 
 
@@ -61,7 +64,7 @@ class ListChoiceSingleOtherWidget(widgets.FormWidget):
 
 # Multiple choice with 'Other', multiple selection
 class ListChoiceMultipleOtherForm(forms.Form):
-    suggested_responses = forms.CharField(widget=forms.CheckboxSelectMultiple)
+    suggested_responses = forms.CharField(widget=forms.CheckboxSelectMultiple(attrs=list_input_suggested_attrs))
     custom = forms.CharField(widget=forms.TextInput(attrs=list_input_other_attrs))
 
 
