@@ -77,6 +77,8 @@ class FormFieldWidget(InputMethod):
 
         # Get final widget DOM attrs
         data['attrs'] = field.widget.build_attrs(field.widget.attrs, field.widget_attrs(field.widget))
+        if hasattr(field, 'choices'):
+            data['attrs']['multiple'] = getattr(field.widget, 'allow_multiple_selected', False)
 
         # Apply early string formatting to values where possible
         dom_attrs_context = {
