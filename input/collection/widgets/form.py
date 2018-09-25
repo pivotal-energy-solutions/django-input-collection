@@ -74,10 +74,12 @@ class FormFieldWidget(InputMethod):
                 continue
             data[attr] = getattr(field, attr)
 
+
+        # Get final widget DOM attrs
+        data['attrs'] = field.widget.build_attrs(field.widget.attrs, field.widget_attrs(field.widget))
         dom_attrs_context = {
             'instrument': instrument,
         }
-        dom_attrs = field.widget.build_attrs(field.widget.attrs, field.widget_attrs({}))
         for k, v in dom_attrs.items():
             dom_attrs[k] = v.format(**dom_attrs_context)
         # Do a server render of widget to store on the serialization
