@@ -1,0 +1,12 @@
+<label class="btn btn-outline-primary list-group-item text-left">
+    <input name="{{ widget.attrs.name }}"
+           value="{{ widget.value }}"
+           data-suggested
+           {% if widget.attrs.multiple %}
+           type="checkbox"
+           {% else %}
+           type="radio"
+           {% endif %}
+           >
+    {{ widget.label }}
+</label>

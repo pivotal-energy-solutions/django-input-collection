@@ -1,4 +1,17 @@
 <ul class="list-group list-group-flush btn-group-toggle" data-toggle="buttons">
-    {{ form.suggested_responses }}
-    {{ form.custom }}
+    {{ fields.suggested_responses.template }}
+
+    <label class="btn btn-outline-primary list-group-item text-left"
+           for="{{ fields.suggested_responses.attrs.name }}-other">
+        <input name="{{ fields.suggested_responses.attrs.name }}"
+               data-source="#{{ fields.suggested_responses.attrs.name }}-other"
+               {% if fields.suggested_responses.attrs.multiple %}
+               type="checkbox"
+               {% else %}
+               type="radio"
+               {% endif %}
+               >
+        Other
+    </label>
+    {{ fields.custom.template }}
 </ul>

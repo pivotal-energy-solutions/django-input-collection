@@ -1,0 +1,7 @@
+<ul class="list-group list-group-flush btn-group-toggle" data-toggle="buttons">
+    {% for group, options, index in widget.optgroups %}
+        {% for option in options %}
+            {% include option.template_name with widget=option %}
+        {% endfor %}
+    {% endfor %}
+</ul>
