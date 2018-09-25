@@ -81,9 +81,8 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
             'user': data['user'],
         }
 
-        # FIXME: TEMPORARY
-        # I need to make the Collector resolvable from an external context, like an API view
-        from input.collection import Collector
+        identifier = 'testproj.core.views.collection.PollTemplateViewCollector'  # FIXME
+        Collector = collection.resolve_collector(identifier=identifier)
         collector = Collector(instrument.collection_request, **context)
 
         is_unavailable = (not collector.is_instrument_allowed(instrument, **context))

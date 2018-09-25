@@ -12,7 +12,17 @@ def store(instrument, data, instance=None, **model_kwargs):
     requires additional fields to successfully save.
     """
 
-    db_data = CollectedInput().serialize_data(data)  # FIXME: classmethod/staticmethod?
+    from . import collectors
+
+    # Resolve Collector class for data prep
+    identifier = 'testproj.core.views.collection.PollTemplateViewCollector'  # FIXME
+    Collector = collectors.resolve_collector(identifier=identifier)
+
+    context = {
+        'user': model_kwargs['user'],
+    }
+    collector = Collector(instrument.collection_request, **context)
+    db_data = collector.serialize_data(data)
 
     kwargs = {
         'instrument': instrument,
