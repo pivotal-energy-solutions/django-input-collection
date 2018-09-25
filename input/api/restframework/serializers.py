@@ -64,6 +64,11 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
         return pklist_field.to_representation(queryset)
 
 
+class RegisteredCollectorField(serializers.Field):
+    def to_internal_value(self, identifier):
+        return collection.Collector.resolve(identifier)
+
+
 CollectedInput = models.get_input_model()
 
 class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
@@ -72,16 +77,10 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         fields = '__all__'
         exclude_write = ('collection_request', 'user')
 
-    def get_collector_identifier(self):
-        return self.context['request'].data.get('identifier')
-
-    def get_collector(self, collection_request, **context):
-        if not hasattr(self, '_collector'):
-            identifier = self.get_collector_identifier()
-            Collector = collection.Collector.resolve(identifier)
-            collector = Collector(collection_request, **context)
-            self._collector = collector
-        return self._collector
+    def get_fields(self):
+        fields = super(CollectedInputSerializer, self).get_fields()
+        fields['collector'] = RegisteredCollectorField(write_only=True)
+        return fields
 
     def validate(self, data):
         instrument = data['instrument']
@@ -91,9 +90,10 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         context = {
             'user': data['user'],
         }
-        collector = self.get_collector(instrument.collection_request, **context)
+        collector_class = data.pop('collector')  # 'collector' won't be a valid model field
+        self.collector = collector_class(instrument.collection_request, **context)
 
-        is_unavailable = (not collector.is_instrument_allowed(instrument))
+        is_unavailable = (not self.collector.is_instrument_allowed(instrument))
         if is_unavailable:
             raise PermissionDenied("[CollectionInstrument=%r] Availability conditions failed. (user=%r, data=%r)" % (
                 instrument.pk,
@@ -101,7 +101,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
                 data['data'],
             ))
 
-        at_capacity = (not collector.is_input_allowed(instrument))
+        at_capacity = (not self.collector.is_input_allowed(instrument))
         if at_capacity:
             raise PermissionDenied("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
                 instrument.pk,
@@ -110,7 +110,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
             ))
 
         try:
-            data['data'] = collector.clean_data(instrument, data['data'])
+            data['data'] = self.collector.clean_data(instrument, data['data'])
         except ValueError as e:
             raise serializers.ValidationError(str(e))
 
