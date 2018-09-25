@@ -42,8 +42,7 @@ def test_condition_case(instrument, match_type, data=None, **context):
 
     matcher = getattr(matchers, match_type.replace('-', '_'))
 
-    input_data = list(instrument.collectedinput_set(manager='filtered_objects') \
-                                .filter_for_context(**context) \
+    input_data = list(instrument.collectedinput_set.filter_for_context(**context) \
                                 .values_list('data', flat=True))
 
     status = matcher(input_data, test_data=data, instrument=instrument)

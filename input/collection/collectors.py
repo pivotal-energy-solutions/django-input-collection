@@ -121,7 +121,7 @@ class Collector(object, metaclass=CollectorType):
         """
         Returns True when the given instrument passes checks against flags on its CollectionRequest.
         """
-        manager = instrument.collectedinput_set(manager='filtered_objects')
+        manager = instrument.collectedinput_set
 
         user = self.context.get('user')
         if user and not isinstance(user, AnonymousUser):

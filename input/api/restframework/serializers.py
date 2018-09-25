@@ -59,7 +59,7 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
         context = {
             'user': self.context['request'].user,
         }
-        queryset = obj.collectedinput_set(manager='filtered_objects').filter_for_context(**context)
+        queryset = obj.collectedinput_set.filter_for_context(**context)
         pklist_field = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
         return pklist_field.to_representation(queryset)
 

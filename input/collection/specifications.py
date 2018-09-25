@@ -88,7 +88,7 @@ class Specification(object):
     def get_collected_inputs_info(self):
         inputs_info = defaultdict(list)
 
-        queryset = self.collector.collection_request.collectedinput_set(manager='filtered_objects') \
+        queryset = self.collector.collection_request.collectedinput_set \
                                                     .filter_for_context(**self.collector.context)
         for input in queryset:
             inputs_info[input.instrument_id].append(model_to_dict(input))

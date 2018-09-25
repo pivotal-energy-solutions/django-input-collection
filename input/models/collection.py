@@ -42,7 +42,7 @@ class CollectionRequest(DatesModel, models.Model):
     # Global data integrity settings
 
     # Maximum inputs for a single user for a single Instrument.
-    # NOTE: If the CollectedInput model's ``filtered_objects`` manager returns fewer items in its
+    # NOTE: If the CollectedInput queryset's ``filter_for_context()`` returns fewer items in its
     # queryset than specified in this setting, it will be impossible for this setting to be enforced
     # at runtime.
     max_instrument_inputs_per_user = models.PositiveIntegerField(blank=True, null=True)
@@ -167,12 +167,7 @@ class AbstractCollectedInput(DatesModel, models.Model):
     A ``data`` field must be supplied by a concrete sublcass.
     """
 
-    objects = models.Manager()
-
-    # This custom manager is where restricted queryset behavior is allowed in swapped models.  It
-    # is reasonable to subclass the provided custom QuerySet to indicate special filtering is meant
-    # for this custom manager attribute.
-    filtered_objects = managers.ContextualCollectedInputQuerySet.as_manager()
+    objects = managers.CollectedInputQuerySet.as_manager()
 
     # Note that these fk references MUST include this app's label, since otherwise, anyone
     # inheriting from this abstract base will end up with ForeignKey references that appear local.
