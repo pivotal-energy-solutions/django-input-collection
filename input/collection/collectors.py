@@ -12,6 +12,10 @@ from . import methods
 class Collector(object):
     __version__ = (0, 0, 0, 'dev')
     group = 'default'
+
+    # TODO: Streamline how this will have to work for targetting response_policy settings, too.
+    # I think it'll have to be something like a list of "match dicts" and the first one to match
+    # all settings for the instrument will be used.
     type_methods = None
     measure_methods = None
     specification_class = specifications.Specification
