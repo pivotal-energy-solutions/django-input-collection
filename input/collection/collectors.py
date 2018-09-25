@@ -1,3 +1,4 @@
+import importlib
 from inspect import isclass
 import json
 
@@ -8,7 +9,30 @@ from .base import get_data_for_suggested_responses
 from . import specifications
 from . import methods
 
-__all__ = ['Collector', 'BaseAPICollector']
+__all__ = ['Collector', 'BaseAPICollector', 'resolve_identifier', 'resolve_collector']
+
+
+def resolve_identifier(identifier):
+    # TODO: Support settings-driven identifier resolution.  Right now this is just pass-through.
+    return identifier
+
+
+def resolve_collector(dotted_path=None, identifier=None):
+    if not any((dotted_path, identifier)):
+        raise ValueError("Specify one of the following to trigger resolution: ['dotted_path', 'identifier']")
+
+    if identifier:
+        dotted_path = resolve_identifier(identifier)
+
+    path, name = dotted_path.rsplit('.', 1)
+    module = importlib.import_module(path)
+    collector_class = getattr(module, name)
+    if Collector not in collector_class.__mro__:
+        raise ValueError("Resolved reference is not a Collector! %r: %r" % (
+            dotted_path,
+            collector_class,
+        ))
+    return collector_class
 
 
 class Collector(object):
@@ -30,6 +54,11 @@ class Collector(object):
 
         self.type_methods = self.get_type_methods()
         self.measure_methods = self.get_measure_methods()
+
+    # Persistence internals
+    @property
+    def identifier(self):
+        return '.'.join((self.__class__.__module__, self.__class__.__name__))
 
     # Resolution utils
     def get_specification(self):
