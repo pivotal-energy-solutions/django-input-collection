@@ -97,6 +97,9 @@ var DjangoInputCollection = (function(){
         getRequestArgs: function(type, operation, context, payload) {
             var endpointInfo = api.specification.endpoints[type][operation];
             var url = utils.interpolate(endpointInfo.url, context);
+            if (payload !== undefined) {
+                payload.collector = api.specification.collector;
+            }
             return {
                 url: url,
                 method: endpointInfo.method.toLowerCase(),

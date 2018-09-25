@@ -13,12 +13,14 @@ class Specification(object):
     def data(self):
         """ Returns a JSON-safe spec for another tool to correctly supply inputs. """
         meta_info = self.get_meta()
+        identifier = self.collector.get_identifier()
         collection_request_info = model_to_dict(self.collector.collection_request)
         inputs_info = self.get_collected_inputs_info()
         instruments_info = self.get_instruments_info(inputs_info)
 
         info = {
             'meta': meta_info,
+            'collector': identifier,
             'collection_request': collection_request_info,
             'group': self.collector.group,
             'instruments_info': instruments_info,
@@ -132,6 +134,7 @@ class BaseAPISpecification(Specification):
 
     def get_api_info(self):
         return {
+            'collector': self.collector.get_identifier(),  # repeated from top-level spec
             'content_type': self.content_type,
             'endpoints': {},
         }
