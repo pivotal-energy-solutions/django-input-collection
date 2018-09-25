@@ -5,14 +5,17 @@ from input.collection import widgets
 
 lone_input_attrs = {
     'class': 'form-control',
+    'name': 'instrument-{instrument.id}',
     'placeholder': '(Enter answer)',
 }
 list_input_suggested_attrs = {
     'class': 'form-control',
+    'name': 'instrument-{instrument.id}',
 }
 list_input_other_attrs = {
     'id': 'instrument-{instrument.id}-other',
     'class': 'form-control list-group-item',
+    'name': 'instrument-{instrument.id}',
     'placeholder': '(Please specify)',
 }
 
