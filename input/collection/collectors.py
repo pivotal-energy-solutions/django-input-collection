@@ -1,4 +1,5 @@
 import importlib
+import hashlib
 from inspect import isclass
 import json
 
@@ -45,7 +46,9 @@ class Collector(object, metaclass=CollectorType):
     # Persistence internals
     @classmethod
     def get_identifier(cls):
-        return '.'.join((cls.__module__, cls.__name__))
+        path = '.'.join((cls.__module__, cls.__name__))
+        identifier = hashlib.sha256(path.encode()).hexdigest()
+        return identifier
 
     @classmethod
     def register(cls):
