@@ -1,6 +1,7 @@
 from django.db.models.query import QuerySet
 from django.db.models import Q, Max, OuterRef, Subquery
 
+__all__ = ['CollectedInputQuerySet', 'UserLatestCollectedInputQuerySet']
 
 
 class ContextualMixin(object):
