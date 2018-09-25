@@ -72,6 +72,17 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         fields = '__all__'
         exclude_write = ('collection_request', 'user')
 
+    def get_collector_identifier(self):
+        return self.context['request'].data.get('identifier')
+
+    def get_collector(self, collection_request, **context):
+        if not hasattr(self, '_collector'):
+            identifier = self.get_collector_identifier()
+            Collector = collection.Collector.resolve(identifier)
+            collector = Collector(collection_request, **context)
+            self._collector = collector
+        return self._collector
+
     def validate(self, data):
         instrument = data['instrument']
 
@@ -80,10 +91,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         context = {
             'user': data['user'],
         }
-
-        identifier = 'testproj.core.views.collection.PollTemplateViewCollector'  # FIXME
-        Collector = collection.Collector.resolve(identifier)
-        collector = Collector(instrument.collection_request, **context)
+        collector = self.get_collector(instrument.collection_request, **context)
 
         is_unavailable = (not collector.is_instrument_allowed(instrument))
         if is_unavailable:
