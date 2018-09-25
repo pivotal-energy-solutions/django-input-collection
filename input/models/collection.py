@@ -4,7 +4,6 @@ from django.conf import settings
 
 import swapper
 
-from .. import collection
 from . import managers
 from .base import DatesModel
 
@@ -190,63 +189,6 @@ class AbstractCollectedInput(DatesModel, models.Model):
 
     def __str__(self):
         return str(self.data)
-
-    @classmethod
-    def allowed_for_instrument(cls, instrument, **context):
-        """
-        Returns True when the given instrument passes checks against flags on its CollectionRequest.
-        """
-
-        manager = instrument.collectedinput_set(manager='filtered_objects')
-
-        user = context.get('user')
-        if user and not isinstance(user, AnonymousUser):
-            user_max = instrument.collection_request.max_instrument_inputs_per_user
-            if user_max is not None:
-                existing_inputs = manager.filter_for_context(**context)
-                input_count = existing_inputs.count()
-                if input_count >= user_max:
-                    return False
-
-        total_max = instrument.collection_request.max_instrument_inputs
-        if total_max is not None:
-            no_user_context = dict(context, user=None)
-            existing_inputs = manager.filter_for_context(**no_user_context)
-            input_count = existing_inputs.count()
-            if input_count >= total_max:
-                return False
-
-        return True
-
-    @classmethod
-    def clean_data_for_instrument(cls, instrument, data, **context):
-        # Clean coded ids
-        has_suggested_responses = instrument.suggested_responses.exists()
-        if has_suggested_responses:
-            is_single = (not instrument.response_policy.multiple)
-
-            if is_single:
-                data = [data]
-
-            data = collection.get_data_for_suggested_responses(instrument, *data)
-
-            if is_single:
-                data = data[0]
-
-        return data
-
-    # These default implementations trust the type to match whatever modelfield is in use for the
-    # ``data`` field on the concrete model.
-    def serialize_data(self, data):
-        """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
-        return data
-
-    def deserialize_data(self, data):
-        """
-        Coerces retrieved ``data`` from the active input model (CollectedInput or swapped) to an
-        appropriate object for its type.
-        """
-        return data
 
 
 MODEL_SWAP_SETTING = swapper.swappable_setting('input', 'CollectedInput')
