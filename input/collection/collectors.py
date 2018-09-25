@@ -19,12 +19,15 @@ registry = {}
 class CollectorType(type):
     def __new__(cls, name, bases, attrs):
         cls = super(CollectorType, cls).__new__(cls, name, bases, attrs)
-        cls.register()
+        if not attrs.get('__noregister__', False):
+            cls.register()
         return cls
 
 
 class Collector(object, metaclass=CollectorType):
     __version__ = (0, 0, 0, 'dev')
+
+    __noregister__ = True
 
     specification_class = specifications.Specification
     group = 'default'
@@ -178,4 +181,6 @@ class Collector(object, metaclass=CollectorType):
 
 
 class BaseAPICollector(Collector):
+    __noregister__ = True
+
     specification_class = specifications.BaseAPISpecification
