@@ -38,27 +38,27 @@ class Collector(object):
             self._measure_methods = self.measure_methods or {}
         return self._measure_methods
 
-    def get_widget_kwargs(self, instrument):
+    def get_method_kwargs(self, instrument):
         kwargs = {
             
         }
         return kwargs
 
-    def get_widget(self, instrument):
-        widget = methods.InputMethod
+    def get_method(self, instrument):
+        method = methods.InputMethod
 
         if instrument.measure_id in self.measure_methods:
-            widget = self.measure_methods[instrument.measure_id]
+            method = self.measure_methods[instrument.measure_id]
         elif instrument.type_id in self.type_methods:
-            widget = self.type_methods[instrument.type_id]
+            method = self.type_methods[instrument.type_id]
 
-        if isclass(widget):
-            widget = widget()
+        if isclass(method):
+            method = method()
 
-        widget_kwargs = self.get_widget_kwargs(instrument)
-        widget.update_kwargs(**widget_kwargs)
+        method_kwargs = self.get_method_kwargs(instrument)
+        method.update_kwargs(**method_kwargs)
 
-        return widget
+        return method
 
     # Main properties
     @property
@@ -123,9 +123,9 @@ class Collector(object):
             if is_single:
                 data = data[0]
 
-        # Let the widget clean and do type coercion
-        widget = self.get_widget(instrument)
-        data = widget.clean(data)
+        # Let the method clean and do type coercion
+        method = self.get_method(instrument)
+        data = method.clean(data)
 
         return data
 

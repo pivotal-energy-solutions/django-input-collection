@@ -134,11 +134,11 @@
 
             <div class="card mt-3 mb-3">
                 {% if instrument.response_info.suggested_responses %}
-                    {{ instrument.response_info.widget.template }}
+                    {{ instrument.response_info.method.template }}
                 {% else %}
                     <div class="card-body">
                         <div class="input-group mb-3">
-                            {{ instrument.response_info.widget.template }}
+                            {{ instrument.response_info.method.template }}
                         </div>
                     </div>
                 {% endif %}
@@ -151,7 +151,7 @@
                     </div>
 
                     <div class="text-monospace">
-                        {# {{ instrument.response_info.widget }} #}
+                        {# {{ instrument.response_info.method }} #}
                         {% for input_info in instrument.collected_inputs %}
                             {{ input_info.data }},
                         {% endfor %}

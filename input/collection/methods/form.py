@@ -137,12 +137,12 @@ class FormMethod(InputMethod):
         widget_templates = data['widget_template_name'] or {}
         option_templates = data['option_template_name'] or {}
         for name, field in form.fields.items():
-            sub_widget = FormFieldMethod(**{
+            sub_method = FormFieldMethod(**{
                 'formfield': field,
                 'widget_template_name': widget_templates.get(name),
                 'option_template_name': option_templates.get(name),
             })
-            data['fields'][name] = sub_widget.serialize(instrument)
+            data['fields'][name] = sub_method.serialize(instrument)
 
         if data['template_name']:
             data['template'] = render_to_string(data['template_name'], context={

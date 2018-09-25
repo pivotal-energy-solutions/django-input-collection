@@ -20,7 +20,7 @@ class PollTemplateViewCollector(collection.RestFrameworkCollector):
         )
         return specification
 
-    def get_widget(self, instrument):
+    def get_method(self, instrument):
         has_suggested_responses = instrument.suggested_responses.exists()
         policy = instrument.response_policy.get_flags()
 

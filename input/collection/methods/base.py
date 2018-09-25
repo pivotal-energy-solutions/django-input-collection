@@ -41,7 +41,7 @@ class InputMethod(UserDict):
             attr = getattr(self, k, missing)
             if attr is missing or k.startswith('_') or callable(attr):
                 if raise_:
-                    raise AttributeError("Invalid attribute %r for widget %r" % (k, self))
+                    raise AttributeError("Invalid attribute %r for method %r" % (k, self))
                 continue
             setattr(self, k, v)
 

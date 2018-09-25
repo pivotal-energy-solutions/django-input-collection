@@ -97,12 +97,12 @@ class Specification(object):
         """ Returns input specifications for data this instruments wants to collect. """
         policy_info = model_to_dict(instrument.response_policy)
         suggested_responses_info = self.get_suggested_responses_info(instrument)
-        widget_info = self.get_widget_info(instrument)
+        method_info = self.get_method_info(instrument)
 
         input_info = {
             'response_policy': policy_info,
             'suggested_responses': suggested_responses_info,
-            'widget': widget_info,
+            'method': method_info,
         }
         return input_info
 
@@ -111,15 +111,15 @@ class Specification(object):
         suggested_responses_info = list(map(model_to_dict, queryset))
         return suggested_responses_info
 
-    def get_widget_info(self, instrument):
+    def get_method_info(self, instrument):
         """
-        Resolve a widget for the given instrument based on self.measure_widgets, or
-        self.type_widgets, whichever is resolvable first.
+        Resolve a method for the given instrument based on self.measure_methods, or
+        self.type_methods, whichever is resolvable first.
         """
 
-        widget = self.collector.get_widget(instrument)
-        widget_info = widget.serialize(instrument)
-        return widget_info
+        method = self.collector.get_method(instrument)
+        method_info = method.serialize(instrument)
+        return method_info
 
 
 class BaseAPISpecification(Specification):
