@@ -27,13 +27,13 @@ class PollTemplateViewCollector(collection.RestFrameworkCollector):
         if has_suggested_responses:
             if policy['multiple']:
                 if policy['restrict']:
-                    return methods.ListChoiceMultipleWidget()
+                    return methods.ListChoiceMultipleMethod()
                 else:
-                    return methods.ListChoiceMultipleOtherWidget()
+                    return methods.ListChoiceMultipleOtherMethod()
             else:
                 if policy['restrict']:
-                    return methods.ListChoiceSingleWidget()
+                    return methods.ListChoiceSingleMethod()
                 else:
-                    return methods.ListChoiceSingleOtherWidget()
+                    return methods.ListChoiceSingleOtherMethod()
         else:
-            return methods.LoneTextWidget()
+            return methods.LoneTextMethod()

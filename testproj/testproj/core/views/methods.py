@@ -30,19 +30,19 @@ LIST_OPTION_TEMPLATE_NAME = 'poll/methods/list_option.html'
 
 
 # Open response
-class LoneTextWidget(methods.FormFieldMethod):
+class LoneTextMethod(methods.FormFieldMethod):
     formfield = forms.CharField(widget=forms.TextInput(attrs=lone_input_attrs))
 
 
 # Multiple choice
-class ListChoiceSingleWidget(methods.FormFieldMethod):
+class ListChoiceSingleMethod(methods.FormFieldMethod):
     formfield = forms.CharField(widget=forms.RadioSelect(attrs=list_input_suggested_attrs))
     widget_template_name = LIST_FIELD_TEMPLATE_NAME
     option_template_name = LIST_OPTION_TEMPLATE_NAME
 
 
 # Multiple choice, multiple selection
-class ListChoiceMultipleWidget(methods.FormFieldMethod):
+class ListChoiceMultipleMethod(methods.FormFieldMethod):
     formfield = forms.CharField(widget=forms.CheckboxSelectMultiple(attrs=list_input_suggested_attrs))
     widget_template_name = LIST_FIELD_TEMPLATE_NAME
     option_template_name = LIST_OPTION_TEMPLATE_NAME
@@ -54,7 +54,7 @@ class ListChoiceSingleOtherForm(forms.Form):
     custom = forms.CharField(widget=forms.TextInput(attrs=list_input_other_attrs))
 
 
-class ListChoiceSingleOtherWidget(methods.FormMethod):
+class ListChoiceSingleOtherMethod(methods.FormMethod):
     form_class = ListChoiceSingleOtherForm
     template_name = LIST_FORM_TEMPLATE_NAME
     widget_template_name = {
@@ -71,7 +71,7 @@ class ListChoiceMultipleOtherForm(forms.Form):
     custom = forms.CharField(widget=forms.TextInput(attrs=list_input_other_attrs))
 
 
-class ListChoiceMultipleOtherWidget(methods.FormMethod):
+class ListChoiceMultipleOtherMethod(methods.FormMethod):
     form_class = ListChoiceMultipleOtherForm
     template_name = LIST_FORM_TEMPLATE_NAME
     widget_template_name = {
