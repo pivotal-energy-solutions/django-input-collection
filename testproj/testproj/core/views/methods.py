@@ -1,6 +1,6 @@
 from django import forms
 
-from input.collection import widgets
+from input.collection import methods
 
 
 lone_input_attrs = {
@@ -21,28 +21,28 @@ list_input_other_attrs = {
 
 
 # Simple Field version
-LIST_FIELD_TEMPLATE_NAME = 'poll/widgets/list_field.html'
+LIST_FIELD_TEMPLATE_NAME = 'poll/methods/list_field.html'
 
 # Complex Form version
-LIST_FORM_TEMPLATE_NAME = 'poll/widgets/list_form.html'
-LIST_WIDGET_TEMPLATE_NAME = 'poll/widgets/list_choices.html'
-LIST_OPTION_TEMPLATE_NAME = 'poll/widgets/list_option.html'
+LIST_FORM_TEMPLATE_NAME = 'poll/methods/list_form.html'
+LIST_WIDGET_TEMPLATE_NAME = 'poll/methods/list_choices.html'
+LIST_OPTION_TEMPLATE_NAME = 'poll/methods/list_option.html'
 
 
 # Open response
-class LoneTextWidget(widgets.FormFieldMethod):
+class LoneTextWidget(methods.FormFieldMethod):
     formfield = forms.CharField(widget=forms.TextInput(attrs=lone_input_attrs))
 
 
 # Multiple choice
-class ListChoiceSingleWidget(widgets.FormFieldMethod):
+class ListChoiceSingleWidget(methods.FormFieldMethod):
     formfield = forms.CharField(widget=forms.RadioSelect(attrs=list_input_suggested_attrs))
     widget_template_name = LIST_FIELD_TEMPLATE_NAME
     option_template_name = LIST_OPTION_TEMPLATE_NAME
 
 
 # Multiple choice, multiple selection
-class ListChoiceMultipleWidget(widgets.FormFieldMethod):
+class ListChoiceMultipleWidget(methods.FormFieldMethod):
     formfield = forms.CharField(widget=forms.CheckboxSelectMultiple(attrs=list_input_suggested_attrs))
     widget_template_name = LIST_FIELD_TEMPLATE_NAME
     option_template_name = LIST_OPTION_TEMPLATE_NAME
@@ -54,7 +54,7 @@ class ListChoiceSingleOtherForm(forms.Form):
     custom = forms.CharField(widget=forms.TextInput(attrs=list_input_other_attrs))
 
 
-class ListChoiceSingleOtherWidget(widgets.FormMethod):
+class ListChoiceSingleOtherWidget(methods.FormMethod):
     form_class = ListChoiceSingleOtherForm
     template_name = LIST_FORM_TEMPLATE_NAME
     widget_template_name = {
@@ -71,7 +71,7 @@ class ListChoiceMultipleOtherForm(forms.Form):
     custom = forms.CharField(widget=forms.TextInput(attrs=list_input_other_attrs))
 
 
-class ListChoiceMultipleOtherWidget(widgets.FormMethod):
+class ListChoiceMultipleOtherWidget(methods.FormMethod):
     form_class = ListChoiceMultipleOtherForm
     template_name = LIST_FORM_TEMPLATE_NAME
     widget_template_name = {
