@@ -135,37 +135,6 @@
             <div class="card mt-3 mb-3">
                 {% if instrument.response_info.suggested_responses %}
                     {{ instrument.response_info.widget.template }}
-                    {# <ul class="list-group list-group-flush btn-group-toggle" data-toggle="buttons"> #}
-                    {#     {% for suggested_response in instrument.response_info.suggested_responses %} #}
-                    {#         <label class="btn btn-outline-primary list-group-item text-left"> #}
-                    {#             <input name="instrument-{{ instrument.id }}" #}
-                    {#                    value="{{ suggested_response.id }}" #}
-                    {#                    data-suggested #}
-                    {#                    {% if instrument.response_info.response_policy.multiple %} #}
-                    {#                    type="checkbox" #}
-                    {#                    {% else %} #}
-                    {#                    type="radio" #}
-                    {#                    {% endif %} #}
-                    {#                    > #}
-                    {#             {{ suggested_response.data }} #}
-                    {#         </label> #}
-                    {#     {% endfor %} #}
-                    {#     {% if not instrument.response_info.response_policy.restrict %} #}
-                    {#         <label class="btn btn-outline-primary list-group-item text-left" #}
-                    {#                for="instrument-{{ instrument.id }}-other"> #}
-                    {#             <input name="instrument-{{ instrument.id }}" #}
-                    {#                    data-source="#instrument-{{ instrument.id }}-other" #}
-                    {#                    {% if instrument.response_info.response_policy.multiple %} #}
-                    {#                    type="checkbox" #}
-                    {#                    {% else %} #}
-                    {#                    type="radio" #}
-                    {#                    {% endif %} #}
-                    {#                    > #}
-                    {#             Other #}
-                    {#         </label> #}
-                    {#         {{ instrument.response_info.widget.template }} #}
-                    {#     {% endif %} #}
-                    {# </ul> #}
                 {% else %}
                     <div class="card-body">
                         <div class="input-group mb-3">
