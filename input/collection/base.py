@@ -16,7 +16,7 @@ def store(instrument, data, instance=None, **model_kwargs):
 
     # Resolve Collector class for data prep
     identifier = 'testproj.core.views.collection.PollTemplateViewCollector'  # FIXME
-    Collector = collectors.resolve_collector(identifier=identifier)
+    Collector = collectors.Collector.resolve(identifier)
 
     context = {
         'user': model_kwargs['user'],

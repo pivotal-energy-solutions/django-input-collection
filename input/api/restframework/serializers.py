@@ -82,7 +82,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         }
 
         identifier = 'testproj.core.views.collection.PollTemplateViewCollector'  # FIXME
-        Collector = collection.resolve_collector(identifier=identifier)
+        Collector = collection.Collector.resolve(identifier)
         collector = Collector(instrument.collection_request, **context)
 
         is_unavailable = (not collector.is_instrument_allowed(instrument, **context))
