@@ -1,3 +1,5 @@
+import collections
+
 from django.db.models import Model
 
 __all__ = ['get_data_for_suggested_responses', 'test_condition_case']
