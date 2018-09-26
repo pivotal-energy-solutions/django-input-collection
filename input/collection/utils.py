@@ -45,7 +45,7 @@ def test_condition_case(instrument, match_type, data=None, **context):
     input_data = list(instrument.collectedinput_set.filter_for_context(**context) \
                                 .values_list('data', flat=True))
 
-    status = matcher(input_data, test_data=data, instrument=instrument)
+    status = matcher(input_data, match_data=data, instrument=instrument)
 
     return status
 
@@ -57,7 +57,7 @@ class CaseMatchers(object):
     def none(self, data, **kwargs):
         return not data
 
-    def all_suggested(self, data, test_data, instrument):
+    def all_suggested(self, data, match_data, instrument):
         if not len(data):
             return False
         if not isinstance(data, list):
@@ -66,13 +66,13 @@ class CaseMatchers(object):
         all_suggested = set(data).issubset(set(suggested_data))
         return all_suggested
 
-    def one_suggested(self, data, test_data, instrument):
+    def one_suggested(self, data, match_data, instrument):
         if not isinstance(data, list):
             data = [data]
         is_suggested = instrument.suggested_responses.filter(data__in=data).exists()
         return is_suggested
 
-    def all_custom(self, data, test_data, instrument):
+    def all_custom(self, data, match_data, instrument):
         if not len(data):
             return False
         if not isinstance(data, list):
@@ -81,23 +81,23 @@ class CaseMatchers(object):
         overlaps = set(data).intersection(suggested_data)
         return len(overlaps) == 0
 
-    def one_custom(self, data, test_data, instrument):
+    def one_custom(self, data, match_data, instrument):
         if not isinstance(data, list):
             data = [data]
         is_not_suggested = (not instrument.suggested_responses.filter(data__in=data).exists())
         return is_not_suggested
 
-    def match(self, data, test_data, **kwargs):
-        return data == test_data
+    def match(self, data, match_data, **kwargs):
+        return data == match_data
 
-    def mismatch(self, data, test_data, **kwargs):
-        return data != test_data
+    def mismatch(self, data, match_data, **kwargs):
+        return data != match_data
 
-    def contains(self, data, test_data, **kwargs):
-        return test_data in data
+    def contains(self, data, match_data, **kwargs):
+        return match_data in data
 
-    def not_contains(self, data, test_data, **kwargs):
-        return test_data not in data
+    def not_contains(self, data, match_data, **kwargs):
+        return match_data not in data
 
 
 matchers = CaseMatchers()
