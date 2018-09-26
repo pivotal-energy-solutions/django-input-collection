@@ -38,7 +38,7 @@ def get_data_for_suggested_responses(instrument, *responses):
     return values
 
 
-def test_condition_case(instrument_or_raw_values, match_type, data=None,
+def test_condition_case(instrument_or_raw_values, match_type, match_data=None,
                         suggested_values=None, **context):
     """
     Routes a ``match_type`` condition to the appropriate test function, given an instrument's active
@@ -72,7 +72,7 @@ def test_condition_case(instrument_or_raw_values, match_type, data=None,
         suggested_values = suggested_values or []
 
     matcher = matchers.resolve(match_type)
-    status = matcher(values, suggested_values=suggested_values, match_data=data)
+    status = matcher(values, suggested_values=suggested_values, match_data=match_data)
 
     return status
 

@@ -98,7 +98,7 @@ class Case(DatesModel, models.Model):
         ('contains', "Input contains this data"),
         ('not-contains', "Input does not contain this data"),
     ))
-    data = models.CharField(max_length=512)
+    match_data = models.CharField(max_length=512)
 
     # Also available:
     #
@@ -110,12 +110,11 @@ class Case(DatesModel, models.Model):
     def get_flags(self):
         return {
             'match_type': self.match_type,
-            'data': self.data,
+            'match_data': self.match_data,
         }
 
     def test(self, instrument, **context):
         from ..collection.utils import test_condition_case
 
-        kwargs = self.get_flags()
-        kwargs.update(context)
-        return test_condition_case(instrument, match_data=kwargs.pop('data'), **kwargs)
+        flags = self.get_flags()
+        return test_condition_case(instrument, **flags, **context)
