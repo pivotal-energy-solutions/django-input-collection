@@ -9,7 +9,7 @@ from .base import DatesModel
 
 __all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrumentType',
            'CollectionInstrument', 'ResponsePolicy', 'SuggestedResponse', 'AbstractCollectedInput',
-           'CollectedInput']
+           'CollectedInput', 'MODEL_SWAP_SETTING']
 
 
 class Measure(DatesModel, models.Model):
