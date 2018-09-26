@@ -77,10 +77,14 @@ def test_condition_case(instrument_or_raw_values, match_type, data=None,
 
 class CaseMatchers(object):
     def any(self, data, **kwargs):
-        return bool(data)
+        if not isinstance(data, list):
+            data = [data]
+        return any(data)
 
     def none(self, data, **kwargs):
-        return not data
+        if not isinstance(data, list):
+            data = [data]
+        return not any(data)
 
     def all_suggested(self, data, suggested_values, **kwargs):
         if not len(data):
