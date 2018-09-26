@@ -24,3 +24,8 @@ INPUT_COLLECTEDINPUT_MODEL = 'core.CollectedInput_MySQL_JSON'
 #     'PASSWORD': env.get_variable('DATABASE_PASSWORD', ''),
 # }
 # INPUT_COLLECTEDINPUT_MODEL = 'testproj.CollectedInput_Postgres_JSON'
+
+
+import sys
+if sys.argv[1] == 'test':
+    INPUT_COLLECTEDINPUT_MODEL = 'input.CollectedInput'
