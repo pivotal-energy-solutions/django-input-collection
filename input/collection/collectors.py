@@ -5,9 +5,9 @@ import json
 
 from django.contrib.auth.models import AnonymousUser
 
-from .. import models
 from ..encoders import CollectionSpecificationJSONEncoder
-from .base import get_data_for_suggested_responses
+from .. import models
+from . import utils
 from . import specifications
 from . import methods
 
@@ -158,7 +158,7 @@ class Collector(object, metaclass=CollectorType):
             if is_single:
                 data = [data]
 
-            data = get_data_for_suggested_responses(instrument, *data)
+            data = utils.get_data_for_suggested_responses(instrument, *data)
 
             if is_single:
                 data = data[0]

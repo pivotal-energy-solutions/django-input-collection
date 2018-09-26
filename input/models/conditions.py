@@ -114,7 +114,7 @@ class Case(DatesModel, models.Model):
         }
 
     def test(self, instrument, **context):
-        from ..collection import test_condition_case
+        from ..collection.utils import test_condition_case
 
         kwargs = self.get_flags()
         kwargs.update(context)
