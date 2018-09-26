@@ -93,8 +93,8 @@ class CaseMatchers(object):
     def one_suggested(self, data, suggested_values, **kwargs):
         if not isinstance(data, list):
             data = [data]
-        is_suggested = (data in suggested_values)
-        return is_suggested
+        has_suggested = (not set(data).isdisjoint(set(suggested_values)))
+        return has_suggested
 
     def all_custom(self, data, suggested_values, **kwargs):
         if not len(data):
@@ -107,8 +107,8 @@ class CaseMatchers(object):
     def one_custom(self, data, suggested_values, **kwargs):
         if not isinstance(data, list):
             data = [data]
-        is_not_suggested = (data not in suggested_values)
-        return is_not_suggested
+        overlaps = set(data).difference(set(suggested_values))
+        return len(overlaps) > 0
 
     def match(self, data, match_data, **kwargs):
         return data == match_data
