@@ -4,14 +4,10 @@ from django.db.models import Q, Max, OuterRef, Subquery
 __all__ = ['CollectedInputQuerySet', 'UserLatestCollectedInputQuerySet']
 
 
-class ContextualMixin(object):
+class CollectedInputQuerySet(QuerySet):
     """ Provides a clear hook for doing special operations with a context. """
     def filter_for_context(self, **context):
         return self.filter(**context)
-
-
-class CollectedInputQuerySet(ContextualMixin, QuerySet):
-    pass
 
 
 class UserLatestCollectedInputQuerySet(CollectedInputQuerySet):
