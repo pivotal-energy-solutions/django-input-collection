@@ -51,4 +51,3 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
 
     policy = ResponsePolicy.objects.create(**create_kwargs)
     return policy
-
