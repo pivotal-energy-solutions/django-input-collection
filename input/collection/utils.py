@@ -53,7 +53,8 @@ def test_condition_case(instrument_or_raw_values, match_type, data=None,
     be given, or else will be treated as an empty list and likely produce unexpected behavior.
     """
 
-    if isinstance(instrument_or_raw_values, models.Model):
+    if isinstance(instrument_or_raw_values, Model):
+        instrument = instrument_or_raw_values
         values = list(instrument.collectedinput_set.filter_for_context(**context) \
                                 .values_list('data', flat=True))
         if not suggested_values:
