@@ -62,7 +62,11 @@ def test_condition_case(instrument_or_raw_values, match_type, data=None,
             # end up hitting the database.
             suggested_values = instrument.suggested_responses.values_list('data', flat=True)
     else:
-        values = list(instrument_or_raw_values)
+        values = instrument_or_raw_values
+        if isinstance(values, str) or not isinstance(values, collections.Iterable):
+            values = [values]
+        else:
+            values = list(values)
         suggested_values = suggested_values or []
 
     matcher = getattr(matchers, match_type.replace('-', '_'))
