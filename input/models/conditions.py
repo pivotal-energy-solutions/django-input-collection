@@ -118,4 +118,4 @@ class Case(DatesModel, models.Model):
 
         kwargs = self.get_flags()
         kwargs.update(context)
-        return test_condition_case(instrument, **kwargs)
+        return test_condition_case(instrument, match_data=kwargs.pop('data'), **kwargs)
