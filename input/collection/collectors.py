@@ -123,7 +123,7 @@ class Collector(object, metaclass=CollectorType):
         """
         manager = instrument.collectedinput_set
 
-        user = self.context.get('user')
+        user = self.context['user']
         if user and not isinstance(user, AnonymousUser):
             user_max = instrument.collection_request.max_instrument_inputs_per_user
             if user_max is not None:
