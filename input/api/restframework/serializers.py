@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.contrib.auth.models import AnonymousUser
 
 from rest_framework import serializers
 
@@ -86,6 +87,8 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         instrument = data['instrument']
 
         user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            user = None
         data['user'] = user
 
         context = {
