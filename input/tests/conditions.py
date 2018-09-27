@@ -8,7 +8,7 @@ from . import factories
 CollectedInput = models.get_input_model()
 
 
-class TestCoreMatcher(TestCase):
+class CoreMatcherTests(TestCase):
     """ Verifies behavior of the underlying ``collection.utils.test_condition_case`` function. """
 
     def test_matcher_resolver(self):
@@ -104,7 +104,7 @@ class TestCoreMatcher(TestCase):
         self.assertEqual(test_condition_case(instrument, 'one-suggested', suggested_values=['OVERRIDDEN']), False)
 
 
-class TestMatchTypes(TestCase):
+class MatchTypesTests(TestCase):
     """ Verifies behavior of the individual matchers. """
     def test_match_type_any(self):
         self.assertEqual(matchers.any('foo'), True)
@@ -211,7 +211,7 @@ class TestMatchTypes(TestCase):
         self.assertEqual(matchers.not_contains(['xfooxbarx'], match_data='foo'), False)
 
 
-class TestSingleConditionGroupRequirementTypes(TestCase):
+class SingleConditionGroupRequirementTypesTests(TestCase):
     def test_group_cases_requirement_type_all_pass(self):
         """ Verifies the AND requirement for a group with a pair of cases. """
         group = factories.ConditionGroupFactory.create(**{
@@ -303,7 +303,7 @@ class TestSingleConditionGroupRequirementTypes(TestCase):
         self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
 
 
-class TestStackedConditionGroupRequirementTypes(TestCase):
+class StackedConditionGroupRequirementTypesTests(TestCase):
     def test_group_child_groups_requirement_type_all_pass(self):
         """ Verifies the AND requirement for a group with subgroups. """
         group = factories.ConditionGroupFactory.create(**{
@@ -458,7 +458,7 @@ class TestStackedConditionGroupRequirementTypes(TestCase):
         self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
 
 
-class TestCondition(TestCase):
+class ConditionTests(TestCase):
     def test_condition_gets_values_from_parent_instrument(self):
         """
         Verifies that a Condition on a specific Instrument gathers the required data to for the
