@@ -159,13 +159,18 @@ class Collector(object, metaclass=CollectorType):
         if not allow_multiple and isinstance(data, list):
             raise ValidationError("Multiple inputs are not allowed")
 
+        disallow_custom = policy_flags['restrict']
+
         # Clean coded ids if needed
-        has_suggested_responses = instrument.suggested_responses.exists()
-        if has_suggested_responses:
+        suggested_values = set(instrument.suggested_responses.values_list('data', flat=True))
+        if suggested_values:
             is_single = (not policy_flags['multiple'])
 
             if is_single:
                 data = [data]
+
+            if disallow_custom and not utils.matchers.all_suggested(data, suggested_values):
+                raise ValidationError("Inputs must be chosen from the suggested responses")
 
             data = utils.get_data_for_suggested_responses(instrument, *data)
 
