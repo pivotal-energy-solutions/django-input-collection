@@ -132,4 +132,4 @@ class CaseFactory(factory.django.DjangoModelFactory):
 
     nickname = factory.Sequence(lambda n: 'Case %d' % n)
     match_type = 'any'
-    data = ''
+    match_data = ''
