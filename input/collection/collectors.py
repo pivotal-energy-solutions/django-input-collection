@@ -121,16 +121,18 @@ class Collector(object, metaclass=CollectorType):
         """
         manager = instrument.collectedinput_set
 
+        request_flags = instrument.collection_request.get_flags()
+
         user = self.context['user']
         if user and not isinstance(user, AnonymousUser):
-            user_max = instrument.collection_request.max_instrument_inputs_per_user
+            user_max = request_flags['max_instrument_inputs_per_user']
             if user_max is not None:
                 existing_inputs = manager.filter_for_context(**self.context)
                 input_count = existing_inputs.count()
                 if input_count >= user_max:
                     return False
 
-        total_max = instrument.collection_request.max_instrument_inputs
+        total_max = request_flags['max_instrument_inputs']
         if total_max is not None:
             no_user_context = self.context.copy()
             no_user_context.pop('user')
@@ -149,10 +151,12 @@ class Collector(object, metaclass=CollectorType):
         storage on the active CollectedInput model.
         """
 
+        policy_flags = instrument.response_policy.get_flags()
+
         # Clean coded ids if needed
         has_suggested_responses = instrument.suggested_responses.exists()
         if has_suggested_responses:
-            is_single = (not instrument.response_policy.multiple)
+            is_single = (not policy_flags['multiple'])
 
             if is_single:
                 data = [data]
