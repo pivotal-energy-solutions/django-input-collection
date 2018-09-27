@@ -58,12 +58,12 @@ class ConditionGroup(DatesModel, models.Model):
             'requirement_type': self.requirement_type,
         }
 
-    def test(self, instrument_or_raw_values, **context):
+    def test(self, instrument_or_raw_values, **kwargs):
         has_failed = False
         has_passed = False
         testables = self.child_groups.all() or self.cases.all()
         for item in testables:
-            if item.test(instrument_or_raw_values, **context):
+            if item.test(instrument_or_raw_values, **kwargs):
                 has_passed = True
             else:
                 has_failed = True
@@ -113,8 +113,8 @@ class Case(DatesModel, models.Model):
             'match_data': self.match_data,
         }
 
-    def test(self, instrument_or_raw_values, **context):
+    def test(self, instrument_or_raw_values, **kwargs):
         from ..collection.utils import test_condition_case
 
         flags = self.get_flags()
-        return test_condition_case(instrument_or_raw_values, **flags, **context)
+        return test_condition_case(instrument_or_raw_values, **flags, **kwargs)
