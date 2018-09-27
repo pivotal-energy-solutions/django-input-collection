@@ -127,10 +127,12 @@ class CaseMatchers(object):
         return data != match_data
 
     def contains(self, data, match_data, **kwargs):
-        return match_data in data
+        data = list_wrap(data)
+        return any(map(lambda d: match_data in d, data))
 
     def not_contains(self, data, match_data, **kwargs):
-        return match_data not in data
+        data = list_wrap(data)
+        return any(map(lambda d: match_data not in d, data))
 
 
 matchers = CaseMatchers()
