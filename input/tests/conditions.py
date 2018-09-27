@@ -530,29 +530,16 @@ class TestCondition(TestCase):
             }),
         })
 
-        def set_data(parent_id, data):
-            models.CollectedInput.objects.filter(instrument_id=parent_id).update(data=data)
+        def test_conditions(*input_pairs):
+            for id, data in input_pairs:
+                models.CollectedInput.objects.filter(id=id).update(data=data)
+            return instrument.test_conditions()
 
-        factories.CollectedInputFactory.create(instrument__id=1, data='foo')
-        factories.CollectedInputFactory.create(instrument__id=2, data='bar')
-        self.assertEqual(instrument.test_conditions(), True)
-
-        set_data(1, 'xfoox')
-        set_data(2, 'xbarx')
-        self.assertEqual(instrument.test_conditions(), True)
-
-        set_data(1, 'xfooxbarx')
-        set_data(2, 'x')
-        self.assertEqual(instrument.test_conditions(), False)
-
-        set_data(1, 'x')
-        set_data(2, 'xbarxfoox')
-        self.assertEqual(instrument.test_conditions(), False)
-
-        set_data(1, 'x')
-        set_data(2, 'xbarxfoox')
-        self.assertEqual(instrument.test_conditions(), False)
-
-        set_data(1, 'x')
-        set_data(2, 'x')
-        self.assertEqual(instrument.test_conditions(), False)
+        factories.CollectedInputFactory.create(id=1, instrument__id=1, data='dummy')
+        factories.CollectedInputFactory.create(id=2, instrument__id=2, data='dummy')
+        self.assertEqual(test_conditions([1, 'foo'], [2, 'bar']), True)
+        self.assertEqual(test_conditions([1, 'xfoox'], [2, 'xbarx']), True)
+        self.assertEqual(test_conditions([1, 'xfooxbarx'], [2, 'x']), False)
+        self.assertEqual(test_conditions([1, 'x'], [2, 'xbarxfoox']), False)
+        self.assertEqual(test_conditions([1, 'x'], [2, 'xbarxfoox']), False)
+        self.assertEqual(test_conditions([1, 'x'], [2, 'x']), False)
