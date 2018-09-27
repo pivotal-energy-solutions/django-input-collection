@@ -16,7 +16,11 @@ class TestCoreMatcher(TestCase):
         self.assertEqual(matchers.resolve('all_custom'), matchers.all_custom)
 
     def test_matcher_errors_on_bad_match_type(self):
-        pass
+        with self.assertRaises(AttributeError):
+            matchers.resolve('foo')
+
+        with self.assertRaises(AttributeError):
+            test_condition_case('data', match_type='foo')
 
     def test_matcher_accepts_bare_input(self):
         """ Verifies that a single data input arg is cast to a list. """
