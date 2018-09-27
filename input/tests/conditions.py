@@ -456,3 +456,103 @@ class TestStackedConditionGroupRequirementTypes(TestCase):
         self.assertEqual(group.test('xbarx', suggested_values=['bar']), False)
         self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), False)
         self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
+
+
+class TestCondition(TestCase):
+    def test_condition_gets_values_from_parent_instrument(self):
+        """
+        Verifies that a Condition on a specific Instrument gathers the required data to for the
+        ConditionGroups to perform its assessment.
+        """
+        condition = factories.ConditionFactory.create(**{
+            'parent_instrument': factories.CollectionInstrumentFactory.create(**{
+                'id': 1,
+                'collection_request__id': 1,
+            }),
+            'instrument': factories.CollectionInstrumentFactory.create(**{
+                'id': 2,
+                'collection_request__id': 1,
+            }),
+            'condition_group': factories.ConditionGroupFactory.create(**{
+                'requirement_type': 'all-pass',
+                'cases': [
+                    factories.CaseFactory.create(match_type='all-custom'),
+                ],
+            }),
+        })
+
+        input = factories.CollectedInputFactory.create(**{
+            'instrument__id': 1,
+            'data': 'foo',
+        })
+
+        self.assertEqual(condition.test(), True)
+        self.assertEqual(condition.test(suggested_values=['foo']), False)
+        self.assertEqual(condition.test(suggested_values=['bar']), True)
+
+    def test_multiple_conditions_for_single_instrument_must_all_pass(self):
+        """
+        Verifies that multiple parent instruments are able to condtribute to the unlocking of a
+        single dependent one.
+        """
+
+        instrument = factories.CollectionInstrumentFactory.create(**{
+            'id': 3,
+            'collection_request__id': 1,
+        })
+
+        # Parent 1 input must contain 'foo'
+        factories.ConditionFactory.create(**{
+            'parent_instrument': factories.CollectionInstrumentFactory.create(**{
+                'id': 1,
+                'collection_request__id': 1,
+            }),
+            'instrument': instrument,
+            'condition_group': factories.ConditionGroupFactory.create(**{
+                'requirement_type': 'all-pass',
+                'cases': [
+                    factories.CaseFactory.create(match_type='contains', match_data='foo'),
+                ],
+            }),
+        })
+        # Parent 2 input must contain 'bar'
+        factories.ConditionFactory.create(**{
+            'parent_instrument': factories.CollectionInstrumentFactory.create(**{
+                'id': 2,
+                'collection_request__id': 1,
+            }),
+            'instrument': instrument,
+            'condition_group': factories.ConditionGroupFactory.create(**{
+                'requirement_type': 'all-pass',
+                'cases': [
+                    factories.CaseFactory.create(match_type='contains', match_data='bar'),
+                ],
+            }),
+        })
+
+        def set_data(parent_id, data):
+            models.CollectedInput.objects.filter(instrument_id=parent_id).update(data=data)
+
+        factories.CollectedInputFactory.create(instrument__id=1, data='foo')
+        factories.CollectedInputFactory.create(instrument__id=2, data='bar')
+        self.assertEqual(instrument.test_conditions(), True)
+
+        set_data(1, 'xfoox')
+        set_data(2, 'xbarx')
+        self.assertEqual(instrument.test_conditions(), True)
+
+        set_data(1, 'xfooxbarx')
+        set_data(2, 'x')
+        self.assertEqual(instrument.test_conditions(), False)
+
+        set_data(1, 'x')
+        set_data(2, 'xbarxfoox')
+        self.assertEqual(instrument.test_conditions(), False)
+
+        set_data(1, 'x')
+        set_data(2, 'xbarxfoox')
+        self.assertEqual(instrument.test_conditions(), False)
+
+        set_data(1, 'x')
+        set_data(2, 'x')
+        self.assertEqual(instrument.test_conditions(), False)
