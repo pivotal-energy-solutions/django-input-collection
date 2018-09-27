@@ -75,6 +75,9 @@ class ConditionGroup(DatesModel, models.Model):
             elif has_passed and self.requirement_type == 'one-pass':
                 return True
 
+        if not has_passed and self.requirement_type == 'one-pass':
+            return False
+
         return True
 
 
