@@ -79,7 +79,7 @@ class ConditionGroup(DatesModel, models.Model):
 
 
 class Case(DatesModel, models.Model):
-    id = models.CharField(max_length=100, primary_key=True)
+    nickname = models.CharField(max_length=100, unique=True, blank=True, null=True)
 
     match_type = models.CharField(max_length=20, default=None, null=True, choices=(
         # Generic
@@ -105,7 +105,7 @@ class Case(DatesModel, models.Model):
     # self.conditiongroup_set.all()
 
     def __str__(self):
-        return self.id
+        return self.nickname or self.id
 
     def get_flags(self):
         return {

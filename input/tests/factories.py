@@ -130,6 +130,6 @@ class CaseFactory(factory.django.DjangoModelFactory):
         model = 'input.Case'
         django_get_or_create = ('id',)
 
-    id = factory.Sequence(lambda n: 'case-%d' % n)
+    nickname = factory.Sequence(lambda n: 'Case %d' % n)
     match_type = 'any'
     data = ''
