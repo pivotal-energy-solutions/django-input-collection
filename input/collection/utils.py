@@ -81,42 +81,42 @@ def resolve_matcher(match_type):
     return getattr(matchers, match_type.replace('-', '_'))
 
 
+def list_wrap(data):
+    if not isinstance(data, (list, tuple, set)):
+        data = [data]
+    return data
+
+
 class CaseMatchers(object):
     def any(self, data, **kwargs):
-        if not isinstance(data, list):
-            data = [data]
+        data = list_wrap(data)
         return any(data)
 
     def none(self, data, **kwargs):
-        if not isinstance(data, list):
-            data = [data]
+        data = list_wrap(data)
         return not any(data)
 
     def all_suggested(self, data, suggested_values, **kwargs):
         if not len(data):
             return False
-        if not isinstance(data, list):
-            data = [data]
+        data = list_wrap(data)
         all_suggested = set(data).issubset(set(suggested_values))
         return all_suggested
 
     def one_suggested(self, data, suggested_values, **kwargs):
-        if not isinstance(data, list):
-            data = [data]
+        data = list_wrap(data)
         has_suggested = (not set(data).isdisjoint(set(suggested_values)))
         return has_suggested
 
     def all_custom(self, data, suggested_values, **kwargs):
         if not len(data):
             return False
-        if not isinstance(data, list):
-            data = [data]
+        data = list_wrap(data)
         overlaps = set(data).intersection(set(suggested_values))
         return len(overlaps) == 0
 
     def one_custom(self, data, suggested_values, **kwargs):
-        if not isinstance(data, list):
-            data = [data]
+        data = list_wrap(data)
         overlaps = set(data).difference(set(suggested_values))
         return len(overlaps) > 0
 
