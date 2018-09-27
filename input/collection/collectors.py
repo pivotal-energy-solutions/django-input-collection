@@ -30,8 +30,6 @@ class CollectorType(type):
 class Collector(object, metaclass=CollectorType):
     __version__ = (0, 0, 0, 'dev')
 
-    __noregister__ = True
-
     specification_class = specifications.Specification
     group = 'default'
 
