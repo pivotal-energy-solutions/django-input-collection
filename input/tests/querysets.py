@@ -1,7 +1,6 @@
 from django.test import TestCase
 
 from .. import models
-from ..models import managers
 from . import factories
 
 
