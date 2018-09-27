@@ -209,3 +209,250 @@ class TestMatchTypes(TestCase):
         self.assertEqual(matchers.not_contains('xfooxbarx', match_data='Bar'), True)
         self.assertEqual(matchers.not_contains('xfooxbarx', match_data='xbarx'), False)
         self.assertEqual(matchers.not_contains(['xfooxbarx'], match_data='foo'), False)
+
+
+class TestSingleConditionGroupRequirementTypes(TestCase):
+    def test_group_cases_requirement_type_all_pass(self):
+        """ Verifies the AND requirement for a group with a pair of cases. """
+        group = factories.ConditionGroupFactory.create(**{
+            'requirement_type': 'all-pass',
+            'cases': [
+                # A non-suggested response
+                factories.CaseFactory.create(match_type='all-custom'),
+
+                # That also contains 'foo'
+                factories.CaseFactory.create(match_type='contains', match_data='foo'),
+            ],
+        })
+
+        self.assertEqual(group.test('a'), False)
+        self.assertEqual(group.test('foo'), True)
+        self.assertEqual(group.test('xfoox'), True)
+        self.assertEqual(group.test('bar'), False)
+        self.assertEqual(group.test(['foo', 'bar']), True)
+        self.assertEqual(group.test(['bar']), False)
+        self.assertEqual(group.test(['xfoox']), True)
+
+        self.assertEqual(group.test('foo', suggested_values=['foo']), False)
+        self.assertEqual(group.test('xfoox', suggested_values=['foo']), True)
+        self.assertEqual(group.test(['foo', 'xfoox'], suggested_values=['foo']), False)
+
+        self.assertEqual(group.test('bar', suggested_values=['bar']), False)
+        self.assertEqual(group.test('xbarx', suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
+
+    def test_group_cases_requirement_type_one_pass(self):
+        """ Verifies the OR requirement for a group with a pair of cases. """
+        group = factories.ConditionGroupFactory.create(**{
+            'requirement_type': 'one-pass',
+            'cases': [
+                # A non-suggested response
+                factories.CaseFactory.create(match_type='all-custom'),
+
+                # Or a suggested response that contains 'foo'
+                factories.CaseFactory.create(match_type='contains', match_data='foo'),
+            ],
+        })
+
+        self.assertEqual(group.test('a'), True)
+        self.assertEqual(group.test('foo'), True)
+        self.assertEqual(group.test('xfoox'), True)
+        self.assertEqual(group.test('bar'), True)
+        self.assertEqual(group.test(['foo', 'bar']), True)
+        self.assertEqual(group.test(['bar']), True)
+        self.assertEqual(group.test(['xfoox']), True)
+
+        self.assertEqual(group.test('foo', suggested_values=['foo']), True)
+        self.assertEqual(group.test('xfoox', suggested_values=['foo']), True)
+        self.assertEqual(group.test(['foo', 'xfoox'], suggested_values=['foo']), True)
+
+        self.assertEqual(group.test('bar', suggested_values=['bar']), False)
+        self.assertEqual(group.test('xbarx', suggested_values=['bar']), True)
+        self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), True)
+
+    def test_group_cases_requirement_type_all_fail(self):
+        """ Verifies the NONE requirement for a group with a pair of cases. """
+        group = factories.ConditionGroupFactory.create(**{
+            'requirement_type': 'all-fail',
+            'cases': [
+                # A non-custom response (synonymous with 'all-suggested', once we invert)
+                factories.CaseFactory.create(match_type='all-custom'),
+
+                # That doesn't contain 'foo' (synonymous with 'not-contains', once we invert)
+                factories.CaseFactory.create(match_type='contains', match_data='foo'),
+            ],
+        })
+
+        self.assertEqual(group.test('a'), False)
+        self.assertEqual(group.test('foo'), False)
+        self.assertEqual(group.test('xfoox'), False)
+        self.assertEqual(group.test('bar'), False)
+        self.assertEqual(group.test(['foo', 'bar']), False)
+        self.assertEqual(group.test(['bar']), False)
+        self.assertEqual(group.test(['xfoox']), False)
+
+        self.assertEqual(group.test('foo', suggested_values=['foo']), False)
+        self.assertEqual(group.test('xfoox', suggested_values=['foo']), False)
+        self.assertEqual(group.test(['foo', 'xfoox'], suggested_values=['foo']), False)
+
+        self.assertEqual(group.test('bar', suggested_values=['bar']), True)
+        self.assertEqual(group.test('xbarx', suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), True)
+        self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
+
+
+class TestStackedConditionGroupRequirementTypes(TestCase):
+    def test_group_child_groups_requirement_type_all_pass(self):
+        """ Verifies the AND requirement for a group with subgroups. """
+        group = factories.ConditionGroupFactory.create(**{
+            'requirement_type': 'all-pass',
+            'child_groups': [
+                factories.ConditionGroupFactory.create(**{
+                    'requirement_type': 'all-pass',
+                    'cases': [
+                        # A non-suggested response
+                        factories.CaseFactory.create(match_type='all-custom'),
+                    ],
+                }),
+                factories.ConditionGroupFactory.create(**{
+                    'requirement_type': 'all-pass',
+                    'cases': [
+                        # That also contains 'foo'
+                        factories.CaseFactory.create(match_type='contains', match_data='foo'),
+                    ],
+                }),
+            ],
+        })
+
+        self.assertEqual(group.test('a'), False)
+        self.assertEqual(group.test('foo'), True)
+        self.assertEqual(group.test('xfoox'), True)
+        self.assertEqual(group.test('bar'), False)
+        self.assertEqual(group.test(['foo', 'bar']), True)
+        self.assertEqual(group.test(['bar']), False)
+        self.assertEqual(group.test(['xfoox']), True)
+
+        self.assertEqual(group.test('foo', suggested_values=['foo']), False)
+        self.assertEqual(group.test('xfoox', suggested_values=['foo']), True)
+        self.assertEqual(group.test(['foo', 'xfoox'], suggested_values=['foo']), False)
+
+        self.assertEqual(group.test('bar', suggested_values=['bar']), False)
+        self.assertEqual(group.test('xbarx', suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
+
+    def test_group_cases_requirement_type_one_pass(self):
+        """ Verifies the OR requirement for a group with subgroups. """
+        group = factories.ConditionGroupFactory.create(**{
+            'requirement_type': 'one-pass',
+            'child_groups': [
+                factories.ConditionGroupFactory.create(**{
+                    'requirement_type': 'all-pass',
+                    'cases': [
+                        # A non-suggested response
+                        factories.CaseFactory.create(match_type='all-custom'),
+                    ],
+                }),
+                factories.ConditionGroupFactory.create(**{
+                    'requirement_type': 'all-pass',
+                    'cases': [
+                        # Or a suggested response that contains 'foo'
+                        factories.CaseFactory.create(match_type='contains', match_data='foo'),
+                    ],
+                }),
+            ],
+        })
+
+        self.assertEqual(group.test('a'), True)
+        self.assertEqual(group.test('foo'), True)
+        self.assertEqual(group.test('xfoox'), True)
+        self.assertEqual(group.test('bar'), True)
+        self.assertEqual(group.test(['foo', 'bar']), True)
+        self.assertEqual(group.test(['bar']), True)
+        self.assertEqual(group.test(['xfoox']), True)
+
+        self.assertEqual(group.test('foo', suggested_values=['foo']), True)
+        self.assertEqual(group.test('xfoox', suggested_values=['foo']), True)
+        self.assertEqual(group.test(['foo', 'xfoox'], suggested_values=['foo']), True)
+
+        self.assertEqual(group.test('bar', suggested_values=['bar']), False)
+        self.assertEqual(group.test('xbarx', suggested_values=['bar']), True)
+        self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), True)
+
+    def test_group_cases_requirement_type_all_fail(self):
+        """ Verifies the NONE requirement for a group with subgroups. """
+        group = factories.ConditionGroupFactory.create(**{
+            'requirement_type': 'all-fail',
+            'child_groups': [
+                factories.ConditionGroupFactory.create(**{
+                    'requirement_type': 'all-pass',
+                    'cases': [
+                        # A non-custom response (synonymous with 'all-suggested', once we invert)
+                        factories.CaseFactory.create(match_type='all-custom'),
+                    ],
+                }),
+                factories.ConditionGroupFactory.create(**{
+                    'requirement_type': 'all-pass',
+                    'cases': [
+                        # That doesn't contain 'foo' (synonymous with 'not-contains', once we
+                        # invert)
+                        factories.CaseFactory.create(match_type='contains', match_data='foo'),
+                    ],
+                }),
+            ],
+        })
+
+        self.assertEqual(group.test('a'), False)
+        self.assertEqual(group.test('foo'), False)
+        self.assertEqual(group.test('xfoox'), False)
+        self.assertEqual(group.test('bar'), False)
+        self.assertEqual(group.test(['foo', 'bar']), False)
+        self.assertEqual(group.test(['bar']), False)
+        self.assertEqual(group.test(['xfoox']), False)
+
+        self.assertEqual(group.test('foo', suggested_values=['foo']), False)
+        self.assertEqual(group.test('xfoox', suggested_values=['foo']), False)
+        self.assertEqual(group.test(['foo', 'xfoox'], suggested_values=['foo']), False)
+
+        self.assertEqual(group.test('bar', suggested_values=['bar']), True)
+        self.assertEqual(group.test('xbarx', suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), True)
+        self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
+
+    def test_group_assesses_subgroups_and_local_cases(self):
+        group = factories.ConditionGroupFactory.create(**{
+            'requirement_type': 'all-pass',
+            'cases': [
+                # A non-suggested response
+                factories.CaseFactory.create(match_type='all-custom'),
+            ],
+            'child_groups': [
+                factories.ConditionGroupFactory.create(**{
+                    'requirement_type': 'all-pass',
+                    'cases': [
+                        # That also contains 'foo'
+                        factories.CaseFactory.create(match_type='contains', match_data='foo'),
+                    ],
+                }),
+            ],
+        })
+
+        self.assertEqual(group.test('a'), False)
+        self.assertEqual(group.test('foo'), True)
+        self.assertEqual(group.test('xfoox'), True)
+        self.assertEqual(group.test('bar'), False)
+        self.assertEqual(group.test(['foo', 'bar']), True)
+        self.assertEqual(group.test(['bar']), False)
+        self.assertEqual(group.test(['xfoox']), True)
+
+        self.assertEqual(group.test('foo', suggested_values=['foo']), False)
+        self.assertEqual(group.test('xfoox', suggested_values=['foo']), True)
+        self.assertEqual(group.test(['foo', 'xfoox'], suggested_values=['foo']), False)
+
+        self.assertEqual(group.test('bar', suggested_values=['bar']), False)
+        self.assertEqual(group.test('xbarx', suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xbarx'], suggested_values=['bar']), False)
+        self.assertEqual(group.test(['bar', 'xfoox'], suggested_values=['bar']), False)
