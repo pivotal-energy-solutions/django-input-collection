@@ -18,7 +18,7 @@ class Condition(DatesModel, models.Model):
         return '[instrument=%r depends on instrument=%r via %r]' % (
             self.instrument_id,
             self.parent_instrument_id,
-            self.condition_group_id,
+            self.condition_group,
         )
 
     def test(self, **context):
