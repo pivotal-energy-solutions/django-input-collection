@@ -16,7 +16,7 @@ class UserLatestCollectedInputQuerySet(CollectedInputQuerySet):
     only that user's most recent instances per CollectionInstrument.
     """
 
-    def filter_for_context(self, user, **context):
+    def filter_for_context(self, user=None, **context):
         if user is not None:  # Allows an explicit None to avoid user references
             context['user'] = user
 

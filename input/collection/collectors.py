@@ -134,7 +134,8 @@ class Collector(object, metaclass=CollectorType):
 
         total_max = instrument.collection_request.max_instrument_inputs
         if total_max is not None:
-            no_user_context = dict(self.context, user=None)
+            no_user_context = self.context.copy()
+            no_user_context.pop('user')
             existing_inputs = manager.filter_for_context(**no_user_context)
             input_count = existing_inputs.count()
             if input_count >= total_max:
