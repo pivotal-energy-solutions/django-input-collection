@@ -29,8 +29,8 @@ class Condition(DatesModel, models.Model):
 
 class ConditionGroup(DatesModel, models.Model):
     """ Recusive grouping mechanism for controlling AND/OR/NONE logic between other groups. """
-    id = models.CharField(max_length=100, primary_key=True)
 
+    nickname = models.CharField(max_length=100, unique=True, blank=True, null=True)
     requirement_type = models.CharField(max_length=20, default=True, choices=(
         ('all-pass', "All cases must pass"),
         ('one-pass', "At least one case must pass"),
@@ -51,7 +51,7 @@ class ConditionGroup(DatesModel, models.Model):
     # self.cases.all()
 
     def __str__(self):
-        return self.id
+        return self.nickname or self.id
 
     def get_flags(self):
         return {

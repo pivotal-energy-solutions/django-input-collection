@@ -98,7 +98,7 @@ class ConditionGroupFactory(factory.django.DjangoModelFactory):
         model = 'input.ConditionGroup'
         django_get_or_create = ('id',)
 
-    id = factory.Sequence(lambda n: 'conditiongroup-%d' % n)
+    nickname = factory.Sequence(lambda n: 'Group %d' % n)
     requirement_type = 'all-pass'
 
     @factory.post_generation
