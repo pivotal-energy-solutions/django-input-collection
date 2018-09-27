@@ -4,6 +4,7 @@ from inspect import isclass
 import json
 
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ValidationError
 
 from ..encoders import CollectionSpecificationJSONEncoder
 from .. import models
@@ -151,7 +152,12 @@ class Collector(object, metaclass=CollectorType):
         storage on the active CollectedInput model.
         """
 
+        # Ensure ResponsePolicy flags are respected
         policy_flags = instrument.response_policy.get_flags()
+
+        allow_multiple = policy_flags['multiple']
+        if not allow_multiple and isinstance(data, list):
+            raise ValidationError("Multiple inputs are not allowed")
 
         # Clean coded ids if needed
         has_suggested_responses = instrument.suggested_responses.exists()
