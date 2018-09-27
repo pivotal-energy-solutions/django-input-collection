@@ -61,7 +61,7 @@ class ConditionGroup(DatesModel, models.Model):
     def test(self, instrument_or_raw_values, **kwargs):
         has_failed = False
         has_passed = False
-        testables = self.child_groups.all() or self.cases.all()
+        testables = list(self.child_groups.all()) + list(self.cases.all())
         for item in testables:
             if item.test(instrument_or_raw_values, **kwargs):
                 has_passed = True
