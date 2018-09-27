@@ -11,15 +11,15 @@ class ContextualQuerySetTests(TestCase):
     def test_queryset_has_filter_for_context_method(self):
         self.assertEqual(hasattr(CollectedInput.objects, 'filter_for_context'), True)
 
-    def test_static_context_applies_implicitly(self):
+    def test_queryset_context_applies_filter(self):
         """ Tests that a queryset 'context' does at least a basic filter. """
-        factories.CollectedInputFactory.create_batch(size=2)
+        inputs = factories.CollectedInputFactory.create_batch(size=2)
 
         standard_queryset = CollectedInput.objects.all()
         filtered_queryset = CollectedInput.objects.filter_for_context(**{
-            'id': 1,
+            'id': inputs[1].id,
         })
 
         self.assertEqual(standard_queryset.count(), 2)
         self.assertEqual(filtered_queryset.count(), 1)
-        self.assertEqual(filtered_queryset.get().id, 1)
+        self.assertEqual(filtered_queryset.get().id, inputs[1].id)
