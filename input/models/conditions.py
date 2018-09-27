@@ -7,6 +7,11 @@ __all__ = ['Condition', 'ConditionGroup', 'Case']
 
 class Condition(DatesModel, models.Model):
     """ The control point for checking CollectionInstrument availability. """
+
+    # NOTE: The decision to have the ``instrument`` fk here and a reverse relation 'conditions' on
+    # that instrument is in service of allowing disparate parent_instrument references to be met
+    # before the dependent instrument is unlocked.
+
     instrument = models.ForeignKey('CollectionInstrument', related_name='conditions',
                                    on_delete=models.CASCADE)
     parent_instrument = models.ForeignKey('CollectionInstrument', related_name='child_conditions',
