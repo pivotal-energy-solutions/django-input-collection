@@ -1,4 +1,4 @@
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.models import AnonymousUser
 
 from rest_framework import serializers
@@ -67,7 +67,10 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
 
 class RegisteredCollectorField(serializers.Field):
     def to_internal_value(self, identifier):
-        return collection.Collector.resolve(identifier)
+        try:
+            return collection.Collector.resolve(identifier)
+        except KeyError:
+            raise ValidationError('Unknown collector reference')
 
 
 CollectedInput = models.get_input_model()
