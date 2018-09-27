@@ -96,7 +96,7 @@ class CollectedInputFactory(factory.django.DjangoModelFactory):
 class ConditionGroupFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'input.ConditionGroup'
-        django_get_or_create = ('id',)
+        django_get_or_create = ('nickname',)
 
     nickname = factory.Sequence(lambda n: 'Group %d' % n)
     requirement_type = 'all-pass'
@@ -128,7 +128,7 @@ class ConditionFactory(factory.django.DjangoModelFactory):
 class CaseFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = 'input.Case'
-        django_get_or_create = ('id',)
+        django_get_or_create = ('nickname',)
 
     nickname = factory.Sequence(lambda n: 'Case %d' % n)
     match_type = 'any'
