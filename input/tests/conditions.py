@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from .. import models
-from ..collection.utils import test_condition_case, matchers
+from ..collection.utils import test_condition_case, matchers, resolve_matcher
 from . import factories
 
 
@@ -12,12 +12,12 @@ class TestCoreMatcher(TestCase):
     """ Verifies behavior of the underlying ``collection.utils.test_condition_case`` function. """
 
     def test_matcher_resolver(self):
-        self.assertEqual(matchers.resolve('all-custom'), matchers.all_custom)
-        self.assertEqual(matchers.resolve('all_custom'), matchers.all_custom)
+        self.assertEqual(resolve_matcher('all-custom'), matchers.all_custom)
+        self.assertEqual(resolve_matcher('all_custom'), matchers.all_custom)
 
     def test_matcher_errors_on_bad_match_type(self):
         with self.assertRaises(AttributeError):
-            matchers.resolve('foo')
+            resolve_matcher('foo')
 
         with self.assertRaises(AttributeError):
             test_condition_case('data', match_type='foo')

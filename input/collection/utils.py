@@ -71,16 +71,17 @@ def test_condition_case(instrument_or_raw_values, match_type, match_data=None,
             values = list(values)
         suggested_values = suggested_values or []
 
-    matcher = matchers.resolve(match_type)
+    matcher = resolve_matcher(match_type)
     status = matcher(values, suggested_values=suggested_values, match_data=match_data)
 
     return status
 
 
-class CaseMatchers(object):
-    def resolve(self, match_type):
-        return getattr(self, match_type.replace('-', '_'))
+def resolve_matcher(match_type):
+    return getattr(matchers, match_type.replace('-', '_'))
 
+
+class CaseMatchers(object):
     def any(self, data, **kwargs):
         if not isinstance(data, list):
             data = [data]
