@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from ..collection import collectors
+from ..collection import collectors, InputMethod
 
 
 Collector = collectors.Collector
@@ -37,3 +37,15 @@ class CollectorRegistrationTests(TestCase):
         """ Verifies that the base Collector is usable out of the box. """
         self.assertIn(Collector.get_identifier(), collectors.registry)
         self.assertEqual(collectors.registry[Collector.get_identifier()], Collector)
+
+
+DefaultMethod = InputMethod
+
+class FooMethod(InputMethod):
+    foo1 = None
+    foo2 = None
+
+
+class BarMethod(InputMethod):
+    bar1 = None
+    bar2 = None
