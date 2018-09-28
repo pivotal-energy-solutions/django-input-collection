@@ -63,7 +63,7 @@ class InputMethod(UserDict):
 
         # Raise an error for leftover attributes
         if len(data) and _raise:
-            raise AttributeError("Invalid attributes for input method %r: %r -- valid attributes: %r" % (
+            raise AttributeError("Invalid attributes for input method %r: %r -- valid attributes are %r" % (
                 self.__class__,
                 data,
                 list(sorted(self.data.keys())),
