@@ -1,10 +1,23 @@
 from collections import UserDict
+from functools import reduce
 
 __all__ = ['InputMethod']
 
 
-class missing(object):
-    pass
+def flatten_dicts(*args, **kwargs):
+    return reduce(lambda d, d2: dict(d, **d2), args + (kwargs,), {})
+
+
+def filter_safe_dict(data, attrs=None):
+    """
+    Returns current names and values for valid writeable attributes. If ``attrs`` is given, then
+    the returned dict will contain only items named in that iterable.
+    """
+    return {k: v for k, v in data.items() if all((
+        not k.startswith('_'),
+        not callable(v) and not isinstance(v, (classmethod, staticmethod)),
+        not attrs or (k in attrs),
+    ))}
 
 
 class InputMethod(UserDict):
@@ -36,14 +49,19 @@ class InputMethod(UserDict):
             return
         self.data[k] = v
 
-    def update_kwargs(self, raise_=True, **kwargs):
-        for k, v in kwargs.items():
-            attr = getattr(self, k, missing)
-            if attr is missing or k.startswith('_') or callable(attr):
-                if raise_:
-                    raise AttributeError("Invalid attribute %r for method %r" % (k, self))
-                continue
-            setattr(self, k, v)
+    def update_kwargs(self, *args, _raise=True, **kwargs):
+        data = flatten_dicts(*args, **kwargs)
+
+        for k in filter_safe_dict(self.data, list(data.keys())):
+            setattr(self, k, data.pop(k))
+
+        # Raise an error for leftover attributes
+        if len(data) and _raise:
+            raise AttributeError("Invalid attributes for input method %r: %r -- valid attributes: %r" % (
+                self.__class__,
+                data,
+                list(sorted(self.data.keys())),
+            ))
 
     def serialize(self, instrument):
         """ Serializes a python representation of this input description. """
