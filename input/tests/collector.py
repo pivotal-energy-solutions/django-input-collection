@@ -6,18 +6,19 @@ from ..collection import collectors
 class CollectorRegistrationTests(TestCase):
     def test_basescollectors_are_unregistered(self):
         """ Verifies that the base API collector subclass is NOT directly usable. """
+        self.assertEqual(hasattr(collectors.BaseCollector, '__noregister__'), True)
+        self.assertEqual(collectors.BaseCollector.__noregister__, True)
         self.assertNotIn(collectors.BaseCollector, collectors.registry)
+
+        self.assertEqual(hasattr(collectors.BaseAPICollector, '__noregister__'), True)
+        self.assertEqual(collectors.BaseAPICollector.__noregister__, True)
         self.assertNotIn(collectors.BaseAPICollector, collectors.registry)
 
     def test_basecollectors_cannot_be_inspected_for_registration_identifier(self):
         """ Verifies that the base API collector subclass is NOT directly usable. """
-        self.assertEqual(hasattr(collectors.BaseCollector, '__noregister__'), True)
-        self.assertEqual(collectors.BaseCollector.__noregister__, True)
         with self.assertRaises(collectors.CollectorException):
             collectors.BaseCollector.get_identifier()
 
-        self.assertEqual(hasattr(collectors.BaseAPICollector, '__noregister__'), True)
-        self.assertEqual(collectors.BaseAPICollector.__noregister__, True)
         with self.assertRaises(collectors.CollectorException):
             collectors.BaseAPICollector.get_identifier()
 
