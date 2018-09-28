@@ -3,6 +3,9 @@ from django.test import TestCase
 from ..collection import collectors
 
 
+Collector = collectors.Collector
+
+
 class CollectorRegistrationTests(TestCase):
     def test_basescollectors_are_unregistered(self):
         """ Verifies that the base API collector subclass is NOT directly usable. """
@@ -32,5 +35,5 @@ class CollectorRegistrationTests(TestCase):
 
     def test_collector_is_registered_by_default(self):
         """ Verifies that the base Collector is usable out of the box. """
-        self.assertIn(collectors.Collector.get_identifier(), collectors.registry)
-        self.assertEqual(collectors.registry[collectors.Collector.get_identifier()], collectors.Collector)
+        self.assertIn(Collector.get_identifier(), collectors.registry)
+        self.assertEqual(collectors.registry[Collector.get_identifier()], Collector)
