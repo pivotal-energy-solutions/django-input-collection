@@ -55,14 +55,14 @@ class CollectorType(type):
     def fail_get_identifier(cls):
         fail_registration_action("Collector %(cls)r with __noregister__=True cannot be inspected for a registration identifier.")
 
-class Collector(object, metaclass=CollectorType):
-    __version__ = (0, 0, 0, 'dev')
     def fail_register(cls):
         fail_registration_action("Collector %(cls)r with __noregister__=True cannot be registered.")
         
 
-    specification_class = specifications.Specification
-    group = 'default'
+
+class BaseCollector(object, metaclass=CollectorType):
+    __version__ = (0, 0, 0, 'dev')
+    __noregister__ = True
 
     # TODO: Streamline how this will have to work for targetting response_policy settings, too.
     # I think it'll have to be something like a list of "match dicts" and the first one to match
@@ -78,10 +78,17 @@ class Collector(object, metaclass=CollectorType):
         self.type_methods = self.get_type_methods()
         self.measure_methods = self.get_measure_methods()
 
-        registry.setdefault(cls.get_identifier(), cls)
+    # Main properties
+    @property
+    def specification(self):
+        serializer = self.get_specification()
+        return serializer.data
 
+    @property
+    def specification_json(self):
+        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
 
-    # Resolution utils
+    # Serialization utils
     def get_specification(self):
         return self.specification_class(self)
 
@@ -116,16 +123,6 @@ class Collector(object, metaclass=CollectorType):
         method.update_kwargs(**method_kwargs)
 
         return method
-
-    # Main properties
-    @property
-    def specification(self):
-        serializer = self.get_specification()
-        return serializer.data
-
-    @property
-    def specification_json(self):
-        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
 
     ## Instrument/Input runtime hooks
     def is_instrument_allowed(self, instrument):
@@ -239,7 +236,11 @@ class Collector(object, metaclass=CollectorType):
         return instance
 
 
-class BaseAPICollector(Collector):
-    __noregister__ = True
+class Collector(BaseCollector):
+    specification_class = specifications.Specification
+    group = 'default'
 
+
+class BaseAPICollector(Collector):
+    __noregister__ = True  # Perpetuate the registration opt-out for this alternate base
     specification_class = specifications.BaseAPISpecification
