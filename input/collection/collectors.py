@@ -20,6 +20,14 @@ CollectedInput = models.get_input_model()
 registry = {}
 
 
+class CollectorException(Exception):
+    pass
+
+
+class CollectorRegistrationException(CollectorException):
+    message = "Collector cannot be registered."
+
+
 def resolve(identifier):
     return registry[identifier]
 
