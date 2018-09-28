@@ -100,14 +100,10 @@ class BaseCollector(object, metaclass=CollectorType):
         return self.specification_class(self)
 
     def get_type_methods(self):
-        if not hasattr(self, '_type_methods'):
-            self._type_methods = self.type_methods or {}
-        return self._type_methods
+        return self.type_methods or {}
 
     def get_measure_methods(self):
-        if not hasattr(self, '_measure_methods'):
-            self._measure_methods = self.measure_methods or {}
-        return self._measure_methods
+        return self.measure_methods or {}
 
     def get_method_kwargs(self, instrument):
         kwargs = {
