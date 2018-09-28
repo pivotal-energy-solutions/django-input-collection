@@ -27,6 +27,9 @@ class CollectorRegistrationTests(TestCase):
         with self.assertRaises(collectors.CollectorException):
             collectors.BaseCollector.register()
 
+        with self.assertRaises(collectors.CollectorException):
+            collectors.BaseAPICollector.get_identifier()
+
     def test_collector_is_registered_by_default(self):
         """ Verifies that the base Collector is usable out of the box. """
         self.assertIn(collectors.Collector.get_identifier(), collectors.registry)
