@@ -65,7 +65,6 @@ class CollectorType(type):
 
     def fail_register(cls):
         fail_registration_action(cls, "Collector %(cls)r with __noregister__=True cannot be registered.")
-        
 
 
 class BaseCollector(object, metaclass=CollectorType):
