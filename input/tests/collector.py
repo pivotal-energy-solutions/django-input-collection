@@ -52,6 +52,71 @@ class BarMethod(InputMethod):
     bar2 = None
 
 
+class InputMethodTests(TestCase):
+    def test_init_merges_dict_with_kwargs(self):
+        self.assertEqual(FooMethod({'foo1': 'foo1'}, foo2='foo2').data, {'foo1': 'foo1', 'foo2': 'foo2'})
+
+    def test_update_merges_dict_with_kwargs(self):
+        method = FooMethod()
+
+        def with_update(d, **kwargs):
+            method.update(d, **kwargs)
+            return method.data
+            
+        self.assertEqual(with_update({'foo1': 'foo1'}, foo2='foo2'), {'foo1': 'foo1', 'foo2': 'foo2'})
+
+    def test_init_sets_userdict_data_to_defaults(self):
+        self.assertEqual(FooMethod().data, {'foo1': None, 'foo2': None})
+
+        class CustomFooMethod(FooMethod):  # Something we can monkeypatch without consequences
+            pass
+        CustomFooMethod.bar = None
+
+        self.assertEqual(CustomFooMethod().data, {'foo1': None, 'foo2': None, 'bar': None})
+
+    def test_init_kwarg_updates_userdict_data(self):
+        self.assertEqual(FooMethod(foo1='foo1').data, {'foo1': 'foo1', 'foo2': None})
+
+    def test_init_kwarg_updates_attribute(self):
+        self.assertEqual(FooMethod(foo1='foo1').foo1, 'foo1')
+
+    def test_init_kwarg_not_matching_existing_attributes_raises_error(self):
+        with self.assertRaises(AttributeError):
+            FooMethod(bar='bar')
+
+        class CustomFooMethod(FooMethod):  # Something we can monkeypatch without consequences
+            pass
+
+        with self.assertRaises(AttributeError):
+            CustomFooMethod(bar='bar')
+        CustomFooMethod.bar = None
+        self.assertEqual(CustomFooMethod(bar='bar').data, {'foo1': None, 'foo2': None, 'bar': 'bar'})
+
+    def test_update_modifies_attributes(self):
+        method = FooMethod()
+        method.update({'foo1': 'foo1'})
+        self.assertEqual(method.foo1, 'foo1')
+
+    def test_update_modifies_userdict_data(self):
+        method = FooMethod()
+        method.update({'foo1': 'foo1'})
+        self.assertIn('foo1', method.data)
+        self.assertEqual(method.data['foo1'], 'foo1')
+        self.assertEqual(method.data, {'foo1': 'foo1', 'foo2': None})
+
+    def test_init_silencer_raises_no_error(self):
+        try:
+            FooMethod(bar='bar', _raise=False)
+        except AttributeError as e:
+            self.fail("Silencer did not stop AttributeError: %s" % (e,))
+
+    def test_update_silencer_raises_no_error(self):
+        try:
+            FooMethod(bar='bar', _raise=False)
+        except AttributeError as e:
+            self.fail("Silencer did not stop AttributeError: %s" % (e,))
+
+
 class CollectorTests(TestCase):
     def setUp(self):
         self.collection_request = factories.CollectionRequestFactory.create()
