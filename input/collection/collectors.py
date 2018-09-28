@@ -61,10 +61,10 @@ class CollectorType(type):
         return cls
 
     def fail_get_identifier(cls):
-        fail_registration_action("Collector %(cls)r with __noregister__=True cannot be inspected for a registration identifier.")
+        fail_registration_action(cls, "Collector %(cls)r with __noregister__=True cannot be inspected for a registration identifier.")
 
     def fail_register(cls):
-        fail_registration_action("Collector %(cls)r with __noregister__=True cannot be registered.")
+        fail_registration_action(cls, "Collector %(cls)r with __noregister__=True cannot be registered.")
         
 
 
