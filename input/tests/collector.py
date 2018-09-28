@@ -42,8 +42,6 @@ class CollectorRegistrationTests(TestCase):
         self.assertEqual(collectors.registry[Collector.get_identifier()], Collector)
 
 
-DefaultMethod = InputMethod
-
 class FooMethod(InputMethod):
     foo1 = None
     foo2 = None
@@ -120,7 +118,7 @@ class CollectorTests(TestCase):
             'collection_request': self.collection_request,
         })
 
-        default = DefaultMethod()
+        default = InputMethod()
         foo = FooMethod()
 
         self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}), default)
@@ -135,7 +133,7 @@ class CollectorTests(TestCase):
             'collection_request': self.collection_request,
         })
 
-        default = DefaultMethod()
+        default = InputMethod()
         foo = FooMethod()
 
         self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}), default)
@@ -153,7 +151,7 @@ class CollectorTests(TestCase):
             'collection_request': self.collection_request,
         })
 
-        default = DefaultMethod()
+        default = InputMethod()
         foo = FooMethod()
         bar = BarMethod()
 
