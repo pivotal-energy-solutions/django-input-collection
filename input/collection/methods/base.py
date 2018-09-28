@@ -58,7 +58,7 @@ class InputMethod(UserDict):
     def update(self, *args, _raise=True, **kwargs):
         data = flatten_dicts(*args, **kwargs)
 
-        for k in filter_safe_dict(self.data, list(data.keys())):
+        for k in filter_safe_dict(self.data, data.keys()):
             setattr(self, k, data.pop(k))
 
         # Raise an error for leftover attributes
