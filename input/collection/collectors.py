@@ -24,16 +24,42 @@ def resolve(identifier):
     return registry[identifier]
 
 
+def get_identifier(cls):
+    path = '.'.join((cls.__module__, cls.__name__))
+    identifier = hashlib.sha256(path.encode()).hexdigest()
+    return identifier
+
+
+def register(cls):
+    registry.setdefault(cls.get_identifier(), cls)
+
+
+def fail_registration_action(cls, msg):
+    raise CollectorRegistrationException(msg % {'cls': cls})
+
+
 class CollectorType(type):
     def __new__(cls, name, bases, attrs):
         cls = super(CollectorType, cls).__new__(cls, name, bases, attrs)
-        if not attrs.get('__noregister__', False):
+
+        if attrs.get('__noregister__', False):
+            cls.get_identifier = cls.fail_get_identifier
+            cls.register = cls.fail_register
+        else:
+            cls.__noregister__ = False  # Avoid inheritance confusion
+            cls.get_identifier = classmethod(get_identifier)
+            cls.register = classmethod(register)
             cls.register()
         return cls
 
+    def fail_get_identifier(cls):
+        fail_registration_action("Collector %(cls)r with __noregister__=True cannot be inspected for a registration identifier.")
 
 class Collector(object, metaclass=CollectorType):
     __version__ = (0, 0, 0, 'dev')
+    def fail_register(cls):
+        fail_registration_action("Collector %(cls)r with __noregister__=True cannot be registered.")
+        
 
     specification_class = specifications.Specification
     group = 'default'
@@ -52,15 +78,6 @@ class Collector(object, metaclass=CollectorType):
         self.type_methods = self.get_type_methods()
         self.measure_methods = self.get_measure_methods()
 
-    # Persistence internals
-    @classmethod
-    def get_identifier(cls):
-        path = '.'.join((cls.__module__, cls.__name__))
-        identifier = hashlib.sha256(path.encode()).hexdigest()
-        return identifier
-
-    @classmethod
-    def register(cls):
         registry.setdefault(cls.get_identifier(), cls)
 
 
