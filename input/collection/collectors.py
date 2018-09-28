@@ -123,7 +123,7 @@ class BaseCollector(object, metaclass=CollectorType):
             method = method()
 
         method_kwargs = self.get_method_kwargs(instrument)
-        method.update_kwargs(**method_kwargs)
+        method.update(**method_kwargs)
 
         return method
 

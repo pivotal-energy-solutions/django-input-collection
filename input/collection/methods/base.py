@@ -28,15 +28,21 @@ class InputMethod(UserDict):
     that external methodology has complete.
     """
 
-    def __init__(self, **kwargs):
-        super(InputMethod, self).__init__(**kwargs)
+    def __init__(self, *args, _raise=True, **kwargs):
+        # NOTE: Avoid super() first because our primed defaults won't exist, and it'll think that's
+        # a problem when it goes to do update().  Also avoid super() at the end because that will
+        # just reset data to an empty dict and then update() will have the same problem.
+
+        # Our attribute funnybusiness needs to be preempted by this UserData attribute existing
+        # before anything attempts to read from it in the custom update() implementation.
+        self.data = {}
 
         # Collect all class-level default attribute values for the initial ``data`` dict
         for cls in reversed(self.__class__.__mro__):
-            self.update_kwargs(raise_=False, **cls.__dict__)
+            init_dict = filter_safe_dict(cls.__dict__)
+            self.data.update(init_dict)
 
-        # Record new runtime values
-        self.update_kwargs(**kwargs)
+        self.update(*args, _raise=_raise, **kwargs)
 
     def __getattr__(self, k):
         if k == 'data':
@@ -49,7 +55,7 @@ class InputMethod(UserDict):
             return
         self.data[k] = v
 
-    def update_kwargs(self, *args, _raise=True, **kwargs):
+    def update(self, *args, _raise=True, **kwargs):
         data = flatten_dicts(*args, **kwargs)
 
         for k in filter_safe_dict(self.data, list(data.keys())):
