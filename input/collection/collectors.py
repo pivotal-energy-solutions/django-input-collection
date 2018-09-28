@@ -12,12 +12,16 @@ from . import utils
 from . import specifications
 from . import methods
 
-__all__ = ['Collector', 'BaseAPICollector']
+__all__ = ['resolve', 'Collector', 'BaseAPICollector']
 
 
 CollectedInput = models.get_input_model()
 
 registry = {}
+
+
+def resolve(identifier):
+    return registry[identifier]
 
 
 class CollectorType(type):
@@ -59,9 +63,6 @@ class Collector(object, metaclass=CollectorType):
     def register(cls):
         registry.setdefault(cls.get_identifier(), cls)
 
-    @classmethod
-    def resolve(cls, identifier):
-        return registry[identifier]
 
     # Resolution utils
     def get_specification(self):

@@ -68,7 +68,7 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
 class RegisteredCollectorField(serializers.Field):
     def to_internal_value(self, identifier):
         try:
-            return collection.Collector.resolve(identifier)
+            return collection.resolve(identifier)
         except KeyError:
             raise ValidationError('Unknown collector reference')
 
