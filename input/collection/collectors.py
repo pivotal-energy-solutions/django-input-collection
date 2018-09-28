@@ -184,8 +184,6 @@ class Collector(object, metaclass=CollectorType):
 
         return data
 
-    # These default implementations trust the type to match whatever modelfield is in use for the
-    # ``data`` field on the concrete model.
     def serialize_data(self, data):
         """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
         return data
@@ -204,8 +202,6 @@ class Collector(object, metaclass=CollectorType):
         the manager's ``create()`` method, in case the CollectedInput model has been swapped and
         requires additional fields to successfully save.
         """
-
-        from . import collectors
 
         db_data = self.serialize_data(data)
 
