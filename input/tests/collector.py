@@ -194,9 +194,9 @@ class CollectorTests(TestCase):
             return self.collector.get_method(i)
 
         method = self.with_measuremethods(i, 'a', {'a': foo})
-        with self.assertRaises(KeyError):
+        with self.assertRaises(AttributeError):
             with_methodkwargs({'bar': 'bar'})
 
-        # Now prove the KeyError isn't a fluke
-        CustomFooMethod.bar = None
+        # Now prove the AttributeError isn't a fluke
+        foo.bar = None
         self.assertEqual(with_methodkwargs({'bar': 'bar'}).data, {'foo1': 'foo1', 'foo2': None, 'bar': 'bar'})
