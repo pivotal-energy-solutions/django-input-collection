@@ -110,7 +110,7 @@ class Collector(object, metaclass=CollectorType):
     def specification_json(self):
         return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
 
-    # Instrument/Input runtime checks
+    ## Instrument/Input runtime hooks
     def is_instrument_allowed(self, instrument):
         """
         Returns True when the given instrument passes all related conditions limiting its use.
