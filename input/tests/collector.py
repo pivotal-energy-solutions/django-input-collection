@@ -117,7 +117,7 @@ class InputMethodTests(TestCase):
             self.fail("Silencer did not stop AttributeError: %s" % (e,))
 
 
-class CollectorTests(TestCase):
+class CollectorStaticTests(TestCase):
     def setUp(self):
         self.collection_request = factories.CollectionRequestFactory.create()
         self.collector = Collector(self.collection_request)
