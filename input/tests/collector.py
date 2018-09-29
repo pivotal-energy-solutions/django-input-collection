@@ -360,3 +360,25 @@ class CollectorRuntimeTests(TestCase):
         with self.assertRaises(ValidationError): with_config([''])
         with self.assertRaises(ValidationError): with_config(['a'])
         with self.assertRaises(ValidationError): with_config(['a', 'b'])
+
+    def test_store_creates_collectedinput(self):
+        def with_store(data):
+            self.instrument.collectedinput_set.all().delete()
+            return self.collector.store(self.instrument, data)
+
+        self.assertIsInstance(with_store('a'), CollectedInput)
+        self.assertEqual(with_store('a').data, 'a')
+
+    def test_store_updates_provided_collectedinput(self):
+        # Having some local variable closure trouble with this maneuver, bear with me
+        class inputs:
+            old = None
+            new = None
+
+        def with_store(data):
+            inputs.old = inputs.new
+            inputs.new = self.collector.store(self.instrument, data, instance=inputs.old)
+            return inputs.new
+
+        self.assertEqual(with_store('a').id, with_store('b').id)
+        self.assertEqual(inputs.new.data, 'b')
