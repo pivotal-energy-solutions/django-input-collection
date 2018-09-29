@@ -169,31 +169,22 @@ class BaseCollector(object, metaclass=CollectorType):
         SuggestedResponse implies, thus making the final data safe to send for serialization and
         storage on the active CollectedInput model.
         """
-
         # Ensure ResponsePolicy flags are respected
         policy_flags = instrument.response_policy.get_flags()
 
-        allow_multiple = policy_flags['multiple']
-        if not allow_multiple and isinstance(data, list):
-            raise ValidationError("Multiple inputs are not allowed")
-
         disallow_custom = policy_flags['restrict']
+        allows_multiple = policy_flags['multiple']
+        if allows_multiple and not isinstance(data, list):
+            data = [data]
+        if not allows_multiple and isinstance(data, list):
+            raise ValidationError("Multiple inputs are not allowed")
 
         # Clean coded ids if needed
         suggested_values = set(instrument.suggested_responses.values_list('data', flat=True))
         if suggested_values:
-            is_single = (not policy_flags['multiple'])
-
-            if is_single:
-                data = [data]
-
             if disallow_custom and not utils.matchers.all_suggested(data, suggested_values):
                 raise ValidationError("Inputs must be chosen from the suggested responses")
-
             data = utils.get_data_for_suggested_responses(instrument, *data)
-
-            if is_single:
-                data = data[0]
 
         # Let the method clean and do type coercion
         method = self.get_method(instrument)
