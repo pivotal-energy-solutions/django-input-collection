@@ -1,11 +1,16 @@
 from inspect import isclass
 
 from django.test import TestCase
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 from ..collection import collectors, InputMethod
+from ..models import get_input_model
 from . import factories
 
 
+User = get_user_model()
+CollectedInput = get_input_model()
 Collector = collectors.Collector
 
 
@@ -265,3 +270,93 @@ class CollectorStaticTests(TestCase):
         # Now prove the AttributeError isn't a fluke
         foo.bar = None
         self.assertEqual(with_methodkwargs({'bar': 'bar'}).data, {'foo1': 'foo1', 'foo2': None, 'bar': 'bar'})
+
+
+class CollectorRuntimeTests(TestCase):
+    def setUp(self):
+        self.collection_request = factories.CollectionRequestFactory.create(**{
+            'max_instrument_inputs_per_user': None,
+            'max_instrument_inputs': None,
+        })
+        self.instrument = factories.CollectionInstrumentFactory.create(**{
+            'collection_request': self.collection_request,
+        })
+
+        self.user = User.objects.get_or_create(username='user')[0]
+        self.collector = Collector(self.collection_request, **{
+            'user': self.user,
+        })
+
+    def test_collectionrequest_user_max_stops_is_input_allowed(self):
+        def with_config(inputs, user_max):
+            CollectedInput.objects.all().delete()
+
+            CollectedInput.objects.bulk_create([
+                CollectedInput(data=data, instrument=self.instrument,
+                               collection_request=self.collection_request,
+                               **self.collector.context) \
+                    for data in inputs
+            ])
+
+            self.collection_request.max_instrument_inputs_per_user = user_max
+            return self.collector.is_input_allowed(self.instrument)
+
+        self.assertEqual(with_config(inputs=[], user_max=2), True)
+        self.assertEqual(with_config(inputs=['a'], user_max=2), True)
+        self.assertEqual(with_config(inputs=['a', 'b'], user_max=2), False)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c'], user_max=2), False)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd'], user_max=2), False)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd', 'e'], user_max=2), False)
+        self.assertEqual(with_config(inputs=[], user_max=4), True)
+        self.assertEqual(with_config(inputs=['a'], user_max=4), True)
+        self.assertEqual(with_config(inputs=['a', 'b'], user_max=4), True)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c'], user_max=4), True)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd'], user_max=4), False)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd', 'e'], user_max=5), False)
+
+    def test_collectionrequest_total_max_stops_is_input_allowed(self):
+        def with_config(inputs, max):
+            CollectedInput.objects.all().delete()
+
+            CollectedInput.objects.bulk_create([
+                CollectedInput(data=data, instrument=self.instrument,
+                               collection_request=self.collection_request,
+                               **self.collector.context) \
+                    for data in inputs
+            ])
+
+            self.collection_request.max_instrument_inputs = max
+            return self.collector.is_input_allowed(self.instrument)
+
+        self.assertEqual(with_config(inputs=[], max=4), True)
+        self.assertEqual(with_config(inputs=['a'], max=4), True)
+        self.assertEqual(with_config(inputs=['a', 'b'], max=4), True)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c'], max=4), True)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd'], max=4), False)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd', 'e'], max=5), False)
+        self.assertEqual(with_config(inputs=[], max=5), True)
+        self.assertEqual(with_config(inputs=['a'], max=5), True)
+        self.assertEqual(with_config(inputs=['a', 'b'], max=5), True)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c'], max=5), True)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd'], max=5), True)
+        self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd', 'e'], max=5), False)
+
+    def test_responsepolicy_multiple_coerces_bare_inputs_to_lists_in_clean_data(self):
+        self.instrument.response_policy.multiple = True
+        def with_config(data):
+            return self.collector.clean_data(self.instrument, data)
+
+        self.assertEqual(with_config('a'), ['a'])
+        self.assertEqual(with_config(['']), [''])
+        self.assertEqual(with_config(['a']), ['a'])
+        self.assertEqual(with_config(['a', 'b']), ['a', 'b'])
+
+    def test_responsepolicy_non_multiple_stops_lists_in_clean_data(self):
+        self.instrument.response_policy.multiple = False
+        def with_config(data):
+            return self.collector.clean_data(self.instrument, data)
+
+        with self.assertRaises(ValidationError): with_config([])
+        with self.assertRaises(ValidationError): with_config([''])
+        with self.assertRaises(ValidationError): with_config(['a'])
+        with self.assertRaises(ValidationError): with_config(['a', 'b'])
