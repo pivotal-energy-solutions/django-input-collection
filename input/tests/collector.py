@@ -382,3 +382,10 @@ class CollectorRuntimeTests(TestCase):
 
         self.assertEqual(with_store('a').id, with_store('b').id)
         self.assertEqual(inputs.new.data, 'b')
+
+    # def test_store_forwards_kwargs_to_model(self):
+    #     def with_store(data, **kwargs):
+    #         self.instrument.collectedinput_set.all().delete()
+    #         return self.collector.store(self.instrument, data, instance=None, **kwargs)
+    #
+    #     self.assertEqual(with_store('a', foo='foo').foo, 'foo')
