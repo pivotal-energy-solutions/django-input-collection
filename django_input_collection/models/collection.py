@@ -171,10 +171,11 @@ class AbstractCollectedInput(DatesModel, models.Model):
 
     # Note that these fk references MUST include this app's label, since otherwise, anyone
     # inheriting from this abstract base will end up with ForeignKey references that appear local.
-    collection_request = models.ForeignKey('input.CollectionRequest',
+    collection_request = models.ForeignKey('django_input_collection.CollectionRequest',
                                            related_name='collectedinput_set',
                                            on_delete=models.CASCADE)
-    instrument = models.ForeignKey('input.CollectionInstrument', related_name='collectedinput_set',
+    instrument = models.ForeignKey('django_input_collection.CollectionInstrument',
+                                   related_name='collectedinput_set',
                                    on_delete=models.CASCADE)
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)

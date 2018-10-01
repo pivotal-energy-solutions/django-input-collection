@@ -1,4 +1,4 @@
-from input.api.restframework import collection
+from django_input_collection.api.restframework import collection
 
 from . import methods
 

@@ -1,5 +1,5 @@
 from django_mysql.models import JSONField
-from input.models import AbstractCollectedInput
+from django_input_collection.models import AbstractCollectedInput
 
 from .managers import JSONUserLatestCollectedInputQuerySet
 

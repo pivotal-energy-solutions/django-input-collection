@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from input.models import (Measure, CollectionGroup, CollectionRequest, CollectionInstrument,
+from django_input_collection.models import (Measure, CollectionGroup, CollectionRequest, CollectionInstrument,
                           AbstractCollectedInput, get_input_model)
 
 from .models import Survey, PoliticalRally, RallyPoll

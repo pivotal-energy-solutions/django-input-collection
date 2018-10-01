@@ -6,7 +6,7 @@ import factory
 
 class MeasureFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.Measure'
+        model = 'django_input_collection.Measure'
         django_get_or_create = ('id',)
 
     id = factory.Sequence(lambda n: 'measure-%d' % n)
@@ -14,7 +14,7 @@ class MeasureFactory(factory.django.DjangoModelFactory):
 
 class CollectionGroupFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.CollectionGroup'
+        model = 'django_input_collection.CollectionGroup'
         django_get_or_create = ('id',)
 
     id = 'default'
@@ -22,7 +22,7 @@ class CollectionGroupFactory(factory.django.DjangoModelFactory):
 
 class CollectionRequestFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.CollectionRequest'
+        model = 'django_input_collection.CollectionRequest'
         django_get_or_create = ('id',)
 
     id = factory.Sequence(lambda n: n + 1)
@@ -32,7 +32,7 @@ class CollectionRequestFactory(factory.django.DjangoModelFactory):
 
 class ResponsePolicyFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.ResponsePolicy'
+        model = 'django_input_collection.ResponsePolicy'
         django_get_or_create = ('nickname',)
 
     nickname = 'default'
@@ -43,7 +43,7 @@ class ResponsePolicyFactory(factory.django.DjangoModelFactory):
 
 class SuggestedResponseFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.SuggestedResponse'
+        model = 'django_input_collection.SuggestedResponse'
         django_get_or_create = ('data',)
 
     data = factory.Sequence(lambda n: 'response %d' % n)
@@ -51,7 +51,7 @@ class SuggestedResponseFactory(factory.django.DjangoModelFactory):
 
 class CollectionInstrumentFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.CollectionInstrument'
+        model = 'django_input_collection.CollectionInstrument'
         django_get_or_create = ('id',)
 
     id = factory.Sequence(lambda n: n + 1)
@@ -95,7 +95,7 @@ class CollectedInputFactory(factory.django.DjangoModelFactory):
 
 class ConditionGroupFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.ConditionGroup'
+        model = 'django_input_collection.ConditionGroup'
         django_get_or_create = ('nickname',)
 
     nickname = factory.Sequence(lambda n: 'Group %d' % n)
@@ -118,7 +118,7 @@ class ConditionGroupFactory(factory.django.DjangoModelFactory):
 
 class ConditionFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.Condition'
+        model = 'django_input_collection.Condition'
 
     instrument = factory.SubFactory(CollectionInstrumentFactory)
     parent_instrument = factory.SubFactory(CollectionInstrumentFactory)
@@ -127,7 +127,7 @@ class ConditionFactory(factory.django.DjangoModelFactory):
 
 class CaseFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = 'input.Case'
+        model = 'django_input_collection.Case'
         django_get_or_create = ('nickname',)
 
     nickname = factory.Sequence(lambda n: 'Case %d' % n)

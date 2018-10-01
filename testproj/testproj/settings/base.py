@@ -7,7 +7,7 @@ from . import env
 # Things available to override in settings modules
 DEBUG = True
 ALLOWED_HOSTS = []
-INPUT_COLLECTEDINPUT_MODEL = 'input.CollectedInput'  # Explicit use of the default value
+INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'  # Explicit use of the default value
 
 
 # Things overridden at your own peril
@@ -22,7 +22,7 @@ INSTALLED_APPS = [
 
     # Third-party
     'rest_framework',
-    'input',
+    'django_input_collection',
 
     # Project
     'testproj.core',

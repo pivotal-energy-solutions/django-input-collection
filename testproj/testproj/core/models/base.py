@@ -10,7 +10,7 @@ class Survey(models.Model):
     end_time = models.DateTimeField(blank=True, null=True)
 
     # CollectionRequest is guaranteed to be unique to this Survey
-    collection_request = models.OneToOneField('input.CollectionRequest', on_delete=models.CASCADE)
+    collection_request = models.OneToOneField('django_input_collection.CollectionRequest', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
@@ -29,7 +29,7 @@ class PoliticalRally(models.Model):
 
     # Multiple CollectionRequests allowed, but tracked via a ``through`` model to ensure we can't
     # accidentally associate the same CollectionRequest to more than one PoliticalRally.
-    collection_requests = models.ManyToManyField('input.CollectionRequest', through='RallyPoll')
+    collection_requests = models.ManyToManyField('django_input_collection.CollectionRequest', through='RallyPoll')
 
     def __str__(self):
         return self.title
@@ -44,7 +44,7 @@ class RallyPoll(models.Model):
 
     # Associate uniquely to a CollectionRequest.  Both OneToOne and ForeignKey(unique=True) are
     # allowable.
-    collection_request = models.OneToOneField('input.CollectionRequest', on_delete=models.CASCADE)
+    collection_request = models.OneToOneField('django_input_collection.CollectionRequest', on_delete=models.CASCADE)
 
     # Arbitrary other constraints for the business logic that may justify having multiple
     # CollectionRequests in play on a single PoliticalRally.

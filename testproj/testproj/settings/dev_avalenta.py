@@ -1,19 +1,19 @@
 from .dev import *
 
 # Default mode
-# INPUT_COLLECTEDINPUT_MODEL = 'input.CollectedInput'
+INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
 
 # MySQL mode
-DATABASES['default'] = {
-    'ENGINE': 'django.db.backends.mysql',
-    'NAME': 'input_testproj',
-    'USER': env.get_variable('DATABASE_USERNAME', 'root'),
-    'PASSWORD': env.get_variable('DATABASE_PASSWORD', ''),
-}
-INSTALLED_APPS.extend([
-    'django_mysql',
-])
-INPUT_COLLECTEDINPUT_MODEL = 'core.CollectedInput_MySQL_JSON'
+# DATABASES['default'] = {
+#     'ENGINE': 'django.db.backends.mysql',
+#     'NAME': 'input_testproj',
+#     'USER': env.get_variable('DATABASE_USERNAME', 'root'),
+#     'PASSWORD': env.get_variable('DATABASE_PASSWORD', ''),
+# }
+# INSTALLED_APPS.extend([
+#     'django_mysql',
+# ])
+# INPUT_COLLECTEDINPUT_MODEL = 'core.CollectedInput_MySQL_JSON'
 
 
 # Postgres mode
@@ -28,4 +28,4 @@ INPUT_COLLECTEDINPUT_MODEL = 'core.CollectedInput_MySQL_JSON'
 
 import sys
 if sys.argv[1] == 'test':
-    INPUT_COLLECTEDINPUT_MODEL = 'input.CollectedInput'
+    INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'

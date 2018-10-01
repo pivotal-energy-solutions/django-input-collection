@@ -13,7 +13,7 @@ User = get_user_model()
 
 class RestFrameworkTestCase(APITestCase, URLPatternsTestCase):
     urlpatterns = [
-        path('api/', include('input.api.restframework.urls')),
+        path('api/', include('django_input_collection.api.restframework.urls')),
     ]
 
 

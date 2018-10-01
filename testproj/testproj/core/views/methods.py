@@ -1,6 +1,6 @@
 from django import forms
 
-from input.collection import methods
+from django_input_collection.collection import methods
 
 
 lone_input_attrs = {

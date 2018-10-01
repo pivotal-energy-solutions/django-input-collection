@@ -1,4 +1,4 @@
-from input.views import CollectorView
+from django_input_collection.views import CollectorView
 
 from . import collection
 

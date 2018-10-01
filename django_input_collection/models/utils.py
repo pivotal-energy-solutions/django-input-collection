@@ -4,7 +4,7 @@ import swapper
 
 
 def get_input_model():
-    return swapper.load_model('input', 'CollectedInput')
+    return swapper.load_model('django_input_collection', 'CollectedInput')
 
 
 def isolate_response_policy(instrument):

@@ -1,6 +1,6 @@
 from django.contrib.postgres.fields import JSONField
 
-from input.models import AbstractCollectedInput
+from django_input_collection.models import AbstractCollectedInput
 
 __all__ = ['CollectedInput_Postgres_JSON']
 
