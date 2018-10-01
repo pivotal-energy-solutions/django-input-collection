@@ -10,3 +10,4 @@ node_modules
 .pycharm
 .python-version
 db.sqlite3
+.DS_Store
