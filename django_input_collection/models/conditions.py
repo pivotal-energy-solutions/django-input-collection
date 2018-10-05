@@ -124,5 +124,5 @@ class Case(DatesModel, models.Model):
     def test(self, instrument_or_raw_values, **kwargs):
         from ..collection.utils import test_condition_case
 
-        flags = self.get_flags()
-        return test_condition_case(instrument_or_raw_values, **flags, **kwargs)
+        case_kwargs = dict(self.get_flags(), **kwargs)
+        return test_condition_case(instrument_or_raw_values, **case_kwargs)
