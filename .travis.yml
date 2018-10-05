@@ -12,10 +12,11 @@ python:
   - "3.6"
   # - "3.7"
 env:
-  - DJANGO=1.11
-  - DJANGO=2.0
-  - DJANGO=2.1
+  - DJANGO=1.11.0
+  - DJANGO=2.0.0
+  - DJANGO=2.1.0
 install:
+  - pip install -qqq Django~=$DJANGO
   - pip install -qqq requirements-test.txt
   - pip install -qqq requirements.txt
 script:
