@@ -1,5 +1,6 @@
-from collections import UserDict
 from functools import reduce
+
+from ...compat import UserDict
 
 __all__ = ['InputMethod']
 
