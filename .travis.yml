@@ -7,16 +7,14 @@ git:
   
 python:
   - "2.7"
-  - "3.4"
   - "3.5"
   - "3.6"
-  # - "3.7"
 env:
-  - DJANGO=1.11.0
-  - DJANGO=2.0.0
-  - DJANGO=2.1.0
+  - DJANGO=1.11
+  - DJANGO=2.0
+  - DJANGO=2.1
 install:
-  - pip install -qqq Django~=$DJANGO
+  - pip install -qqq Django~=$DJANGO.0
   - pip install -qqq requirements-test.txt
   - pip install -qqq requirements.txt
 script:
@@ -25,8 +23,6 @@ script:
 matrix:
   exclude:
   - python: "2.7"
-    env: DJANGO=2.0.9
+    env: DJANGO=2.0
   - python: "2.7"
-    env: DJANGO=2.1.2
-  - python: "3.4"
-    env: DJANGO=2.1.2
+    env: DJANGO=2.1
