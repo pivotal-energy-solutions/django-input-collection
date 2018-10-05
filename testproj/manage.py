@@ -2,9 +2,9 @@
 import os
 import sys
 
-current_path = os.path.abspath('.')
-if current_path.endswith(os.path.sep + 'django-input-collection'):
-    sys.path.insert(0, 'testproj')
+# current_path = os.path.abspath('.')
+# if current_path.endswith(os.path.sep + 'django-input-collection'):
+#     sys.path.insert(0, 'testproj')
 
 if __name__ == '__main__':
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'testproj.settings')
