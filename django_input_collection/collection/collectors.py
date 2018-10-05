@@ -6,6 +6,8 @@ import json
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
 
+import six
+
 from ..encoders import CollectionSpecificationJSONEncoder
 from .. import models
 from . import utils
@@ -67,7 +69,8 @@ class CollectorType(type):
         fail_registration_action(cls, "Collector %(cls)r with __noregister__=True cannot be registered.")
 
 
-class BaseCollector(object, metaclass=CollectorType):
+@six.add_metaclass(CollectorType)
+class BaseCollector(object):
     __version__ = (0, 0, 0, 'dev')
     __noregister__ = True
 
