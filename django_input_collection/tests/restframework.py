@@ -1,8 +1,15 @@
+from unittest import SkipTest
+
 from django.urls import path, include, reverse_lazy
 from django.contrib.auth import get_user_model
 
-from rest_framework.test import APITestCase, URLPatternsTestCase
-from rest_framework import status
+try:
+    import rest_framework
+except:
+    rest_framework = False
+else:
+    from rest_framework.test import APITestCase, URLPatternsTestCase
+    from rest_framework import status
 
 from ..collection import Collector
 from . import factories
@@ -15,6 +22,12 @@ class RestFrameworkTestCase(APITestCase, URLPatternsTestCase):
     urlpatterns = [
         path('api/', include('django_input_collection.api.restframework.urls')),
     ]
+
+    @classmethod
+    def setUpClass(cls):
+        if not rest_framework:
+            raise SkipTest("rest_framework is unavailable")
+        super(RestFrameworkTestCase, cls).setUpClass()
 
 
 submit_url = reverse_lazy('api:input-list')
