@@ -18,7 +18,7 @@ env:
 install:
   - pip install -qqq .
 script:
-  - testproj/manage.py test --settings=settings.test
+  - testproj/manage.py test --settings=testproj.settings.test
 
 matrix:
   exclude:
