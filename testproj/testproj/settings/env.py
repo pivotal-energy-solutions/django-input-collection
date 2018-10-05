@@ -19,7 +19,7 @@ def get_variable(var_name, default=UNSET):
     """ Read the given variable name from the environment or the designated .env file. """
 
     if var_name in os.environ:
-        return os.enrion[var_name]
+        return os.environ[var_name]
 
     env_path = _load_file()
 
