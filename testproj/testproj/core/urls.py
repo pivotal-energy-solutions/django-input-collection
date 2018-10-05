@@ -1,9 +1,9 @@
-from django.urls import path, include
+from django_input_collection.compat import url, include
 
 from . import views
 
 urlpatterns = [
-    path('polls/', include([
-        path('<pk>/', views.PollView.as_view()),
+    url(r'^polls/', include([
+        url(r'^(?P<pk>\d+)/', views.PollView.as_view()),
     ])),
 ]

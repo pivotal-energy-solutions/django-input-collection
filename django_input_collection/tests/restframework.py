@@ -1,6 +1,5 @@
 from unittest import SkipTest
 
-from django.urls import path, include, reverse_lazy
 from django.contrib.auth import get_user_model
 
 try:
@@ -11,6 +10,7 @@ else:
     from rest_framework.test import APITestCase, URLPatternsTestCase
     from rest_framework import status
 
+from ..compat import url, include
 from ..collection import Collector
 from . import factories
 
@@ -20,7 +20,7 @@ User = get_user_model()
 
 class RestFrameworkTestCase(APITestCase, URLPatternsTestCase):
     urlpatterns = [
-        path('api/', include('django_input_collection.api.restframework.urls')),
+        url(r'^api/', include('django_input_collection.api.restframework.urls')),
     ]
 
     @classmethod

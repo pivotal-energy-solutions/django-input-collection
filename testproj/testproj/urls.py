@@ -1,13 +1,13 @@
 from django.contrib import admin
-from django.urls import path, include
 
+from django_input_collection.compat import url, include
 
 urlpatterns = [
-    path('', include('testproj.core.urls')),
+    url(r'^', include('testproj.core.urls')),
 
     # API
-    path('api/', include('django_input_collection.api.restframework.urls')),
+    url(r'^api/', include('django_input_collection.api.restframework.urls')),
 
     # Temporary
-    path('admin/', admin.site.urls),
+    url(r'^admin/', admin.site.urls),
 ]
