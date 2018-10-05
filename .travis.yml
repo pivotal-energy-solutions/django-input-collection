@@ -15,8 +15,8 @@ env:
   - DJANGO=2.1
 install:
   - pip install -qqq Django~=$DJANGO.0
-  - pip install -qqq requirements-test.txt
   - pip install -qqq requirements.txt
+  - pip install -qqq requirements-tests.txt
 script:
   - cd testproj && ./manage.py test --settings=testproj.settings.test
 
