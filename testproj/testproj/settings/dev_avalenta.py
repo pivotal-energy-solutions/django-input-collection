@@ -32,4 +32,4 @@ INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
 
 import sys
 if sys.argv[1] == 'test':
-    INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
+    from .test import *
