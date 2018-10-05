@@ -1,5 +1,9 @@
 from .dev import *
 
+INSTALLED_APPS.extend([
+    'rest_framework',
+])
+
 # Default mode
 INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
 
