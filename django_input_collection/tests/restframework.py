@@ -1,6 +1,7 @@
 from unittest import SkipTest
 
 from django.contrib.auth import get_user_model
+from django.urls import reverse_lazy
 
 try:
     import rest_framework
