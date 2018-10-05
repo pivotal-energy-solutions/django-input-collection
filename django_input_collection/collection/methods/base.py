@@ -28,7 +28,7 @@ class InputMethod(UserDict):
     that external methodology has complete.
     """
 
-    def __init__(self, *args, _raise=True, **kwargs):
+    def __init__(self, *args, **kwargs):
         # NOTE: Avoid super() first because our primed defaults won't exist, and it'll think that's
         # a problem when it goes to do update().  Also avoid super() at the end because that will
         # just reset data to an empty dict and then update() will have the same problem.
@@ -42,7 +42,7 @@ class InputMethod(UserDict):
             init_dict = filter_safe_dict(cls.__dict__)
             self.data.update(init_dict)
 
-        self.update(*args, _raise=_raise, **kwargs)
+        self.update(*args, **kwargs)
 
     def __getattr__(self, k):
         if k == 'data':
@@ -55,7 +55,8 @@ class InputMethod(UserDict):
             return
         self.data[k] = v
 
-    def update(self, *args, _raise=True, **kwargs):
+    def update(self, *args, **kwargs):
+        _raise = kwargs.pop('_raise', True)
         data = flatten_dicts(*args, **kwargs)
 
         for k in filter_safe_dict(data, self.data.keys()):
