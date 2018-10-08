@@ -34,7 +34,7 @@ class RestFrameworkTestCase(APITestCase, URLPatternsTestCase):
         super(RestFrameworkTestCase, cls).setUpClass()
 
 
-submit_url = reverse_lazy('api:input-list')
+submit_url = reverse_lazy('collection-api:input-list')
 
 
 class InputSubmissionTests(RestFrameworkTestCase):

@@ -9,8 +9,8 @@ class RestFrameworkSpecification(BaseAPISpecification):
     def get_api_info(self):
         info = super(RestFrameworkSpecification, self).get_api_info()
 
-        input_list = reverse('api:input-list')
-        input_detail = reverse('api:input-detail', kwargs={'pk': '__id__'})
+        input_list = reverse('collection-api:input-list')
+        input_detail = reverse('collection-api:input-detail', kwargs={'pk': '__id__'})
 
         info['endpoints'] = {
             'input': {
