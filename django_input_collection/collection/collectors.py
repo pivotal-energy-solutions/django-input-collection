@@ -74,16 +74,19 @@ class BaseCollector(object):
     __version__ = (0, 0, 0, 'dev')
     __noregister__ = True
 
+    group = 'default'
+
     # TODO: Streamline how this will have to work for targetting response_policy settings, too.
     # I think it'll have to be something like a list of "match dicts" and the first one to match
     # all settings for the instrument will be used.
     type_methods = None
     measure_methods = None
 
-    def __init__(self, collection_request, group='default', **context):
+    def __init__(self, collection_request, group=None, **context):
         self.collection_request = collection_request
         self.context = context
-        self.group = group
+        if group:
+            self.group = group
 
         self.type_methods = self.get_type_methods()
         self.measure_methods = self.get_measure_methods()
