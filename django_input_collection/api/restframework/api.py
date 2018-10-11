@@ -31,11 +31,11 @@ class CollectionInstrumentViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-CollectedInput = models.get_input_model()
-
 class CollectedInputViewSet(viewsets.ModelViewSet):
-    queryset = CollectedInput.objects.all()
     serializer_class = serializers.CollectedInputSerializer
+
+    def get_queryset(self):
+        return models.get_input_model().objects.all()
 
     def get_serializer_context(self):
         context = super(CollectedInputViewSet, self).get_serializer_context()
