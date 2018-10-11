@@ -139,6 +139,9 @@ class ResponsePolicy(DatesModel, models.Model):
     #
     # self.collectioninstrument_set.all()
 
+    class Meta:
+        verbose_name_plural = 'Response policies'
+
     def get_flags(self):
         return {
             'restrict': self.restrict,
