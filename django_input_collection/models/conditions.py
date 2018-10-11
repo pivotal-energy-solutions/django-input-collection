@@ -47,7 +47,7 @@ class ConditionGroup(DatesModel, models.Model):
                                           symmetrical=False)
 
     # Leaf groups declare cases only
-    cases = models.ManyToManyField('Case', symmetrical=False)
+    cases = models.ManyToManyField('Case', blank=True, symmetrical=False)
 
     # Also available:
     #
@@ -106,7 +106,7 @@ class Case(DatesModel, models.Model):
         ('contains', "Input contains this data"),
         ('not-contains', "Input does not contain this data"),
     ))
-    match_data = models.CharField(max_length=512)
+    match_data = models.CharField(max_length=512, blank=True, null=True)
 
     # Also available:
     #
