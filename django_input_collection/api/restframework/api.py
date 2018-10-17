@@ -25,9 +25,12 @@ class CollectionInstrumentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CollectionInstrumentSerializer
 
     def filter_queryset(self, queryset):
+        filters = {}
         if 'group' in self.request.query_params:
             group = self.request.query_params['group']
-            queryset = queryset.filter(group=group)
+            filters['group'] = group
+
+        queryset = queryset.filter(**filters)
         return queryset
 
 
