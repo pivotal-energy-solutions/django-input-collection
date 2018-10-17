@@ -132,9 +132,6 @@ var DjangoInputCollection = (function(){
         },
         prepareRequest: function(args) {
             var xhr = new XMLHttpRequest();
-        sendRequest: function(type, operation, context, payload, csrfToken) {
-            var requestArgs = api.getRequestArgs(type, operation, context, payload);
-            var xhr = api.getRequest(type, requestArgs.method, requestArgs.url);
             xhr.open(args.method, args.url);
 
             // Finalize headers
@@ -155,6 +152,10 @@ var DjangoInputCollection = (function(){
                 return xhr.send(postString);
             });
         },
+        sendRequest: function(type, operation, context, payload, csrfToken) {
+            var info = api.getRequestInfo(type, operation, context, payload, csrfToken);
+            var doRequest = api.prepareRequest(info);
+            return doRequest();
         },
     };
 
