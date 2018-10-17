@@ -94,16 +94,40 @@ var DjangoInputCollection = (function(){
     var api = {
         specification: undefined,
         api: undefined,
-        getRequestArgs: function(type, operation, context, payload) {
+        getRequestInfo: function(type, operation, context, payload, csrfToken) {
             var endpointInfo = api.specification.endpoints[type][operation];
+            var method = endpointInfo.method.toLowerCase();
+            var headers = headers || {};
             var url = utils.interpolate(endpointInfo.url, context);
-            if (payload !== undefined) {
+
+            if (method == 'get' || payload !== undefined) {
                 payload.collector = api.specification.collector;
             }
+
+            // Append query string suffix if required.  This consumes the 'payload'.
+            if (method == 'get') {
+                var params = [];
+                for (var k in payload) {
+                    if (payload.hasOwnProperty(k)) {
+                        var key = encodeURIComponent(k);
+                        var value = encodeURIComponent(payload[k]);
+                        params.push(key + '=' + value);
+                    }
+                }
+                url += '?' + params.join('&');
+                payload = undefined;  // So it doesn't do anything during xhr.send(payload);
+            }
+
+            headers['Content-Type'] = api.specification.content_type;
+            if (csrfToken !== undefined) {
+                headers['X-CSRFToken'] = csrfToken;
+            }
+
             return {
                 url: url,
-                method: endpointInfo.method.toLowerCase(),
-                data: payload
+                method: method,
+                data: payload,
+                headers: headers
             };
         },
         getRequest: function(type, method, url) {
