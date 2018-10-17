@@ -62,7 +62,9 @@ var DjangoInputCollection = (function(){
         generateApi: function(specification){
             // Expose one-liners for accomplishing work via requests
 
-            var api = {};
+            var api = {
+                promise: {}  // 'Promise' versions of api methods
+            };
 
             for (var type of utils.locals(specification.endpoints)) {
                 for (var operation of utils.locals(specification.endpoints[type])) {
@@ -70,21 +72,26 @@ var DjangoInputCollection = (function(){
                     var emptyContext = utils.extractEmptyContext(endpointInfo.url);
                     var name = type + operation.charAt(0).toUpperCase() + operation.substr(1);
 
-                    api[name] = internals.buildAction(type, operation, emptyContext);
+                    api[name] = internals.buildAction(type, operation, emptyContext, false);
+                    api.promise[name] = internals.buildAction(type, operation, emptyContext, true);
                 }
             }
 
             return api;
         },
-        buildAction: function(type, operation, emptyContext) {
+        buildAction: function(type, operation, emptyContext, asPromise) {
             return function(payload, extraContext, csrfToken) {
                 var context = Object.assign({}, emptyContext);
                 utils.fillObject(context, extraContext);
                 if (payload !== undefined) {
                     utils.fillObject(context, payload);
                 }
-                internals.doAction(type, operation, context, payload, csrfToken);
+                var doAction = (asPromise ? internals.promiseAction : internals.doAction);
+                return doAction(type, operation, context, payload, csrfToken);
             };
+        },
+        promiseAction: function(type, operation, context, payload, csrfToken) {
+            return api.getPromise(type, operation, context, payload, csrfToken);
         },
         doAction: function(type, operation, context, payload, csrfToken) {
             return api.sendRequest(type, operation, context, payload, csrfToken);
