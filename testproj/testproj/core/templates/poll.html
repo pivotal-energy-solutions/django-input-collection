@@ -68,7 +68,7 @@
                         console.log("[%s] Nothing to submit <%s:%s>", instrumentId, typeof(data), data);
                     } else {
                         console.log("[%s] Submitting: <%s:%s>", instrumentId, typeof(data), JSON.stringify(data));
-                        collector.api.addInput({
+                        collector.api.inputAdd({
                             instrument: instrumentId,
                             data: data
                         }, {}, polls.getCsrfToken());
