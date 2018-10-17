@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import Iterable
+
 from django.db import models
 from django.db.models.query import Q
 from django.utils.encoding import force_str, force_text
@@ -76,3 +78,24 @@ class ConditionNode(Q):
 
     def __iter__(self):
         return iter(self.children)
+
+
+def flatten(items):
+    # TODO: Block recursion
+    from .conditions import ConditionGroup, Case
+
+    if isinstance(items, Case):
+        return items
+
+    # if isinstance(items, ConditionGroup):
+    #     parent_groups.append(items)
+
+    items = list(items)
+    if len(items) == 0:
+        return items
+
+    size = len(items)
+    bit = items[0]
+    if isinstance(bit, Iterable) and not isinstance(bit, basestring):
+        return flatten(bit) + flatten(items[1:])
+    return sorted([bit] + flatten(items[1:]))
