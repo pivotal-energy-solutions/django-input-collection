@@ -68,7 +68,7 @@ var DjangoInputCollection = (function(){
                 for (var operation of utils.locals(specification.endpoints[type])) {
                     var endpointInfo = specification.endpoints[type][operation];
                     var emptyContext = utils.extractEmptyContext(endpointInfo.url);
-                    var name = operation + type.charAt(0).toUpperCase() + type.substr(1);
+                    var name = type + operation.charAt(0).toUpperCase() + operation.substr(1);
 
                     api[name] = internals.buildAction(type, operation, emptyContext);
                 }
