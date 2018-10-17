@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models.query import Q
+from django.utils.encoding import force_str, force_text
 
 import swapper
 
@@ -53,3 +55,24 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
 
     policy = ResponsePolicy.objects.create(**create_kwargs)
     return policy
+
+
+class ConditionNode(Q):
+    AND = ', '
+    OR = ' | '
+
+    def __str__(self):
+        joiner = self.connector
+        nodes = flatten(self)
+        if not nodes:
+            return ''
+        if len(nodes) > 1:
+            wrapper = '(%s)'
+        else:
+            wrapper = '%s'
+        # if self.negated:
+        #     wrapper = 'NOT%s' % wrapper
+        return force_str(wrapper % joiner.join(force_text(c) for c in nodes))
+
+    def __iter__(self):
+        return iter(self.children)
