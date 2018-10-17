@@ -2,11 +2,33 @@
 
 from __future__ import unicode_literals
 
+import re
+import operator
+from collections import OrderedDict
+try:
+    from functools import reduce
+except:
+    pass
+
 from django.db import models
 
 from .base import DatesModel
+from .utils import ConditionNode
 
 __all__ = ['Condition', 'ConditionGroup', 'Case']
+
+
+def set_substitutions(d):
+    def decorator(f):
+        f.__dict__.update(substitutions=d)
+        return f
+    return decorator
+
+
+def substitute(s, substitutions):
+    for pattern, rep in substitutions.items():
+        s = re.sub(pattern, rep, s)
+    return s
 
 
 class Condition(DatesModel, models.Model):
@@ -67,6 +89,23 @@ class ConditionGroup(DatesModel, models.Model):
             'requirement_type': self.requirement_type,
         }
 
+    @set_substitutions({
+        'all-pass': operator.and_,
+        'one-pass': operator.or_,
+        'all-fail': lambda x,y: operator.and_(x, ~y),
+    })
+    def describe(self):
+        if not self.pk:
+            return '(Unsaved)'
+
+        testables = list(self.child_groups.all()) + list(self.cases.all())
+        if len(testables) == 0:
+            return '(Empty)'
+
+        substitution = self.describe.substitutions[self.requirement_type]
+        tree = reduce(lambda a, b: substitution(a, ConditionNode(b)), testables, ConditionNode())
+        return str(tree)
+
     def test(self, instrument_or_raw_values, **kwargs):
         has_failed = False
         has_passed = False
@@ -124,6 +163,22 @@ class Case(DatesModel, models.Model):
             'match_type': self.match_type,
             'match_data': self.match_data,
         }
+
+    @set_substitutions(OrderedDict((
+        (r"^Input (.*)", r'\1'),
+        (r"matches this data", '={data}'),
+        (r"doesn't match this data", '≠{data}'),
+        (r"contains this data", '*{data}*'),
+        (r"doesn't contain this data", '!*{data}*'),
+    )))
+    def describe(self):
+        if not self.pk:
+            return '(Unsaved)'
+
+        type_display = self.get_match_type_display()
+        text = substitute(type_display, self.describe.substitutions)
+        text = text.format(data=self.match_data)
+        return text.encode('utf-8')
 
     def test(self, instrument_or_raw_values, **kwargs):
         from ..collection.utils import test_condition_case
