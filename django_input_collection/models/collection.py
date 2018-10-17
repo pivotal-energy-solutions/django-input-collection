@@ -92,7 +92,7 @@ class CollectionInstrument(DatesModel, models.Model):
     help = models.TextField(blank=True)  # long text, always hidden unless requested
 
     response_policy = models.ForeignKey('ResponsePolicy', on_delete=models.CASCADE)
-    suggested_responses = models.ManyToManyField('SuggestedResponse')  # FIXME: ordering?
+    suggested_responses = models.ManyToManyField('SuggestedResponse', blank=True)
 
     # Also available:
     #
