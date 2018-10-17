@@ -130,22 +130,31 @@ var DjangoInputCollection = (function(){
                 headers: headers
             };
         },
-        getRequest: function(type, method, url) {
+        prepareRequest: function(args) {
             var xhr = new XMLHttpRequest();
-            xhr.open(method, url);
-            return xhr;
-        },
         sendRequest: function(type, operation, context, payload, csrfToken) {
             var requestArgs = api.getRequestArgs(type, operation, context, payload);
             var xhr = api.getRequest(type, requestArgs.method, requestArgs.url);
-            var postString = undefined;
-            if (requestArgs.method == 'post' || requestArgs.method == 'put') {
-                xhr.setRequestHeader('Content-Type', api.specification.content_type);
-                xhr.setRequestHeader('X-CSRFToken', csrfToken);
-                postString = JSON.stringify(requestArgs.data);
+            xhr.open(args.method, args.url);
+
+            // Finalize headers
+            for (var k in args.headers) {
+                if (payload.hasOwnProperty(k)) {
+                    xhr.setRequestHeader(k, args.headers[k]);
+                }
             }
-            xhr.send(postString);
-            return xhr;
+
+            // Finalize POST payload
+            var postString = undefined;
+            if (args.method != 'get' && payload !== undefined) {
+                postString = JSON.stringify(args.data);
+            }
+
+            // Return promise-compatible trigger function
+            return (function doRequest(resolve, reject) {
+                return xhr.send(postString);
+            });
+        },
         },
     };
 
