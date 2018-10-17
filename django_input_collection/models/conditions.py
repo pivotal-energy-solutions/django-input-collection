@@ -82,7 +82,7 @@ class ConditionGroup(DatesModel, models.Model):
     # self.cases.all()
 
     def __str__(self):
-        return self.nickname or self.id
+        return self.nickname or self.describe()
 
     def get_flags(self):
         return {
@@ -156,7 +156,7 @@ class Case(DatesModel, models.Model):
     # self.conditiongroup_set.all()
 
     def __str__(self):
-        return self.nickname or self.id
+        return self.nickname or self.describe()
 
     def get_flags(self):
         return {
