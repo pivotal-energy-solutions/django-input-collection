@@ -11,12 +11,18 @@ class RestFrameworkSpecification(BaseAPISpecification):
 
         input_list = reverse('collection-api:input-list')
         input_detail = reverse('collection-api:input-detail', kwargs={'pk': '__id__'})
+        instrument_list = reverse('collection-api:instrument-list')
+        instrument_detail = reverse('collection-api:instrument-detail', kwargs={'pk': '__id__'})
 
         info['endpoints'] = {
             'input': {
                 'list': {'url': input_list, 'method': 'GET'},
                 'add': {'url': input_list, 'method': 'POST'},
                 'get': {'url': input_detail, 'method': 'GET'},
+            },
+            'instrument': {
+                'list': {'url': instrument_list, 'method': 'GET'},
+                'get': {'url': instrument_detail, 'method': 'GET'},
             },
         }
         return info
