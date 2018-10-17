@@ -152,6 +152,11 @@ var DjangoInputCollection = (function(){
                 return xhr.send(postString);
             });
         },
+        getPromise: function(type, operation, context, payload, csrfToken) {
+            var info = api.getRequestInfo(type, operation, context, payload, csrfToken);
+            var doRequest = api.prepareRequest(info);
+            return new Promise(doRequest);
+        },
         sendRequest: function(type, operation, context, payload, csrfToken) {
             var info = api.getRequestInfo(type, operation, context, payload, csrfToken);
             var doRequest = api.prepareRequest(info);
