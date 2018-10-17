@@ -177,3 +177,10 @@ var DjangoInputCollection = (function(){
         return api;
     })
 })();
+
+
+try {
+    module.exports.DjangoInputCollection = function(specification){
+        return DjangoInputCollection(specification);
+    };
+} catch (e) {};
