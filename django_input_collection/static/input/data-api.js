@@ -154,8 +154,10 @@ var DjangoInputCollection = (function(){
                 postString = JSON.stringify(args.data);
             }
 
-            // Return promise-compatible trigger function
-            return (function doRequest(resolve, reject) {
+            return (function doRequest(onload) {
+                if (onload !== undefined) {
+                    xhr.onload = onload;
+                }
                 return xhr.send(postString);
             });
         },
