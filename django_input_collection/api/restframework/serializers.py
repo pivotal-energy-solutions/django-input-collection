@@ -40,6 +40,8 @@ class CollectionRequestSerializer(ReadWriteToggleMixin, serializers.ModelSeriali
 
 
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
+    response_policy = serializers.SerializerMethodField()
+
     class Meta:
         model = models.CollectionInstrument
         fields = ['id', 'collection_request', 'measure', 'group', 'type', 'order', 'text',
@@ -64,6 +66,9 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
         queryset = obj.collectedinput_set.filter_for_context(**context)
         pklist_field = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
         return pklist_field.to_representation(queryset)
+
+    def get_response_policy(self, instance):
+        return instance.response_policy.get_flags()
 
 
 class RegisteredCollectorField(serializers.Field):
