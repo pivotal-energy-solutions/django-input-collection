@@ -77,7 +77,7 @@ class InputMethod(UserDict):
         info = self.data.copy()
 
         info['meta'] = {
-            'method_class': self.__class__.__name__,
+            'method_class': '.'.join([self.__module__, self.__class__.__name__]),
         }
 
         return info

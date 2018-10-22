@@ -97,8 +97,8 @@ class FormFieldMethod(InputMethod):
 
         # Extra
         data['meta'].update({
-            'widget_class': field.widget.__class__.__name__,
-            'field_class': field.__class__.__name__,
+            'widget_class': '.'.join([field.widget.__module__, field.widget.__class__.__name__]),
+            'field_class': '.'.join([field.__module__, field.__class__.__name__]),
         })
 
         return data
@@ -151,7 +151,7 @@ class FormMethod(InputMethod):
             })
 
         data['meta'].update({
-            'form_class': form.__class__.__name__,
+            'form_class': '.'.join([form.__module__, form.__class__.__name__]),
         })
 
         return data
