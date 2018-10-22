@@ -143,14 +143,14 @@ var DjangoInputCollection = (function(){
 
             // Finalize headers
             for (var k in args.headers) {
-                if (payload.hasOwnProperty(k)) {
+                if (args.headers.hasOwnProperty(k)) {
                     xhr.setRequestHeader(k, args.headers[k]);
                 }
             }
 
             // Finalize POST payload
             var postString = undefined;
-            if (args.method != 'get' && payload !== undefined) {
+            if (args.method != 'get' && args.data !== undefined) {
                 postString = JSON.stringify(args.data);
             }
 
