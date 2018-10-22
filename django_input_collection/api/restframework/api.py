@@ -1,9 +1,12 @@
+from django.core.exceptions import PermissionDenied
+
 from rest_framework import viewsets, views
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from . import serializers
-from ...collection.collectors import registry
+from ...collection.collectors import resolve, registry
+from ...encoders import CollectionSpecificationJSONEncoder
 from ... import models
 
 
@@ -20,6 +23,28 @@ class CollectionGroupViewSet(viewsets.ModelViewSet):
 class CollectionRequestViewSet(viewsets.ModelViewSet):
     queryset = models.CollectionRequest.objects.all()
     serializer_class = serializers.CollectionRequestSerializer
+
+    @action(detail=True, methods=['get'])
+    def specification(self, request, *args, **kwargs):
+        identifier = request.query_params.get('collector')
+        try:
+            collector_class = resolve(identifier)
+        except KeyError:
+            raise PermissionDenied('Unknown collector reference')
+
+        group = request.query_params.get('group')
+        context = {
+            'user': request.user,
+        }
+        instance = self.get_object()
+        collector = collector_class(instance, group=group, **context)
+        response = Response(collector.specification)
+
+        # There's no such thing as a per-response renderer class, so here we are.  Thanks DRF.
+        # The request's accepted_renderer will be pushed to the response in finalize_response()
+        request.accepted_renderer.encoder_class = CollectionSpecificationJSONEncoder
+
+        return response
 
 
 class CollectionInstrumentViewSet(viewsets.ModelViewSet):
