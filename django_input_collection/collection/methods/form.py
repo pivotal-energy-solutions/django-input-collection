@@ -14,7 +14,6 @@ class FormFieldMethod(InputMethod):
     """
 
     formfield = None
-    template_name = None
     widget_template_name = None
     option_template_name = None
 
@@ -58,9 +57,7 @@ class FormFieldMethod(InputMethod):
         field = self.get_formfield()
 
         # Update field/widget to spec
-        self.update_field(field, instrument, **{
-            'template_name': data['template_name'],
-        })
+        self.update_field(field, instrument)
         self.update_widget(field, field.widget, instrument, **{
             'template_name': data['widget_template_name'],
             'option_template_name': data['option_template_name'],
