@@ -1,7 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, views
 from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from . import serializers
+from ...collection.collectors import registry
 from ... import models
 
 
@@ -47,3 +49,10 @@ class CollectedInputViewSet(viewsets.ModelViewSet):
             context['write_mode'] = True
 
         return context
+
+
+class CollectorRegistryView(views.APIView):
+    def get(self, request, *args, **kwargs):
+        return Response({
+            uid: '.'.join([cls.__module__, cls.__name__]) for uid, cls in sorted(registry.items())
+        })

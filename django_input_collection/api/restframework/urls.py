@@ -1,5 +1,8 @@
+from django.conf import settings
+
 from rest_framework import routers
 
+from ...compat import url
 from . import api
 
 
@@ -13,3 +16,9 @@ router.register(r'input', api.CollectedInputViewSet, base_name='input')
 
 app_name = 'collection-api'
 urlpatterns = router.urls
+
+
+if settings.DEBUG:
+    urlpatterns += [
+        url(r'collector', api.CollectorRegistryView.as_view(), name='registry'),
+    ]
