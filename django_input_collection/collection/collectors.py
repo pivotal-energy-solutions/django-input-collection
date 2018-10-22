@@ -133,7 +133,7 @@ class BaseCollector(object):
 
         return method
 
-    ## Instrument/Input runtime hooks
+    # Instrument/Input runtime hooks
     def is_instrument_allowed(self, instrument):
         """
         Returns True when the given instrument passes all related conditions limiting its use.
