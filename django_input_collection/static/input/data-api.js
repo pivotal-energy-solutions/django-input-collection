@@ -164,7 +164,13 @@ var DjangoInputCollection = (function(){
         getPromise: function(type, operation, context, payload, csrfToken) {
             var info = api.getRequestInfo(type, operation, context, payload, csrfToken);
             var doRequest = api.prepareRequest(info);
-            return new Promise(doRequest);
+
+            return new Promise(function(resolve, reject) {
+                doRequest(function(result){
+                    var obj = JSON.parse(result.currentTarget.response);
+                    resolve(obj);
+                });
+            });
         },
         sendRequest: function(type, operation, context, payload, csrfToken) {
             var info = api.getRequestInfo(type, operation, context, payload, csrfToken);
