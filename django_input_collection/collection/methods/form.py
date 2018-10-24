@@ -48,13 +48,11 @@ class FormFieldMethod(InputMethod):
 
         self.copy_attrs(widget, *forward_attrs, **attrs)
 
-    def serialize(self, instrument):
-        data = super(FormFieldMethod, self).serialize(instrument)
-
-        # Remove hard reference to class and create a reasonable serialization here
-        data.pop('formfield', None)
+    def get_data(self, instrument):
+        data = super(FormFieldMethod, self).get_data(instrument)
 
         field = self.get_formfield()
+        data['formfield'] = field
 
         # Update field/widget to spec
         self.update_field(field, instrument)
@@ -71,7 +69,6 @@ class FormFieldMethod(InputMethod):
                 continue
             data[attr] = getattr(field, attr)
 
-
         # Get final widget DOM attrs
         data['attrs'] = field.widget.build_attrs(field.widget.attrs, field.widget_attrs(field.widget))
         if hasattr(field, 'choices'):
@@ -85,18 +82,27 @@ class FormFieldMethod(InputMethod):
             if isinstance(v, str):
                 data['attrs'][k] = v.format(**dom_attrs_context)
 
-        # Do a server render of widget to store on the serialization
-        data['template'] = field.widget.render(**{
-            'name': 'instrument-%s' % (instrument.id),
-            'value': None,
-            'attrs': data['attrs'],
-        })
-
         # Extra
         data['meta'].update({
             'widget_class': '.'.join([field.widget.__module__, field.widget.__class__.__name__]),
             'field_class': '.'.join([field.__module__, field.__class__.__name__]),
         })
+
+        return data
+
+    def render(self, data, field, context):
+        content = field.widget._render(field.widget.template_name, context)
+        return content
+
+    def serialize(self, instrument):
+        data = super(FormFieldMethod, self).serialize(instrument)
+
+        field = data.pop('formfield')  # Don't want this to go through to final serialization
+        field_name = 'instrument-%s' % (instrument.id)
+        field_value = None
+        context = field.widget.get_context(field_name, field_value, data['attrs'])
+        context['method'] = data
+        data['template'] = self.render(data, field, context)
 
         return data
 
@@ -125,11 +131,13 @@ class FormMethod(InputMethod):
     def get_form(self):
         return self.form_class()
 
-    def serialize(self, instrument):
-        data = super(FormMethod, self).serialize(instrument)
-        data.pop('form_class', None)
+    def get_data(self, instrument):
+        data = super(FormMethod, self).get_data(instrument)
 
+        data.pop('form_class', None)
         form = self.get_form()
+        data['form'] = form
+
         data['fields'] = {}
         widget_templates = data['widget_template_name'] or {}
         option_templates = data['option_template_name'] or {}
@@ -141,14 +149,25 @@ class FormMethod(InputMethod):
             })
             data['fields'][name] = sub_method.serialize(instrument)
 
-        if data['template_name']:
-            data['template'] = render_to_string(data['template_name'], context={
-                'form': form,
-                'fields': data['fields'],
-            })
-
         data['meta'].update({
             'form_class': '.'.join([form.__module__, form.__class__.__name__]),
         })
+
+        return data
+
+    def render(self, data, form, context):
+        if data['template_name']:
+            return render_to_string(data['template_name'], context=context)
+        return None
+
+    def serialize(self, instrument):
+        data = super(FormMethod, self).serialize(instrument)
+
+        form = data.pop('form')
+        context = {
+            'form': form,
+            'fields': data['fields'],
+        }
+        data['template'] = self.render(data, form, context)
 
         return data

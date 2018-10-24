@@ -71,16 +71,17 @@ class InputMethod(UserDict):
                 list(sorted(self.data.keys())),
             ))
 
-    def serialize(self, instrument):
-        """ Serializes a python representation of this input description. """
-
-        info = self.data.copy()
-
-        info['meta'] = {
+    def get_data(self, instrument):
+        """ Gets a copy of the data that will be used for serialize(). """
+        data = self.data.copy()
+        data['meta'] = {
             'method_class': '.'.join([self.__module__, self.__class__.__name__]),
         }
+        return data
 
-        return info
+    def serialize(self, instrument):
+        """ Serializes a python representation of this input description. """
+        return self.get_data(instrument)
 
     def clean(self, result):
         """ Clean the result and perform any necessary type coercion. """
