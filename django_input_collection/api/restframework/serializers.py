@@ -138,6 +138,8 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         except ValueError as e:
             raise serializers.ValidationError(str(e))
 
+        data = self.collector.validate(instrument, data)
+
         return data
 
     # Validation helpers

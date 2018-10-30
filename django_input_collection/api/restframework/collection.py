@@ -30,3 +30,7 @@ class RestFrameworkSpecification(BaseAPISpecification):
 
 class RestFrameworkCollector(BaseAPICollector):
     specification_class = RestFrameworkSpecification
+
+    def validate(self, instrument, data):
+        """ Raises any validation errors in the serializer's ``data``. """
+        return data
