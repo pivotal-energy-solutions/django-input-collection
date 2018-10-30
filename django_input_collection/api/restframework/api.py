@@ -67,7 +67,26 @@ class CollectedInputViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return models.get_input_model().objects.all()
 
-    def get_serializer_context(self):
+    def _save_and_store_ref(self, serializer):
+        serializer.save()
+        self._instance = serializer.instance
+
+    perform_create = _save_and_store_ref
+    perform_update = _save_and_store_ref
+
+    def _rewrite_full_payload(self, response):
+        serializer = self.get_serializer(instance=self._instance, write_mode=False)
+        response.data = serializer.data
+        return response
+
+    def create(self, request, *args, **kwargs):
+        response = super(CollectedInputViewSet, self).create(request, *args, **kwargs)
+        return self._rewrite_full_payload(response)
+
+    def update(self, request, *args, **kwargs):
+        response = super(CollectedInputViewSet, self).update(request, *args, **kwargs)
+        return self._rewrite_full_payload(response)
+
     def get_serializer(self, *args, **kwargs):
         context_kwargs = {
             'write_mode': kwargs.pop('write_mode', None),
