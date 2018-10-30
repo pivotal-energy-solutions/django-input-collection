@@ -68,10 +68,23 @@ class CollectedInputViewSet(viewsets.ModelViewSet):
         return models.get_input_model().objects.all()
 
     def get_serializer_context(self):
+    def get_serializer(self, *args, **kwargs):
+        context_kwargs = {
+            'write_mode': kwargs.pop('write_mode', None),
+        }
+
+        serializer_class = self.get_serializer_class()
+        kwargs['context'] = self.get_serializer_context(**context_kwargs)
+        return serializer_class(*args, **kwargs)
+
+    def get_serializer_context(self, write_mode=None):
         context = super(CollectedInputViewSet, self).get_serializer_context()
 
-        if self.request.method in ['PUT', 'POST']:
-            context['write_mode'] = True
+        if write_mode is None and self.request.method in ['PUT', 'POST', 'PATCH']:
+            write_mode = True
+
+        if write_mode:
+            context['write_mode'] = write_mode
 
         return context
 
