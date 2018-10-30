@@ -96,7 +96,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
     class Meta:
         model = CollectedInput
         fields = '__all__'
-        exclude_write = ('collection_request', 'user')
+        include_write = ('collector', 'instrument', 'data')
 
     def get_fields(self):
         fields = super(CollectedInputSerializer, self).get_fields()
