@@ -16,9 +16,20 @@ class ReadWriteToggleMixin(object):
         super(ReadWriteToggleMixin, self).__init__(*args, **kwargs)
 
         if write_mode:
+            include_fields = getattr(self.Meta, 'include_write', '__all__')
             exclude_fields = getattr(self.Meta, 'exclude_write', [])
-            for name in exclude_fields:
-                del self.fields[name]
+
+            if include_fields == '__all__':
+                include_fields = list(self.fields.keys())
+
+            if include_fields:
+                for name in self.fields:
+                    if name not in include_fields:
+                        del self.fields[name]
+
+            if exclude_fields:
+                for name in exclude_fields:
+                    del self.fields[name]
 
 
 class MeasureSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
