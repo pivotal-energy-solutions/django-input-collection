@@ -341,20 +341,20 @@ class CollectorRuntimeTests(TestCase):
         self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd'], max=5), True)
         self.assertEqual(with_config(inputs=['a', 'b', 'c', 'd', 'e'], max=5), False)
 
-    def test_responsepolicy_multiple_coerces_bare_inputs_to_lists_in_clean_data(self):
+    def test_responsepolicy_multiple_coerces_bare_inputs_to_lists_in_clean_input(self):
         self.instrument.response_policy.multiple = True
         def with_config(data):
-            return self.collector.clean_data(self.instrument, data)
+            return self.collector.clean_input(self.instrument, data)
 
         self.assertEqual(with_config('a'), ['a'])
         self.assertEqual(with_config(['']), [''])
         self.assertEqual(with_config(['a']), ['a'])
         self.assertEqual(with_config(['a', 'b']), ['a', 'b'])
 
-    def test_responsepolicy_non_multiple_stops_lists_in_clean_data(self):
+    def test_responsepolicy_non_multiple_stops_lists_in_clean_input(self):
         self.instrument.response_policy.multiple = False
         def with_config(data):
-            return self.collector.clean_data(self.instrument, data)
+            return self.collector.clean_input(self.instrument, data)
 
         with self.assertRaises(ValidationError): with_config([])
         with self.assertRaises(ValidationError): with_config([''])

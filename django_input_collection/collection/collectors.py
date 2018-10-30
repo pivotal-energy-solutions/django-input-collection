@@ -168,7 +168,7 @@ class BaseCollector(object):
 
         return True
 
-    def clean_data(self, instrument, data):
+    def clean_input(self, instrument, data):
         """
         Return cleaned/validated data based on a speculative input ``data``.  Data coded for
         representing SuggestedResponse instance ids are translated to the concrete data that
