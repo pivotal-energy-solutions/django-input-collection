@@ -134,7 +134,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
             ))
 
         try:
-            data['data'] = self.collector.clean_data(instrument, data['data'])
+            data['data'] = self.collector.clean_input(instrument, data['data'])
         except ValueError as e:
             raise serializers.ValidationError(str(e))
 
