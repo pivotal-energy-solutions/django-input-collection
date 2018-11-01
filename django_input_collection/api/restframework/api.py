@@ -44,11 +44,12 @@ class CollectorEnabledMixin(object):
         return collector_class
 
     def get_collector_kwargs(self):
-        return {
+        kwargs = {
             'collection_request': self.get_collection_request(),
             'group': self.request.query_params.get('group'),
-            'context': self.get_collector_context(),
         }
+        kwargs.update(self.get_collector_context())
+        return kwargs
 
     def get_collector_context(self):
         context = {
