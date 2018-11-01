@@ -90,15 +90,16 @@ class RegisteredCollectorField(serializers.Field):
 CollectedInput = models.get_input_model()
 
 class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
+    collector = None  # Filled in by viewset at instantiation
+
     class Meta:
         model = CollectedInput
         fields = '__all__'
-        include_write = ('collector', 'instrument', 'data')
+        include_write = ('instrument', 'data')
 
-    def get_fields(self):
-        fields = super(CollectedInputSerializer, self).get_fields()
-        fields['collector'] = RegisteredCollectorField(write_only=True)
-        return fields
+    def __init__(self, *args, **kwargs):
+        super(CollectedInputSerializer, self).__init__(*args, **kwargs)
+        self.collector = self.context['collector']
 
     def validate(self, data):
         instrument = data['instrument']
@@ -107,12 +108,6 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         if isinstance(user, AnonymousUser):
             user = None
         data['user'] = user
-
-        context = {
-            'user': user,
-        }
-        collector_class = data.pop('collector')  # 'collector' won't be a valid model field
-        self.collector = collector_class(instrument.collection_request, **context)
 
         is_unavailable = (not self.collector.is_instrument_allowed(instrument))
         if is_unavailable:
