@@ -50,33 +50,30 @@ class CollectionRequestSerializer(ReadWriteToggleMixin, serializers.ModelSeriali
         fields = '__all__'
 
 
+class ContextualCollectedInputsSerializer(serializers.Serializer):
+    """ Filters the given CollectedInput queryset for the active context. """
+    # NOTE: Don't confuse the context sent to the queryset method for the serializer's own attribute
+    # with the same name.
+
+    def to_representation(self, queryset):
+        serializer_class = self.context['collector'].get_serializer_class(CollectedInput)
+        context = {
+            'user': self.context['request'].user,
+        }
+        queryset = queryset.filter_for_context(**context)
+        serializer = serializer_class(queryset, many=True, context=self.context)
+        return serializer.data
+
+
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     response_policy = serializers.SerializerMethodField()
+    collectedinput_set = ContextualCollectedInputsSerializer()
 
     class Meta:
         model = models.CollectionInstrument
         fields = ['id', 'collection_request', 'measure', 'group', 'type', 'order', 'text',
                   'description', 'help', 'response_policy', 'suggested_responses',
                   'collectedinput_set']
-
-    def to_representation(self, obj):
-        # restframework is so impossible to customize for this behavior anywhere else.  The
-        # inefficiency of having to do the normal behavior and then overwrite it with additional
-        # queries bothers me a lot.  Help.  I've tried everything.
-        data = super(CollectionInstrumentSerializer, self).to_representation(obj)
-        data['collectedinput_set'] = self.patch_collectedinput_set_data(obj)
-        return data
-
-    def patch_collectedinput_set_data(self, obj):
-        # The logic I wish I could just put on a custom field and have it respected in a plural data
-        # situation.  ``Meta.list_serializer_class`` has no control because ManyRelatedField is not
-        # a ListSerializer.
-        context = {
-            'user': self.context['request'].user,
-        }
-        queryset = obj.collectedinput_set.filter_for_context(**context)
-        pklist_field = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-        return pklist_field.to_representation(queryset)
 
     def get_response_policy(self, instance):
         return instance.response_policy.get_flags()
