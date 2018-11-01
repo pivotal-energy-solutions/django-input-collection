@@ -10,34 +10,63 @@ from ...encoders import CollectionSpecificationJSONEncoder
 from ... import models
 
 
-class MeasureViewSet(viewsets.ModelViewSet):
-    queryset = models.Measure.objects.all()
-    serializer_class = serializers.MeasureSerializer
+class CollectorEnabledMixin(object):
+    serializer_class = None  # Obtained at runtime via the collector
+
+    def get_serializer_class(self):
+        collector = self.get_collector()
+        model = self.get_queryset().model
+        return collector.get_serializer_class(model)
+
+    def get_serializer_context(self):
+        context = super(CollectorEnabledMixin, self).get_serializer_context()
+        context['collector'] = self.get_collector()
+        return context
 
 
-class CollectionGroupViewSet(viewsets.ModelViewSet):
-    queryset = models.CollectionGroup.objects.all()
-    serializer_class = serializers.CollectionGroupSerializer
+    def get_collector(self):
+        if not hasattr(self, '_collector'):
+            collector_class = self.get_collector_class()
+            kwargs = self.get_collector_kwargs()
+            self._collector = collector_class(**kwargs)
+        return self._collector
 
-
-class CollectionRequestViewSet(viewsets.ModelViewSet):
-    queryset = models.CollectionRequest.objects.all()
-    serializer_class = serializers.CollectionRequestSerializer
-
-    @action(detail=True, methods=['get'])
-    def specification(self, request, *args, **kwargs):
-        identifier = request.query_params.get('collector')
+    def get_collector_class(self):
+        identifier = self.request.query_params.get('collector')
         try:
             collector_class = resolve(identifier)
         except KeyError:
             raise PermissionDenied('Unknown collector reference')
+        return collector_class
 
-        group = request.query_params.get('group')
-        context = {
-            'user': request.user,
+    def get_collector_kwargs(self):
+        return {
+            'collection_request': self.get_collection_request(),
+            'group': self.request.query_params.get('group'),
+            'context': self.get_collector_context(),
         }
-        instance = self.get_object()
-        collector = collector_class(instance, group=group, **context)
+
+    def get_collector_context(self):
+        context = {
+            'user': self.request.user,
+        }
+        return context
+
+
+class MeasureViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
+    queryset = models.Measure.objects.all()
+
+
+class CollectionGroupViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
+    queryset = models.CollectionGroup.objects.all()
+
+
+class CollectionRequestViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
+    queryset = models.CollectionRequest.objects.all()
+
+    @action(detail=True, methods=['get'])
+    def specification(self, request, *args, **kwargs):
+        collector = self.get_collector()
         response = Response(collector.specification)
 
         # There's no such thing as a per-response renderer class, so here we are.  Thanks DRF.
@@ -47,9 +76,8 @@ class CollectionRequestViewSet(viewsets.ModelViewSet):
         return response
 
 
-class CollectionInstrumentViewSet(viewsets.ModelViewSet):
+class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     queryset = models.CollectionInstrument.objects.all()
-    serializer_class = serializers.CollectionInstrumentSerializer
 
     def filter_queryset(self, queryset):
         filters = {}
@@ -61,9 +89,8 @@ class CollectionInstrumentViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class CollectedInputViewSet(viewsets.ModelViewSet):
-    serializer_class = serializers.CollectedInputSerializer
 
+class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         return models.get_input_model().objects.all()
 
