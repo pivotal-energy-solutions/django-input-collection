@@ -23,6 +23,10 @@ class CollectorEnabledMixin(object):
         context['collector'] = self.get_collector()
         return context
 
+    def get_collection_request(self):
+        request_id = self.request.query_params.get('request')
+        collection_request = models.CollectionRequest.objects.filter(id=request_id).first()
+        return collection_request
 
     def get_collector(self):
         if not hasattr(self, '_collector'):
@@ -75,6 +79,12 @@ class CollectionRequestViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
 
         return response
 
+    def get_collection_request(self):
+        instance = self.get_object()
+        if 'pk' in self.kwargs:
+            return self.get_object()
+        return super(CollectionRequestViewSet, self).get_collection_request()
+
 
 class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     queryset = models.CollectionInstrument.objects.all()
@@ -88,12 +98,20 @@ class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         queryset = queryset.filter(**filters)
         return queryset
 
+    def get_collection_request(self):
+        if 'pk' in self.kwargs:
+            return self.get_object().collection_request
+        return super(CollectionInstrumentViewSet, self).get_collection_request()
 
 
 class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         return models.get_input_model().objects.all()
 
+    def get_collection_request(self):
+        if 'pk' in self.kwargs:
+            return self.get_object().collection_request
+        return super(CollectedInputViewSet, self).get_collection_request()
 
     def get_serializer_context(self, write_mode=None):
         context = super(CollectedInputViewSet, self).get_serializer_context()
