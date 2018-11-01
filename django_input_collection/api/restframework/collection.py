@@ -1,6 +1,8 @@
 from django.urls import reverse
 
 from ...collection import BaseAPICollector, BaseAPISpecification
+from ... import models
+from . import serializers
 
 
 class RestFrameworkSpecification(BaseAPISpecification):
@@ -30,6 +32,27 @@ class RestFrameworkSpecification(BaseAPISpecification):
 
 class RestFrameworkCollector(BaseAPICollector):
     specification_class = RestFrameworkSpecification
+
+    # rest_framework CollectedInput serializers
+    serializer_classes = {}
+    base_serializer_classes = {
+        'measure': serializers.MeasureSerializer,
+        'request': serializers.CollectionRequestSerializer,
+        'group': serializers.CollectionGroupSerializer,
+        'instrument': serializers.CollectionInstrumentSerializer,
+        'input': serializers.CollectedInputSerializer,
+    }
+    serializer_codenames = {
+        models.Measure: 'measure',
+        models.CollectionRequest: 'request',
+        models.CollectionGroup: 'group',
+        models.CollectionInstrument: 'instrument',
+        models.get_input_model(): 'input',
+    }
+
+    def get_serializer_class(self, model):
+        codename = self.serializer_codenames[model]
+        return self.serializer_classes.get(codename, self.base_serializer_classes[codename])
 
     def validate(self, instrument, data):
         """ Raises any validation errors in the serializer's ``data``. """
