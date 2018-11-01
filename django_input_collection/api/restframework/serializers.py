@@ -56,11 +56,9 @@ class ContextualCollectedInputsSerializer(serializers.Serializer):
     # with the same name.
 
     def to_representation(self, queryset):
-        serializer_class = self.context['collector'].get_serializer_class(CollectedInput)
-        context = {
-            'user': self.context['request'].user,
-        }
-        queryset = queryset.filter_for_context(**context)
+        collector = self.context['collector']
+        queryset = queryset.filter_for_context(**collector.context)
+        serializer_class = collector.get_serializer_class(CollectedInput)
         serializer = serializer_class(queryset, many=True, context=self.context)
         return serializer.data
 
