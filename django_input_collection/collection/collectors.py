@@ -178,24 +178,22 @@ class BaseCollector(object):
         if not allows_multiple and isinstance(data, list):
             raise ValidationError("Multiple inputs are not allowed")
 
+        allowed_values = None
+        if disallow_custom:
+            allowed_values = set(instrument.suggested_responses.values_list('data', flat=True))
+
         # Process each bit in the input, forcing a list in case there is only one
         is_plural = isinstance(data, list)
         if not is_plural:
             data = [data]
         for i, item in enumerate(data):
-            data[i] = self.clean_input(instrument, item)
+            data[i] = self.clean_input(instrument, item, allowed_values)
         if not is_plural:
             data = data[0]
 
-        # Enforce the disallow_custom flag
-        if disallow_custom:
-            suggested_values = set(instrument.suggested_responses.values_list('data', flat=True))
-            if not utils.matchers.all_suggested(data, suggested_values):
-                raise ValidationError("Inputs must be chosen from the suggested responses")
-
         return data
 
-    def clean_input(self, instrument, data):
+    def clean_input(self, instrument, data, allowed_values=None):
         """
         Cleans a single input data point for storage, either directly or within a list of plural
         inputs (if ``response_policy.multiple`` allows it).
@@ -204,9 +202,13 @@ class BaseCollector(object):
         # Ensure {'_suggested_response': pk} is swapped out for real underlying data
         data = utils.replace_data_for_suggested_responses(instrument, data)
 
-        # Let the method clean and do type coercion
+        # Let the method clean and do type coercion with a concrete data reference
         method = self.get_method(instrument)
         data = method.clean(data)
+
+        # Enforce the disallow_custom flag from clean_data()
+        if allowed_values and not utils.matchers.all_suggested(data, allowed_values):
+            raise ValidationError("Input %r is not from the list of suggested responses" % (data,))
 
         return data
 
