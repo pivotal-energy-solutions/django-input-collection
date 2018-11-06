@@ -178,13 +178,14 @@ class BaseCollector(object):
         if not allows_multiple and isinstance(data, list):
             raise ValidationError("Multiple inputs are not allowed")
 
-        data_items = data
-        if not isinstance(data, list):
-            data_items = [data]
-        for i, item in enumerate(data_items):
-            data_items[i] = self.clean_input(instrument, item)
-        if not isinstance(data, list):
-            data = data_items[0]
+        # Process each bit in the input, forcing a list in case there is only one
+        is_plural = isinstance(data, list)
+        if not is_plural:
+            data = [data]
+        for i, item in enumerate(data):
+            data[i] = self.clean_input(instrument, item)
+        if not is_plural:
+            data = data[0]
 
         # Clean coded ids if needed
         suggested_values = set(instrument.suggested_responses.values_list('data', flat=True))
