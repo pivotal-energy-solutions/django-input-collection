@@ -13,6 +13,9 @@ from ... import models
 class CollectorEnabledMixin(object):
     serializer_class = None  # Obtained at runtime via the collector
 
+    def _get_value(self, k):
+        return self.request.query_params.get(k, self.request.data.get(k))
+
     def get_serializer_class(self):
         collector = self.get_collector()
         model = self.get_queryset().model
@@ -24,7 +27,7 @@ class CollectorEnabledMixin(object):
         return context
 
     def get_collection_request(self):
-        request_id = self.request.query_params.get('request')
+        request_id = self._get_value('request')
         collection_request = models.CollectionRequest.objects.filter(id=request_id).first()
         return collection_request
 
@@ -36,17 +39,18 @@ class CollectorEnabledMixin(object):
         return self._collector
 
     def get_collector_class(self):
-        identifier = self.request.query_params.get('collector')
+        identifier = self._get_value('collector')
         try:
             collector_class = resolve(identifier)
         except KeyError:
+            raise
             raise PermissionDenied('Unknown collector reference')
         return collector_class
 
     def get_collector_kwargs(self):
         kwargs = {
             'collection_request': self.get_collection_request(),
-            'group': self.request.query_params.get('group'),
+            'group': self._get_value('group'),
         }
         kwargs.update(self.get_collector_context())
         return kwargs
@@ -92,8 +96,9 @@ class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
 
     def filter_queryset(self, queryset):
         filters = {}
-        if 'group' in self.request.query_params:
-            group = self.request.query_params['group']
+
+        group = self._get_value('group')
+        if group:
             filters['group'] = group
 
         queryset = queryset.filter(**filters)
