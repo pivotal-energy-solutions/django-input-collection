@@ -68,6 +68,11 @@ class SuggestedResponseSerializer(serializers.ModelSerializer):
         model = models.SuggestedResponse
         exclude = ['date_created', 'date_modified']
 
+    def to_representation(self, obj):
+        data = super(SuggestedResponseSerializer, self).to_representation(obj)
+        data['_suggested_response'] = data['id']
+        return data
+
 
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     response_policy = serializers.SerializerMethodField()
@@ -132,7 +137,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
 
         try:
             data['data'] = self.collector.clean_input(instrument, data['data'])
-        except ValueError as e:
+        except Exception as e:
             raise serializers.ValidationError(str(e))
 
         data = self.collector.validate(instrument, data)
