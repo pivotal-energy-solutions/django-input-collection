@@ -166,7 +166,7 @@ class SuggestedResponse(DatesModel, models.Model):
     # self.collectioninstrument_set.all()
 
     def __str__(self):
-        return str(self.data)
+        return self.data.encode('utf-8')
 
 
 class AbstractCollectedInput(DatesModel, models.Model):
