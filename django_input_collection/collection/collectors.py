@@ -112,10 +112,7 @@ class BaseCollector(object):
         return self.measure_methods or {}
 
     def get_method_kwargs(self, instrument):
-        kwargs = {
-            
-        }
-        return kwargs
+        return {}
 
     def get_method(self, instrument):
         method = methods.InputMethod
