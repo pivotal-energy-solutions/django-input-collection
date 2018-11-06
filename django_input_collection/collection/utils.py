@@ -2,10 +2,14 @@ import collections
 
 from django.db.models import Model
 
-__all__ = ['get_data_for_suggested_responses', 'test_condition_case', 'matchers']
+__all__ = ['replace_data_for_suggested_responses', 'test_condition_case', 'matchers']
 
 
-def get_data_for_suggested_responses(instrument, *responses):
+def replace_data_for_suggested_responses(instrument, *responses):
+    """
+    Maps any {'_suggested_response': pk} values to the actual data that the response represents.
+    """
+
     class missing:
         pass
 

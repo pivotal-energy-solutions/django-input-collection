@@ -165,13 +165,9 @@ class BaseCollector(object):
 
         return True
 
-    def clean_input(self, instrument, data):
-        """
-        Return cleaned/validated data based on a speculative input ``data``.  Data coded for
-        representing SuggestedResponse instance ids are translated to the concrete data that
-        SuggestedResponse implies, thus making the final data safe to send for serialization and
-        storage on the active CollectedInput model.
-        """
+    def clean_data(self, instrument, data):
+        """ Cleans the block of input data for storage. """
+
         # Ensure ResponsePolicy flags are respected
         policy_flags = instrument.response_policy.get_flags()
 
@@ -182,12 +178,30 @@ class BaseCollector(object):
         if not allows_multiple and isinstance(data, list):
             raise ValidationError("Multiple inputs are not allowed")
 
+        data_items = data
+        if not isinstance(data, list):
+            data_items = [data]
+        for i, item in enumerate(data_items):
+            data_items[i] = self.clean_input(instrument, item)
+        if not isinstance(data, list):
+            data = data_items[0]
+
         # Clean coded ids if needed
         suggested_values = set(instrument.suggested_responses.values_list('data', flat=True))
         if suggested_values:
-            if disallow_custom and not utils.matchers.all_suggested(data, suggested_values):
+            if disallow_custom and not utils.matchers.all_suggested(data_items, suggested_values):
                 raise ValidationError("Inputs must be chosen from the suggested responses")
-            data = utils.get_data_for_suggested_responses(instrument, *data)
+
+        return data
+
+    def clean_input(instrument, data):
+        """
+        Cleans a single input data point for storage, either directly or within a list of plural
+        inputs (if ``response_policy.multiple`` allows it).
+        """
+
+        # Ensure {'_suggested_response': pk} is swapped out for real underlying data
+        data = utils.replace_data_for_suggested_responses(instrument, data)
 
         # Let the method clean and do type coercion
         method = self.get_method(instrument)
