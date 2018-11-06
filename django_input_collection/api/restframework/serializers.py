@@ -123,7 +123,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         if is_unavailable:
             raise PermissionDenied("[CollectionInstrument=%r] Availability conditions failed. (user=%r, data=%r)" % (
                 instrument.pk,
-                context['user'],
+                user,
                 data['data'],
             ))
 
@@ -131,7 +131,7 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         if at_capacity:
             raise PermissionDenied("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
                 instrument.pk,
-                context['user'],
+                user,
                 data['data'],
             ))
 
