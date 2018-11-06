@@ -63,8 +63,15 @@ class ContextualCollectedInputsSerializer(serializers.Serializer):
         return serializer.data
 
 
+class SuggestedResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.SuggestedResponse
+        exclude = ['date_created', 'date_modified']
+
+
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     response_policy = serializers.SerializerMethodField()
+    suggested_responses = SuggestedResponseSerializer(many=True, read_only=True)
     collectedinput_set = ContextualCollectedInputsSerializer()
 
     class Meta:
