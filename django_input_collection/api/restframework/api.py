@@ -117,6 +117,14 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     def get_collection_request(self):
         if 'pk' in self.kwargs:
             return self.get_object().collection_request
+        else:
+            instrument_id = self._get_value('instrument')
+            try:
+                # FIXME: No query access control
+                instrument = models.CollectionInstrument.objects.get(id=instrument_id)
+                return instrument.collection_request
+            except:
+                pass
         return super(CollectedInputViewSet, self).get_collection_request()
 
     def get_serializer_context(self, write_mode=None):
