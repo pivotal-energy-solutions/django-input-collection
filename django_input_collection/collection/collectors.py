@@ -194,7 +194,7 @@ class BaseCollector(object):
 
         return data
 
-    def clean_input(instrument, data):
+    def clean_input(self, instrument, data):
         """
         Cleans a single input data point for storage, either directly or within a list of plural
         inputs (if ``response_policy.multiple`` allows it).
