@@ -187,10 +187,10 @@ class BaseCollector(object):
         if not is_plural:
             data = data[0]
 
-        # Clean coded ids if needed
-        suggested_values = set(instrument.suggested_responses.values_list('data', flat=True))
-        if suggested_values:
-            if disallow_custom and not utils.matchers.all_suggested(data_items, suggested_values):
+        # Enforce the disallow_custom flag
+        if disallow_custom:
+            suggested_values = set(instrument.suggested_responses.values_list('data', flat=True))
+            if not utils.matchers.all_suggested(data, suggested_values):
                 raise ValidationError("Inputs must be chosen from the suggested responses")
 
         return data
