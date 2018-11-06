@@ -39,6 +39,9 @@ def replace_data_for_suggested_responses(instrument, *responses):
 
         values.append(data)
 
+    if len(responses) == 1:
+        return values[0]
+
     return values
 
 
