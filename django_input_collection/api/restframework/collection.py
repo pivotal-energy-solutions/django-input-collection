@@ -33,16 +33,7 @@ class RestFrameworkSpecification(BaseAPISpecification):
 class RestFrameworkCollector(BaseAPICollector):
     specification_class = RestFrameworkSpecification
 
-    # rest_framework CollectedInput serializers
-    serializer_classes = {}
-    base_serializer_classes = {
-        'measure': serializers.MeasureSerializer,
-        'request': serializers.CollectionRequestSerializer,
-        'group': serializers.CollectionGroupSerializer,
-        'instrument': serializers.CollectionInstrumentSerializer,
-        'input': serializers.CollectedInputSerializer,
-    }
-    serializer_codenames = {
+    model_codenames = {
         models.Measure: 'measure',
         models.CollectionRequest: 'request',
         models.CollectionGroup: 'group',
@@ -50,9 +41,20 @@ class RestFrameworkCollector(BaseAPICollector):
         models.get_input_model(): 'input',
     }
 
+    # dynamic rest_framework overrides per model (use codename strings)
+    serializer_classes = {}
+
+    default_serializer_classes = {
+        'measure': serializers.MeasureSerializer,
+        'request': serializers.CollectionRequestSerializer,
+        'group': serializers.CollectionGroupSerializer,
+        'instrument': serializers.CollectionInstrumentSerializer,
+        'input': serializers.CollectedInputSerializer,
+    }
+
     def get_serializer_class(self, model):
-        codename = self.serializer_codenames[model]
-        return self.serializer_classes.get(codename, self.base_serializer_classes[codename])
+        codename = self.model_codenames[model]
+        return self.serializer_classes.get(codename, self.default_serializer_classes[codename])
 
     def validate(self, instrument, data):
         """ Raises any validation errors in the serializer's ``data``. """
