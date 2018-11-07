@@ -18,6 +18,19 @@ class CollectorEnabledMixin(object):
         """ Reads target key from request ``query_params`` or else ``data``. """
         return self.request.query_params.get(k, self.request.data.get(k))
 
+    # Pagination class via collector
+    def set_pagination_class(self):
+        collector = self.get_collector()
+        model = self.get_queryset().model
+        pagination_class = collector.get_pagination_class(model)
+        if pagination_class is not False:
+            self.pagination_class = pagination_class
+
+    @property
+    def paginator(self):
+        self.set_pagination_class()
+        return super(CollectorEnabledMixin, self).paginator
+
     # Serializer class via collector
     def get_serializer_class(self):
         collector = self.get_collector()

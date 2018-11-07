@@ -43,6 +43,7 @@ class RestFrameworkCollector(BaseAPICollector):
 
     # dynamic rest_framework overrides per model (use codename strings)
     serializer_classes = {}
+    pagination_classes = {}
 
     default_serializer_classes = {
         'measure': serializers.MeasureSerializer,
@@ -51,6 +52,15 @@ class RestFrameworkCollector(BaseAPICollector):
         'instrument': serializers.CollectionInstrumentSerializer,
         'input': serializers.CollectedInputSerializer,
     }
+
+    def get_pagination_class(self, model):
+        """
+        Returns a rest_framework pagination class for the model's viewset.  Returning ``None`` will
+        be taken directly (disabling pagination), and ``False`` will ensure rest_framework still
+        applies whatever default pagination policy is in effect.
+        """
+        codename = self.model_codenames[model]
+        return self.pagination_classes.get(codename, False)
 
     def get_serializer_class(self, model):
         codename = self.model_codenames[model]
