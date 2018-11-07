@@ -13,9 +13,12 @@ from ... import models
 class CollectorEnabledMixin(object):
     serializer_class = None  # Obtained at runtime via the collector
 
+    # Utils
     def _get_value(self, k):
+        """ Reads target key from request ``query_params`` or else ``data``. """
         return self.request.query_params.get(k, self.request.data.get(k))
 
+    # Serializer class via collector
     def get_serializer_class(self):
         collector = self.get_collector()
         model = self.get_queryset().model
@@ -26,6 +29,7 @@ class CollectorEnabledMixin(object):
         context['collector'] = self.get_collector()
         return context
 
+    # Collector instance support
     def get_collection_request(self):
         request_id = self._get_value('request')
         collection_request = models.CollectionRequest.objects.filter(id=request_id).first()
