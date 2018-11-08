@@ -91,7 +91,7 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
 
     def get_is_condition_met(self, instance):
         collector = self.context['collector']
-        return collector.is_instrument_available(instance)
+        return collector.is_instrument_allowed(instance)
 
 
 class RegisteredCollectorField(serializers.Field):
