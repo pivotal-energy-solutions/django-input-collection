@@ -131,6 +131,16 @@ class BaseCollector(object):
         return method
 
     # Instrument/Input runtime hooks
+    def get_active_conditional_instruments(self, instrument):
+        """
+        Tests the conditions on the instrument's sub-instruments and returns those that pass.
+        """
+        allowed = []
+        for child in instrument.get_conditional_instruments():
+            if child.test_conditions(**self.context):
+                allowed.append(child)
+        return allowed
+
     def is_instrument_allowed(self, instrument):
         """
         Returns True when the given instrument passes all related conditions limiting its use.
