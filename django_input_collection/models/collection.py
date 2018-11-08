@@ -120,7 +120,7 @@ class CollectionInstrument(DatesModel, models.Model):
         Returns a list of instruments connected to this one via a Condition.  Note that returned
         instruments may require conditions from still other parent instruments.
         """
-        return Instrument.objects.filter(condition__parent_instrument=self)
+        return CollectionInstrument.objects.filter(condition__parent_instrument=self)
 
 
 class ResponsePolicy(DatesModel, models.Model):
