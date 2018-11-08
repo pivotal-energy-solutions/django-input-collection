@@ -115,6 +115,13 @@ class CollectionInstrument(DatesModel, models.Model):
                 return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
         return True
 
+    def get_conditional_instruments(self):
+        """
+        Returns a list of instruments connected to this one via a Condition.  Note that returned
+        instruments may require conditions from still other parent instruments.
+        """
+        return Instrument.objects.filter(condition__parent_instrument=self)
+
 
 class ResponsePolicy(DatesModel, models.Model):
     """
