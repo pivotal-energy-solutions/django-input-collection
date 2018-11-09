@@ -79,11 +79,13 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
     suggested_responses = SuggestedResponseSerializer(many=True, read_only=True)
     collectedinput_set = ContextualCollectedInputsSerializer()
     is_condition_met = serializers.SerializerMethodField()
+    parent_instruments = serializers.PrimaryKeyRelatedField(source='get_parent_instruments',
+                                                            many=True, read_only=True)
 
     class Meta:
         model = models.CollectionInstrument
         fields = ['id', 'collection_request', 'measure', 'group', 'type', 'order', 'text',
-                  'description', 'help', 'response_policy', 'is_condition_met',
+                  'description', 'help', 'is_condition_met', 'response_policy', 'parent_instruments',
                   'suggested_responses', 'collectedinput_set']
 
     def get_response_policy(self, instance):
