@@ -46,7 +46,7 @@ def replace_data_for_suggested_responses(instrument, *responses):
 
 
 def test_condition_case(instrument_or_raw_values, match_type, match_data=None,
-                        suggested_values=None, **context):
+                        suggested_values=None, key_input=None, key_case=None, **context):
     """
     Routes a ``match_type`` condition to the appropriate test function, given an instrument's active
     inputs (filtered by **context kwargs) or a list of raw values representing the same. If
@@ -60,6 +60,10 @@ def test_condition_case(instrument_or_raw_values, match_type, match_data=None,
     If a list of raw values is given instead of an instrument reference, match types relying on the
     distinction between suggested and custom values will expect the ``suggested_values`` kwarg to
     be given, or else will be treated as an empty list and likely produce unexpected behavior.
+
+    If either the instrument/raw data or the suggested/match data requires coercion before the test
+    is applied, the ``key_input`` and ``key_case`` kwargs (respectively) can be set to mapping
+    functions for that purpose.
     """
 
     if isinstance(instrument_or_raw_values, Model):
@@ -77,6 +81,13 @@ def test_condition_case(instrument_or_raw_values, match_type, match_data=None,
         else:
             values = list(values)
         suggested_values = suggested_values or []
+
+    if key_input is not None:
+        values = list(map(key_input, values))
+    if key_case is not None:
+        suggested_values = list(map(key_case, suggested_values))
+        if match_data is not None:
+            match_data = key_case(match_data)
 
     matcher = resolve_matcher(match_type)
     status = matcher(values, suggested_values=suggested_values, match_data=match_data)
@@ -128,10 +139,10 @@ class CaseMatchers(object):
         return len(overlaps) > 0
 
     def match(self, data, match_data, **kwargs):
-        return data == match_data
+        return list_wrap(data) == list_wrap(match_data)
 
     def mismatch(self, data, match_data, **kwargs):
-        return data != match_data
+        return list_wrap(data) != list_wrap(match_data)
 
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
