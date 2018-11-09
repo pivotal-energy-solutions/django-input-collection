@@ -131,6 +131,14 @@ class BaseCollector(object):
         return method
 
     # Instrument/Input runtime hooks
+    def get_conditional_input_value(self, collected_input):
+        """ Coerces a CollectedInput's stored data for comparison with Case match data. """
+        return collected_input.data
+
+    def get_conditional_check_value(self, data):
+        """ Coerces match data from a SuggestedResponse or Case for comparison with an input. """
+        return data
+
     def get_active_conditional_instruments(self, instrument):
         """
         Tests the conditions on the instrument's sub-instruments and returns those that pass.
@@ -145,7 +153,9 @@ class BaseCollector(object):
         """
         Returns True when the given instrument passes all related conditions limiting its use.
         """
-        return instrument.test_conditions(**self.context)
+        key_input = self.get_conditional_input_value
+        key_case = self.get_conditional_check_value
+        return instrument.test_conditions(key_input=key_input, key_case=key_case, **self.context)
 
     def is_input_allowed(self, instrument):
         """
