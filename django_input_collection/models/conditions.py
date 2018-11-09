@@ -52,10 +52,9 @@ class Condition(DatesModel, models.Model):
             self.condition_group,
         )
 
-    def test(self, **context):
+    def test(self, **kwargs):
         # Testing the availability of ``instrument`` relies on ``parent_instrument`` conditions.
-        test = self.condition_group.test(self.parent_instrument, **context)
-        return test
+        return self.condition_group.test(self.parent_instrument, **kwargs)
 
 
 class ConditionGroup(DatesModel, models.Model):
