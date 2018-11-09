@@ -98,7 +98,8 @@ class CollectionInstrument(DatesModel, models.Model):
 
     # Also available:
     #
-    # self.conditions.all()
+    # self.conditions.all()  # Conditions toward enabling this instrument
+    # self.child_conditions.all()  # Conditions toward enabling other instruments
     # self.suggestedresponse_set.all()
     # self.collectedinput_set.all()
 
