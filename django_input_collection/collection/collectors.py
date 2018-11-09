@@ -137,7 +137,7 @@ class BaseCollector(object):
         """
         allowed = []
         for child in instrument.get_conditional_instruments():
-            if child.test_conditions(**self.context):
+            if self.is_instrument_allowed(child):
                 allowed.append(child)
         return allowed
 
