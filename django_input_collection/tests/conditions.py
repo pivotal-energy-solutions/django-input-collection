@@ -167,7 +167,9 @@ class MatchTypesTests(TestCase):
         self.assertEqual(matchers.match('foo', match_data='bar'), False)
         self.assertEqual(matchers.match('foo', match_data='Bar'), False)
         self.assertEqual(matchers.match('foo', match_data='xbarx'), False)
-        self.assertEqual(matchers.match(['foo'], match_data='foo'), False)
+        self.assertEqual(matchers.match(['foo'], match_data='foo'), True)
+        self.assertEqual(matchers.match('foo', match_data=['foo']), True)
+        self.assertEqual(matchers.match(['foo'], match_data=['foo']), True)
 
     def test_match_type_mismatch(self):
         self.assertEqual(matchers.mismatch('foo', match_data='foo'), False)
@@ -176,7 +178,9 @@ class MatchTypesTests(TestCase):
         self.assertEqual(matchers.mismatch('foo', match_data='bar'), True)
         self.assertEqual(matchers.mismatch('foo', match_data='Bar'), True)
         self.assertEqual(matchers.mismatch('foo', match_data='xbarx'), True)
-        self.assertEqual(matchers.mismatch(['foo'], match_data='foo'), True)
+        self.assertEqual(matchers.mismatch(['foo'], match_data='foo'), False)
+        self.assertEqual(matchers.mismatch('foo', match_data=['foo']), False)
+        self.assertEqual(matchers.mismatch(['foo'], match_data=['foo']), False)
 
     def test_match_type_contains(self):
         self.assertEqual(matchers.contains('foo', match_data='foo'), True)
