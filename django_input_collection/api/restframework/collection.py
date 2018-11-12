@@ -65,6 +65,7 @@ class RestFrameworkCollector(BaseAPICollector):
 
     def get_serializer_class(self, model):
         codename = self.model_codenames[model]
+        """ Returns a rest_framework serializer class for the model's viewset. """
         return self.serializer_classes.get(codename, self.default_serializer_classes[codename])
 
     def validate(self, instrument, data):
