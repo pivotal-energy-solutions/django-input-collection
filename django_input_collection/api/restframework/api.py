@@ -155,6 +155,13 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
 
         return context
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instrument = instance.instrument
+        collector = self.get_collector()
+        self.perform_destroy(instance)
+        return collector.get_destroy_response(instrument)
+
 
 class CollectorRegistryView(views.APIView):
     def get(self, request, *args, **kwargs):

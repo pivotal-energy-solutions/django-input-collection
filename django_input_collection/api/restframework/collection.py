@@ -1,5 +1,8 @@
 from django.urls import reverse
 
+from rest_framework.response import Response
+from rest_framework import status
+
 from ...collection import BaseAPICollector, BaseAPISpecification
 from ... import models
 from . import serializers
@@ -67,6 +70,10 @@ class RestFrameworkCollector(BaseAPICollector):
         """ Returns a rest_framework serializer class for the model's viewset. """
         codename = self.model_codenames.get(model, model)
         return self.serializer_classes.get(codename, self.default_serializer_classes[codename])
+
+    def get_destroy_response(self, instrument):
+        """ Returns a rest_framework Response when an input is deleted from this instrument. """
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def validate(self, instrument, data):
         """ Raises any validation errors in the serializer's ``data``. """
