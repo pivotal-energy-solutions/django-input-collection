@@ -269,6 +269,10 @@ class BaseCollector(object):
 
         return instance
 
+    def remove(self, instrument, instance):
+        """ Removes a given CollectedInput from the instrument. """
+        instance.delete()
+
 
 class Collector(BaseCollector):
     specification_class = specifications.Specification

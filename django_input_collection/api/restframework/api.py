@@ -162,6 +162,14 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         self.perform_destroy(instance)
         return collector.get_destroy_response(instrument)
 
+    def perform_destroy(self, instance):
+        """ Forwards deletion work to the collector instance. """
+        # The create and update methods exist on the serializer for convenience of access to the
+        # developer, but destroy() never touches a serializer, so customization must occur on
+        # at the collector class instead.
+        collector = self.get_collector()
+        collector.remove(instance.instrument, instance)
+
 
 class CollectorRegistryView(views.APIView):
     def get(self, request, *args, **kwargs):
