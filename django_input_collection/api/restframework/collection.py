@@ -21,6 +21,7 @@ class RestFrameworkSpecification(BaseAPISpecification):
                 'list': {'url': input_list, 'method': 'GET'},
                 'add': {'url': input_list, 'method': 'POST'},
                 'get': {'url': input_detail, 'method': 'GET'},
+                'delete': {'url': input_detail, 'method': 'DELETE'},
             },
             'instrument': {
                 'list': {'url': instrument_list, 'method': 'GET'},
