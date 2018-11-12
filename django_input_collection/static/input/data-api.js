@@ -34,7 +34,9 @@ var DjangoInputCollection = (function(){
         },
         fillObject: function(object, source) {
             for (name of utils.locals(object)) {
-                object[name] = source[name];
+                if (source.hasOwnProperty(name)) {
+                    object[name] = source[name];
+                }
             }
         },
         interpolate: function(string, context, tokenPattern) {
