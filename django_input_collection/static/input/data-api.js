@@ -109,9 +109,7 @@ var DjangoInputCollection = (function(){
             var headers = headers || {};
             var url = utils.interpolate(endpointInfo.url, context);
 
-            if (method == 'get' || payload !== undefined) {
-                payload.collector = api.specification.collector;
-            }
+            payload.collector = api.specification.collector;
 
             // Append query string suffix if required.  This consumes the 'payload'.
             if (method == 'get') {
