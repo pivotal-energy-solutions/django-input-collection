@@ -112,8 +112,10 @@ class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     queryset = models.CollectionInstrument.objects.all()
 
     def filter_queryset(self, queryset):
-        filters = {}
+        collection_request = self.get_collection_request()
+        queryset = queryset.filter(collection_request=collection_request)
 
+        filters = {}
         group = self._get_value('group')
         if group:
             filters['group'] = group
