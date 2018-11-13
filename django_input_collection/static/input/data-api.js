@@ -110,6 +110,7 @@ var DjangoInputCollection = (function(){
             var url = utils.interpolate(endpointInfo.url, context);
 
             payload.collector = api.specification.collector;
+            payload.request = api.specification.collection_request;
 
             // Append query string suffix if required.  This consumes the 'payload'.
             if (method == 'get') {
