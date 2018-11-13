@@ -134,7 +134,10 @@ class BaseAPISpecification(Specification):
 
     def get_api_info(self):
         return {
-            'collector': self.collector.get_identifier(),  # repeated from top-level spec
             'content_type': self.content_type,
             'endpoints': {},
+
+            # Repeated from top-level spec for convenience
+            'collector': self.collector.get_identifier(),
+            'collection_request': self.collector.collection_request.id,
         }
