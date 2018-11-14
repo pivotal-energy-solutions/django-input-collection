@@ -122,10 +122,10 @@ class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         queryset = queryset.filter(**filters)
         return queryset
 
-    def get_collection_request(self):
-        if 'pk' in self.kwargs:
-            return self.get_object().collection_request
-        return super(CollectionInstrumentViewSet, self).get_collection_request()
+    # def get_collection_request(self):
+    #     if 'pk' in self.kwargs:
+    #         return self.get_object().collection_request
+    #     return super(CollectionInstrumentViewSet, self).get_collection_request()
 
 
 class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
