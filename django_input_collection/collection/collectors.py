@@ -145,7 +145,8 @@ class BaseCollector(object):
         """
         key_input = self.get_conditional_input_value
         key_case = self.get_conditional_check_value
-        return instrument.test_conditions(key_input=key_input, key_case=key_case, **self.context)
+        return instrument.test_conditions(key_input=key_input, key_case=key_case,
+                                          context=self.context)
 
     def is_input_allowed(self, instrument):
         """
