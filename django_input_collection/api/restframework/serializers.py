@@ -23,7 +23,7 @@ class ReadWriteToggleMixin(object):
                 include_fields = list(self.fields.keys())
 
             if include_fields:
-                for name in self.fields:
+                for name in list(self.fields.keys()):
                     if name not in include_fields:
                         del self.fields[name]
 
