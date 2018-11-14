@@ -7,6 +7,7 @@ from django_input_collection import features
 if features.rest_framework:
     from rest_framework.test import APITestCase, URLPatternsTestCase
     from rest_framework import status
+    from django_input_collection.api.restframework.collection import RestFrameworkCollector
 else:
     from django.test import TestCase
     class APITestCase(TestCase):
@@ -15,7 +16,6 @@ else:
         pass
 
 from ..compat import url, include
-from ..collection import Collector
 from . import factories
 
 
@@ -52,7 +52,7 @@ class InputSubmissionTests(RestFrameworkTestCase):
             'response_policy__multiple': False,
         })
 
-        cls.collector = Collector(cls.collection_request)
+        cls.collector = RestFrameworkCollector(cls.collection_request)
 
     def submit(self, payload):
         payload = dict({
