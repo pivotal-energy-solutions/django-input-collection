@@ -181,8 +181,6 @@ class Case(DatesModel, models.Model):
         text = text.format(data=self.match_data)
         return text.encode('utf-8')
 
-    def test(self, instrument_or_raw_values, **kwargs):
-        from ..collection.utils import test_condition_case
-
-        case_kwargs = dict(self.get_flags(), **kwargs)
-        return test_condition_case(instrument_or_raw_values, **case_kwargs)
+    def test(self, data, **kwargs):
+        kwargs.update(self.get_flags())
+        return matchers.test_condition_case(data, **kwargs)
