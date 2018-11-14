@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from .. import models
-from ..collection.utils import test_condition_case, matchers, resolve_matcher
+from ..collection.matchers import test_condition_case, matchers, resolve_matcher
 from . import factories
 
 
