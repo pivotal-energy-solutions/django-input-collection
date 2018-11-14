@@ -12,6 +12,7 @@ except:
 
 from django.db import models
 
+from ..collection import matchers
 from .base import DatesModel
 from .utils import ConditionNode
 
@@ -52,9 +53,10 @@ class Condition(DatesModel, models.Model):
             self.condition_group,
         )
 
-    def test(self, **kwargs):
-        # Testing the availability of ``instrument`` relies on ``parent_instrument`` conditions.
-        return self.condition_group.test(self.parent_instrument, **kwargs)
+    def test(self, context=None, **kwargs):
+        if context is None:
+            context = {}
+        return self.condition_group.test(**kwargs)
 
 
 class ConditionGroup(DatesModel, models.Model):
@@ -105,12 +107,12 @@ class ConditionGroup(DatesModel, models.Model):
         tree = reduce(lambda a, b: substitution(a, ConditionNode(b)), testables, ConditionNode())
         return str(tree)
 
-    def test(self, instrument_or_raw_values, **kwargs):
+    def test(self, data, **kwargs):
         has_failed = False
         has_passed = False
         testables = list(self.child_groups.all()) + list(self.cases.all())
         for item in testables:
-            if item.test(instrument_or_raw_values, **kwargs):
+            if item.test(data, **kwargs):
                 has_passed = True
             else:
                 has_failed = True
