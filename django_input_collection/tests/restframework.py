@@ -65,7 +65,7 @@ class InputSubmissionTests(RestFrameworkTestCase):
         self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'foo'}), status.HTTP_201_CREATED)
 
     def test_submit_bad_collector_is_rejected(self):
-        self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'foo', 'collector': 'fake'}), status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'foo', 'collector': 'fake'}), status.HTTP_403_FORBIDDEN)
 
     def test_submit_bad_instrument_is_rejected(self):
         self.assertEqual(self.submit({'instrument': 0, 'data': 'foo'}), status.HTTP_400_BAD_REQUEST)
