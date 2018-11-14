@@ -9,10 +9,11 @@ from django.core.exceptions import ValidationError
 import six
 
 from ..encoders import CollectionSpecificationJSONEncoder
-from . import exceptions
-from . import utils
+from .matchers import matchers
 from . import specifications
 from . import methods
+from . import utils
+from . import exceptions
 
 __all__ = ['resolve', 'Collector', 'BaseAPICollector']
 
@@ -218,7 +219,7 @@ class BaseCollector(object):
         data = method.clean(data)
 
         # Enforce the disallow_custom flag from clean_data()
-        if allowed_values and not utils.matchers.all_suggested(data, allowed_values):
+        if allowed_values and not matchers.all_suggested(data, allowed_values):
             raise ValidationError("Input %r is not from the list of suggested responses" % (data,))
 
         return data
