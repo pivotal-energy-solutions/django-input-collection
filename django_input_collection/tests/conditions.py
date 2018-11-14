@@ -50,61 +50,6 @@ class CoreMatcherTests(TestCase):
         self.assertEqual(test_condition_case(valueslist, match_type='all-custom', suggested_values=['a', 'b', 'c']), False)
         self.assertEqual(test_condition_case(valueslist, match_type='one-custom', suggested_values=['a', 'b', 'c']), False)
 
-    def test_matcher_applies_context_to_instrument_collectedinput_queryset(self):
-        """
-        Verifies that a CollectionInstrument with associated SuggestedResponses forwards those
-        suggested response values to the matcher.
-        """
-        a = factories.SuggestedResponseFactory.create(data='a')
-        b = factories.SuggestedResponseFactory.create(data='b')
-        c = factories.SuggestedResponseFactory.create(data='c')
-        instrument = factories.CollectionInstrumentFactory.create(**{
-            'suggested_responses': [a, b, c],
-        })
-        factories.CollectedInputFactory.create(**{
-            'instrument': instrument,
-            'data': a.data,
-        })
-
-        self.assertEqual(test_condition_case(instrument, 'one-suggested', data='a'), True)
-        self.assertEqual(test_condition_case(instrument, 'one-suggested', data='b'), False)
-
-    def test_matcher_reads_instrument_suggested_responses(self):
-        """
-        Verifies that a CollectionInstrument with associated SuggestedResponses forwards those
-        suggested response values to the matcher.
-        """
-        a = factories.SuggestedResponseFactory.create(data='a')
-        b = factories.SuggestedResponseFactory.create(data='b')
-        c = factories.SuggestedResponseFactory.create(data='c')
-        instrument = factories.CollectionInstrumentFactory.create(**{
-            'suggested_responses': [a, b, c],
-        })
-        factories.CollectedInputFactory.create(**{
-            'instrument': instrument,
-            'data': a.data,
-        })
-
-        self.assertEqual(test_condition_case(instrument, 'one-suggested'), True)
-
-    def test_matcher_overrides_instrument_suggested_responses_with_suggested_values(self):
-        """
-        Verifies that a CollectionInstrument with associated SuggestedResponses forwards those
-        suggested response values to the matcher.
-        """
-        a = factories.SuggestedResponseFactory.create(data='a')
-        b = factories.SuggestedResponseFactory.create(data='b')
-        c = factories.SuggestedResponseFactory.create(data='c')
-        instrument = factories.CollectionInstrumentFactory.create(**{
-            'suggested_responses': [a, b, c],
-        })
-        factories.CollectedInputFactory.create(**{
-            'instrument': instrument,
-            'data': a.data,
-        })
-
-        self.assertEqual(test_condition_case(instrument, 'one-suggested', suggested_values=['OVERRIDDEN']), False)
-
 
 class MatchTypesTests(TestCase):
     """ Verifies behavior of the individual matchers. """
@@ -465,16 +410,17 @@ class StackedConditionGroupRequirementTypesTests(TestCase):
 
 
 class ConditionTests(TestCase):
-    def test_condition_gets_values_from_parent_instrument(self):
+    def test_condition_gets_values_from_data_getter(self):
         """
         Verifies that a Condition on a specific Instrument gathers the required data to for the
         ConditionGroups to perform its assessment.
         """
+        parent_instrument = factories.CollectionInstrumentFactory.create(**{
+            'id': 1,
+            'collection_request__id': 1,
+        })
         condition = factories.ConditionFactory.create(**{
-            'parent_instrument': factories.CollectionInstrumentFactory.create(**{
-                'id': 1,
-                'collection_request__id': 1,
-            }),
+            'data_getter': 'instrument:%d' % (parent_instrument.id,),
             'instrument': factories.CollectionInstrumentFactory.create(**{
                 'id': 2,
                 'collection_request__id': 1,
@@ -493,7 +439,7 @@ class ConditionTests(TestCase):
         })
 
         self.assertEqual(condition.test(), True)
-        self.assertEqual(condition.test(suggested_values=['foo']), False)
+        self.assertEqual(condition.test(suggested_values=['foo']), True)
         self.assertEqual(condition.test(suggested_values=['bar']), True)
 
     def test_multiple_conditions_for_single_instrument_must_all_pass(self):
@@ -508,11 +454,12 @@ class ConditionTests(TestCase):
         })
 
         # Parent 1 input must contain 'foo'
+        parent_instrument1 = factories.CollectionInstrumentFactory.create(**{
+            'id': 1,
+            'collection_request__id': 1,
+        })
         factories.ConditionFactory.create(**{
-            'parent_instrument': factories.CollectionInstrumentFactory.create(**{
-                'id': 1,
-                'collection_request__id': 1,
-            }),
+            'data_getter': 'instrument:%d' % (parent_instrument1.id,),
             'instrument': instrument,
             'condition_group': factories.ConditionGroupFactory.create(**{
                 'requirement_type': 'all-pass',
@@ -521,12 +468,13 @@ class ConditionTests(TestCase):
                 ],
             }),
         })
+        parent_instrument2 = factories.CollectionInstrumentFactory.create(**{
+            'id': 2,
+            'collection_request__id': 1,
+        })
         # Parent 2 input must contain 'bar'
         factories.ConditionFactory.create(**{
-            'parent_instrument': factories.CollectionInstrumentFactory.create(**{
-                'id': 2,
-                'collection_request__id': 1,
-            }),
+            'data_getter': 'instrument:%d' % (parent_instrument2.id,),
             'instrument': instrument,
             'condition_group': factories.ConditionGroupFactory.create(**{
                 'requirement_type': 'all-pass',
