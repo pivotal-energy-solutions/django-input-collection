@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 import six
 
 from ..encoders import CollectionSpecificationJSONEncoder
-from .. import models
+from . import exceptions
 from . import utils
 from . import specifications
 from . import methods
@@ -17,17 +17,7 @@ from . import methods
 __all__ = ['resolve', 'Collector', 'BaseAPICollector']
 
 
-CollectedInput = models.get_input_model()
-
 registry = {}
-
-
-class CollectorException(Exception):
-    pass
-
-
-class CollectorRegistrationException(CollectorException):
-    message = "Collector cannot be registered."
 
 
 def resolve(identifier):
@@ -45,7 +35,7 @@ def register(cls):
 
 
 def fail_registration_action(cls, msg):
-    raise CollectorRegistrationException(msg % {'cls': cls})
+    raise exceptions.CollectorRegistrationException(msg % {'cls': cls})
 
 
 class CollectorType(type):
@@ -250,6 +240,9 @@ class BaseCollector(object):
         the manager's ``create()`` method, in case the CollectedInput model has been swapped and
         requires additional fields to successfully save.
         """
+
+        from .. import models
+        CollectedInput = models.get_input_model()
 
         db_data = self.serialize_data(data)
 
