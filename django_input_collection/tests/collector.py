@@ -27,18 +27,18 @@ class CollectorRegistrationTests(TestCase):
 
     def test_basecollectors_cannot_be_inspected_for_registration_identifier(self):
         """ Verifies that the base API collector subclass is NOT directly usable. """
-        with self.assertRaises(collectors.CollectorException):
+        with self.assertRaises(collectors.exceptions.CollectorException):
             collectors.BaseCollector.get_identifier()
 
-        with self.assertRaises(collectors.CollectorException):
+        with self.assertRaises(collectors.exceptions.CollectorException):
             collectors.BaseAPICollector.get_identifier()
 
     def test_basecollectors_cannot_be_registered(self):
         """ Verifies that the base API collector subclass is NOT directly usable. """
-        with self.assertRaises(collectors.CollectorException):
+        with self.assertRaises(collectors.exceptions.CollectorException):
             collectors.BaseCollector.register()
 
-        with self.assertRaises(collectors.CollectorException):
+        with self.assertRaises(collectors.exceptions.CollectorException):
             collectors.BaseAPICollector.get_identifier()
 
     def test_collector_is_registered_by_default(self):
