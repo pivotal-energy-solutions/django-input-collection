@@ -60,7 +60,6 @@ class CollectorEnabledMixin(object):
         try:
             collector_class = resolve(identifier)
         except KeyError:
-            raise
             raise PermissionDenied('Unknown collector reference')
         return collector_class
 
