@@ -13,6 +13,7 @@ except:
 from django.db import models
 
 from ..collection import matchers
+from ..collection import resolvers
 from .base import DatesModel
 from .utils import ConditionNode
 
@@ -33,29 +34,37 @@ def substitute(s, substitutions):
 
 
 class Condition(DatesModel, models.Model):
-    """ The control point for checking CollectionInstrument availability. """
-
+    """
+    Condition that relates a conditional CollectionInstrument to a ConditionGroup.  The
+    ``data_getter`` field must point to source data that will be tested in the related
+    ``condition_group``.
+    """
     # NOTE: The decision to have the ``instrument`` fk here and a reverse relation 'conditions' on
-    # that instrument is in service of allowing disparate parent_instrument references to be met
-    # before the dependent instrument is unlocked.
+    # that instrument is in service of allowing disparate getter references to be met before the
+    # dependent instrument is unlocked.
 
     instrument = models.ForeignKey('CollectionInstrument', related_name='conditions',
                                    on_delete=models.CASCADE)
-    parent_instrument = models.ForeignKey('CollectionInstrument', related_name='child_conditions',
-                                          on_delete=models.CASCADE)
     condition_group = models.ForeignKey('ConditionGroup', on_delete=models.CASCADE,
                                         limit_choices_to={'parent_groups': None})
+    data_getter = models.CharField(max_length=512)
 
     def __str__(self):
-        return '[instrument=%r depends on instrument=%r via %r]' % (
-            self.instrument_id,
-            self.parent_instrument_id,
-            self.condition_group,
-        )
+        return '[%(instrument)r depends on source=%(source)r via %(condition_group)r]' % {
+            'instrument': self.instrument,
+            'source': self.data_getter,
+            'condition_group': self.condition_group,
+        }
 
     def test(self, context=None, **kwargs):
+        """
+        Resolves and runs the ``data_getter`` value and sends it to the related ``condition_group``.
+        ``kwargs`` are forwarded to ``collection.matchers.test_condition_case()``.
+        """
         if context is None:
             context = {}
+        data_kwargs = resolvers.resolve(self.instrument, self.data_getter, **context)
+        kwargs.update(data_kwargs)
         return self.condition_group.test(**kwargs)
 
 

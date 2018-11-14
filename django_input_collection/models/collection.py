@@ -99,7 +99,6 @@ class CollectionInstrument(DatesModel, models.Model):
     # Also available:
     #
     # self.conditions.all()  # Conditions toward enabling this instrument
-    # self.child_conditions.all()  # Conditions toward enabling other instruments
     # self.suggestedresponse_set.all()
     # self.collectedinput_set.all()
 
@@ -120,12 +119,13 @@ class CollectionInstrument(DatesModel, models.Model):
         """ Returns a list of instruments that enable this one via a Condition. """
         return CollectionInstrument.objects.filter(conditions__instrument=self)
 
-    def get_conditional_instruments(self):
-        """
-        Returns a list of instruments connected to this one via a Condition.  Note that returned
-        instruments may require conditions from still other parent instruments.
-        """
-        return CollectionInstrument.objects.filter(conditions__parent_instrument=self)
+    def get_child_instruments(self):
+        """ Returns a list of instrument that this one enables via a Condition. """
+        return CollectionInstrument.objects.filter(conditions__data_getter='instrument:%d' % (self.pk,))
+
+    def get_child_conditions(self):
+        from .conditions import Condition
+        return Condition.objects.filter(data_getter='instrument:%d' % (self.pk,))
 
 
 class ResponsePolicy(DatesModel, models.Model):

@@ -81,11 +81,11 @@ class CollectedInputAdmin(admin.ModelAdmin):
     
 @admin.register(models.Condition)
 class ConditionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'parent_instrument', 'instrument', 'condition_group']
+    list_display = ['id', 'data_getter', 'instrument', 'condition_group']
     list_filter = ['date_created', 'date_modified']
     date_hierarchy = 'date_created'
 
-    fields = ('parent_instrument', 'instrument', 'condition_group')
+    fields = ('data_getter', 'instrument', 'condition_group')
 
 
 @admin.register(models.ConditionGroup)

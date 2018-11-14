@@ -121,7 +121,7 @@ class ConditionFactory(factory.django.DjangoModelFactory):
         model = 'django_input_collection.Condition'
 
     instrument = factory.SubFactory(CollectionInstrumentFactory)
-    parent_instrument = factory.SubFactory(CollectionInstrumentFactory)
+    data_getter = None
     condition_group = factory.SubFactory(ConditionGroupFactory)
 
 

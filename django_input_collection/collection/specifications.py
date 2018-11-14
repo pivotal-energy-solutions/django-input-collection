@@ -56,7 +56,7 @@ class Specification(object):
                 self.get_condition_info(condition) for condition in instrument.conditions.all()
             ]
             info['child_conditions'] = [
-                self.get_condition_info(condition) for condition in instrument.child_conditions.all()
+                self.get_condition_info(condition) for condition in instrument.get_child_conditions()
             ]
 
             instruments_info['instruments'][instrument.id] = info

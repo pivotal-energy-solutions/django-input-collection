@@ -134,7 +134,7 @@ class BaseCollector(object):
         Tests the conditions on the instrument's sub-instruments and returns those that pass.
         """
         allowed = []
-        for child in instrument.get_conditional_instruments():
+        for child in instrument.get_child_instruments():
             if self.is_instrument_allowed(child):
                 allowed.append(child)
         return allowed
