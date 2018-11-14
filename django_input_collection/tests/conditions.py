@@ -9,7 +9,9 @@ CollectedInput = models.get_input_model()
 
 
 class CoreMatcherTests(TestCase):
-    """ Verifies behavior of the underlying ``collection.utils.test_condition_case`` function. """
+    """
+    Verifies behavior of the underlying ``collection.matchers.test_condition_case`` function.
+    """
 
     def test_matcher_resolver(self):
         self.assertEqual(resolve_matcher('all-custom'), matchers.all_custom)
