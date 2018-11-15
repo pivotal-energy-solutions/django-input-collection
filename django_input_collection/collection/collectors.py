@@ -142,6 +142,18 @@ class BaseCollector(object):
                 allowed.append(child)
         return allowed
 
+    def is_condition_successful(self, condition, **kwargs):
+        """
+        Like ``is_instrument_allowed()``, except that it tests only the given condition.  Using this
+        method instead of ``condition.test()`` directly has the benefit of allowing the collector
+        to implicitly send ``key_input``, ``key_case``, and ``condition_resolver_fallback``.
+        """
+        if 'resolver_fallback' not in kwargs:
+            kwargs['resolver_fallback'] = self.condition_resolver_fallback
+        key_input = self.get_conditional_input_value
+        key_case = self.get_conditional_check_value
+        return condition.test(key_input=key_input, key_case=key_case, **kwargs)
+
     def is_instrument_allowed(self, instrument, **kwargs):
         """
         Returns True when the given instrument passes all related conditions limiting its use.  The
