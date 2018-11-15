@@ -56,22 +56,29 @@ class Condition(DatesModel, models.Model):
             'condition_group': self.condition_group,
         }
 
-    def test(self, context=None, resolver_fallback=None, **kwargs):
+    def resolve(self, **kwargs):
+        """
+        Finds a resolver class for ``self.data_getter`` and returns a 3-tuple of the resolver,
+        the data yielded by the it, and if that data is the fallback setting.
+        """
+        kwargs.update(kwargs.pop('context', None) or {})
+        return resolvers.resolve(self.instrument, self.data_getter, **kwargs)
+
+    def test(self, **kwargs):
         """
         Resolves and runs the ``data_getter`` value and sends it to the related ``condition_group``.
-        ``kwargs`` are forwarded to ``collection.matchers.test_condition_case()``.  If the resolver
-        encounters an error while evaluating the ``data_getter`` spec, the ``resolver_fallback`` dict
-        will be used for kwargs in place of the anticipated resolver dict result.
-
-        If CollectedInput is swapped and uses a complex ``data`` field type, you should use the
-        ``resolver_fallback`` kwarg to ensure this method falls back to a compatible data format.
+        ``kwargs`` are forwarded through condtion group hierarchies and sent to
+        ``collection.matchers.test_condition_case()``.
         """
-        if context is None:
-            context = {}
-        if resolver_fallback is None:
-            resolver_fallback = {'data': None}
-        data_kwargs = resolvers.resolve(self.instrument, self.data_getter, fallback=resolver_fallback,
-                                        **context)
+        resolver_kwargs = {}
+        if 'raise_exception' in kwargs:
+            resolver_kwargs['raise_exception'] = kwargs.pop('raise_exception')
+        if 'context' in kwargs:
+            resolver_kwargs['context'] = kwargs.pop('context')
+        if 'resolver_fallback' in kwargs:
+            resolver_kwargs['fallback'] = kwargs.pop('resolver_fallback')
+        resolver, data_kwargs, used_default = self.resolve(**resolver_kwargs)
+
         kwargs.update(data_kwargs)
         return self.condition_group.test(**kwargs)
 
