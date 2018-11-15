@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from django.forms import fields_for_model
+from django.forms import fields_for_model, Textarea
 from django.utils.safestring import mark_safe
 from django.utils.html import format_html_join
 
@@ -86,6 +86,11 @@ class ConditionAdmin(admin.ModelAdmin):
     date_hierarchy = 'date_created'
 
     fields = ('data_getter', 'instrument', 'condition_group')
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == 'data_getter':
+            kwargs['widget'] = Textarea
+        return super(ConditionAdmin, self).formfield_for_dbfield(db_field, **kwargs)
+
 
 
 @admin.register(models.ConditionGroup)
