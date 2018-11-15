@@ -20,8 +20,8 @@ def resolve(instrument, spec, **context):
             kwargs = dict(context, **result)
             return resolver.resolve(instrument=instrument, **kwargs)
 
-    raise ValueError("Data getter %r does not match known resolvers in %r.registry: %r" % (
-        spec, __name__, [resolver.__class__ for resolver in registry],
+    raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
+        spec, __name__, {resolver.pattern: resolver.__class__ for resolver in registry},
     ))
 
 
