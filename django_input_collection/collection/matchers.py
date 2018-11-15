@@ -77,8 +77,8 @@ def coerce_type(match_data, value):
     try:
         return value_type(match_data)
     except:
-        raise ValueError('Cannot convert sample match_data %r to incoming type %r (ex: %r)' % (
-            match_data, value_type, value,
+        raise ValueError('Cannot convert sample match_data %r (%r) to incoming %r (%r)' % (
+            match_data, match_type, value, value_type,
         ))
 
 
