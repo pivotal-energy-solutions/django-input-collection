@@ -71,11 +71,8 @@ def coerce_type(match_data, value):
         pass  # Keep match_data as its source string
 
     match_type = type(match_data)
-    if match_type == value_type:
+    if match_type == value_type or value_type in (list, tuple, set):
         return match_data
-
-    if value_type in (list, tuple, set):
-        match_data = list_wrap(match_data)
 
     try:
         return value_type(match_data)
