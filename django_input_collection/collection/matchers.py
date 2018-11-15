@@ -44,9 +44,10 @@ def resolve_matcher(match_type):
     return getattr(matchers, match_type.replace('-', '_'))
 
 
-def list_wrap(data, coerce_iterables=False):
+def list_wrap(data, wrap_strings=True, coerce_iterables=False):
     """
     Wraps ``data`` in a list if it is not inherantly iterable, or is a string or mapping.
+    If ``wrap_strings`` is set to False, then strings will be left as-is.
     If ``coerce_iterables`` is True, then non-mapping iterables will be forced to a list type
     instead of being passed through.
     """
@@ -102,11 +103,11 @@ class CaseMatchers(object):
 
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        return any(map(lambda d: match_data in d, data))
+        return any(map(lambda d: match_data in list_wrap(d, wrap_strings=False), data))
 
     def not_contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        return any(map(lambda d: match_data not in d, data))
+        return any(map(lambda d: match_data not in list_wrap(d, wrap_strings=False), data))
 
 
 matchers = CaseMatchers()
