@@ -12,13 +12,18 @@ log = logging.getLogger(__name__)
 
 registry = []
 
-def resolve(instrument, spec, fallback=None, **context):
+
+class unset(object):
+    pass
+
+
+def resolve(instrument, spec, fallback=unset, **context):
     """
     Uses the first registered resolver where ``spec`` matches its pattern, and returns a dict of
     kwargs for ``collection.matchers.test_condition_case()``.
     """
 
-    if fallback is None:
+    if fallback is unset:
         fallback = {'data': None}
 
     for resolver in registry:
