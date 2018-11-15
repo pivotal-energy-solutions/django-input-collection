@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.forms import fields_for_model, Textarea
 from django.utils.safestring import mark_safe
-from django.utils.html import format_html_join
+from django.utils.html import format_html, format_html_join
 
 from . import models
 
@@ -88,7 +88,9 @@ class ConditionAdmin(admin.ModelAdmin):
     search_fields = ['instrument__text', 'data_getter', 'condition_group__nickname', 'condition_group__cases__nickname']
     date_hierarchy = 'date_created'
 
-    fields = ('data_getter', 'instrument', 'condition_group')
+    readonly_fields = ['_resolver_info']
+    fields = list(fields_for_model(models.Condition).keys()) + ['_resolver_info']
+
     def formfield_for_dbfield(self, db_field, **kwargs):
         if db_field.name == 'data_getter':
             kwargs['widget'] = Textarea
@@ -102,6 +104,19 @@ class ConditionAdmin(admin.ModelAdmin):
         data_getter = mark_safe('<div>{}</div>'.format(instance.data_getter))
         return data_getter + self._resolver_info(instance)
     _data_getter.short_description = """Data Getter"""
+
+    def _resolver_info(self, instance):
+        resolver, data, used_default = instance.resolve(raise_exception=False)
+        if resolver:
+            return format_html('<dt>{}</dt><dd>{}{}</dd>',
+                '.'.join((resolver.__module__, resolver.__class__.__name__)),
+                format_html('<code>{}</code>', repr(data)) if not used_default else '',
+                mark_safe('<code style="color: orange;">Lookup failed, will use runtime default</code>') if used_default else '',
+            )
+        return format_html('<div style="color: red;">{}</div>',
+            'NO MATCHING RESOLVER',
+        )
+    _resolver_info.short_description = """Resolver"""
 
 
 @admin.register(models.ConditionGroup)
