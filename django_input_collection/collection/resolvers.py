@@ -17,7 +17,7 @@ class unset(object):
     pass
 
 
-def resolve(instrument, spec, fallback=unset, **context):
+def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
     """
     Uses the first registered resolver where ``spec`` matches its pattern, and returns a dict of
     kwargs for ``collection.matchers.test_condition_case()``.
@@ -38,9 +38,11 @@ def resolve(instrument, spec, fallback=unset, **context):
                          resolver.__class__, instrument.pk, kwargs, spec, e)
             return data
 
-    raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
-        spec, __name__, {resolver.pattern: resolver.__class__ for resolver in registry},
-    ))
+    if raise_exception:
+        raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
+            spec, __name__, {resolver.pattern: resolver.__class__ for resolver in registry},
+        ))
+    return None
 
 
 def register(cls):
