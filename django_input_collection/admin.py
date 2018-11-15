@@ -1,11 +1,17 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib import admin
+from django.contrib.admin.templatetags.admin_list import _boolean_icon
 from django.forms import fields_for_model, Textarea
 from django.utils.safestring import mark_safe
 from django.utils.html import format_html, format_html_join
 
 from . import models
+
+
+log = logging.getLogger(__name__)
 
 
 @admin.register(models.Measure, models.CollectionGroup, models.CollectionInstrumentType)
@@ -82,14 +88,19 @@ class CollectedInputAdmin(admin.ModelAdmin):
     
 @admin.register(models.Condition)
 class ConditionAdmin(admin.ModelAdmin):
-    list_display = ['id', '_instrument', '_data_getter', 'condition_group']
+    list_display = ['id', '_instrument', '_data_getter', '_test', 'condition_group']
     list_display_links = ['id', '_instrument']
     list_filter = ['date_created', 'date_modified']
     search_fields = ['instrument__text', 'data_getter', 'condition_group__nickname', 'condition_group__cases__nickname']
     date_hierarchy = 'date_created'
 
-    readonly_fields = ['_resolver_info']
-    fields = list(fields_for_model(models.Condition).keys()) + ['_resolver_info']
+    readonly_fields = ['_resolver_info', '_test']
+    fields = list(fields_for_model(models.Condition).keys()) + ['_resolver_info', '_test']
+
+    def get_queryset(self, request):
+        queryset = super(ConditionAdmin, self).get_queryset(request)
+        self.request = request
+        return queryset
 
     def formfield_for_dbfield(self, db_field, **kwargs):
         if db_field.name == 'data_getter':
@@ -106,17 +117,52 @@ class ConditionAdmin(admin.ModelAdmin):
     _data_getter.short_description = """Data Getter"""
 
     def _resolver_info(self, instance):
-        resolver, data, used_default = instance.resolve(raise_exception=False)
+        if instance.pk is None:
+            return '(Unsaved)'
+
+        resolver, data, error = instance.resolve(raise_exception=False)
         if resolver:
             return format_html('<dt>{}</dt><dd>{}{}</dd>',
                 '.'.join((resolver.__module__, resolver.__class__.__name__)),
-                format_html('<code>{}</code>', repr(data)) if not used_default else '',
-                mark_safe('<code style="color: orange;">Lookup failed, will use runtime default</code>') if used_default else '',
+                format_html('<code>{}</code>', repr(data)) if not error else '',
+                format_html('<code style="color: orange;">Lookup failed!  (Will use collector class default.)<br>{}</code>', error) if error else '',
             )
         return format_html('<div style="color: red;">{}</div>',
             'NO MATCHING RESOLVER',
         )
     _resolver_info.short_description = """Resolver"""
+
+    def _test(self, instance):
+        try:
+            from .collection.collectors import registry
+
+            if instance.pk is None:
+                return _boolean_icon(None)
+
+            collection_request = instance.instrument.collection_request
+
+            statuses = []
+            context = {
+                'user': self.request.user,
+            }
+
+            for collector_class in sorted(registry.values(), key=lambda c: (c.__module__, c.__name__)):
+                status = '-'
+                try:
+                    collector = collector_class(collection_request=collection_request, context=context)
+                    status = _boolean_icon(collector.is_condition_successful(instance, raise_exception=False))
+                except Exception as e:
+                    log.exception(e)
+                    status = format_html('<code style="color: red;">{}</code>', e)
+                statuses.append([
+                    '.'.join((collector_class.__module__, collector_class.__name__)),
+                    status,
+                ])
+            return mark_safe('<dl>%s</dl>' % (format_html_join('', '<dt>{}</dt><dd>{}</dd>', statuses),))
+        except Exception as e:
+            log.exception(e)
+            return format_html('<code style="color: red;">{}</code>', e)
+    _test.short_description = """Test"""
 
 
 @admin.register(models.ConditionGroup)
