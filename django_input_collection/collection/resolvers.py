@@ -21,7 +21,7 @@ def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
     """
     Uses the first registered resolver where ``spec`` matches its pattern, and returns a 3-tuple of
     the resolver used, the dict of kwargs for ``collection.matchers.test_condition_case()``, and
-    a boolean indicating if that dict is the fallback value (indicating attribute lookup failure).
+    any exception raised during attribute traversal.
     """
 
     if fallback is unset:
@@ -30,14 +30,15 @@ def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
     for resolver in registry:
         result = resolver.apply(spec)
         if result is not False:
+            error = None
             kwargs = dict(context, **result)
             try:
                 data = resolver.resolve(instrument=instrument, **kwargs)
-            except Exception as e:
+            except Exception as error:
                 data = fallback
                 log.info("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
                          resolver.__class__, instrument.pk, kwargs, spec, e)
-            return (resolver, data, data is fallback)
+            return (resolver, data, error)
 
     if raise_exception:
         raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (

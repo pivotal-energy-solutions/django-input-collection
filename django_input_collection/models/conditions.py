@@ -59,7 +59,7 @@ class Condition(DatesModel, models.Model):
     def resolve(self, **kwargs):
         """
         Finds a resolver class for ``self.data_getter`` and returns a 3-tuple of the resolver,
-        the data yielded by the it, and if that data is the fallback setting.
+        the data yielded by the it, and any error raised during attribute traversal.
         """
         kwargs.update(kwargs.pop('context', None) or {})
         return resolvers.resolve(self.instrument, self.data_getter, **kwargs)
@@ -77,7 +77,7 @@ class Condition(DatesModel, models.Model):
             resolver_kwargs['context'] = kwargs.pop('context')
         if 'resolver_fallback' in kwargs:
             resolver_kwargs['fallback'] = kwargs.pop('resolver_fallback')
-        resolver, data_kwargs, used_default = self.resolve(**resolver_kwargs)
+        resolver, data_kwargs, error = self.resolve(**resolver_kwargs)
 
         kwargs.update(data_kwargs)
         return self.condition_group.test(**kwargs)
