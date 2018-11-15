@@ -142,18 +142,18 @@ class BaseCollector(object):
                 allowed.append(child)
         return allowed
 
-    def is_instrument_allowed(self, instrument, resolver_fallback=None):
+    def is_instrument_allowed(self, instrument, **kwargs):
         """
         Returns True when the given instrument passes all related conditions limiting its use.  The
         ``resolver_fallback`` kwarg is forwarded to ``Condition.test()``, where a failed attempt at
         resolving its ``data_getter`` will result in the use of the given default instead.
         """
-        if resolver_fallback is None:
-            resolver_fallback = self.condition_resolver_fallback
+        if 'resolver_fallback' not in kwargs:
+            kwargs['resolver_fallback'] = self.condition_resolver_fallback
         key_input = self.get_conditional_input_value
         key_case = self.get_conditional_check_value
         return instrument.test_conditions(key_input=key_input, key_case=key_case,
-                                          resolver_fallback=resolver_fallback, context=self.context)
+                                          context=self.context, **kwargs)
 
     def is_input_allowed(self, instrument):
         """
