@@ -17,6 +17,10 @@ def resolve(instrument, spec, fallback=None, **context):
     Uses the first registered resolver where ``spec`` matches its pattern, and returns a dict of
     kwargs for ``collection.matchers.test_condition_case()``.
     """
+
+    if fallback is None:
+        fallback = {'data': None}
+
     for resolver in registry:
         result = resolver.apply(spec)
         if result is not False:
