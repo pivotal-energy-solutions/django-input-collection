@@ -76,6 +76,7 @@ class SuggestedResponseAdmin(admin.ModelAdmin):
 class CollectedInputAdmin(admin.ModelAdmin):
     list_display = ['id', 'data']
     list_filter = ['date_created', 'date_modified']
+    search_fields = ['data']
     date_hierarchy = 'date_created'
 
     
@@ -83,6 +84,7 @@ class CollectedInputAdmin(admin.ModelAdmin):
 class ConditionAdmin(admin.ModelAdmin):
     list_display = ['id', 'data_getter', 'instrument', 'condition_group']
     list_filter = ['date_created', 'date_modified']
+    search_fields = ['instrument__text', 'data_getter', 'condition_group__nickname', 'condition_group__cases__nickname']
     date_hierarchy = 'date_created'
 
     fields = ('data_getter', 'instrument', 'condition_group')
