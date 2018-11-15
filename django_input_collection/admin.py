@@ -28,7 +28,7 @@ class CollectionInstrumentAdmin(admin.ModelAdmin):
                     '_has_description', '_has_help', 'response_policy', '_suggested_responses']
     list_filter = ['date_created', 'date_modified', 'group', 'type', 'response_policy']
     date_hierarchy = 'date_created'
-    search_fields = ['measure', 'group', 'type', 'text', 'description', 'help']
+    search_fields = ['measure_id', 'group_id', 'type_id', 'text', 'description', 'help']
 
     def _text_preview(self, instance):
         max_length = self._text_preview.max_length
