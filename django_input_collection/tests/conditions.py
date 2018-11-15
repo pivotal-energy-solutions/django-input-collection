@@ -489,8 +489,8 @@ class ConditionTests(TestCase):
                 models.CollectedInput.objects.filter(id=id).update(data=data)
             return instrument.test_conditions()
 
-        factories.CollectedInputFactory.create(id=1, instrument__id=1, data='dummy')
-        factories.CollectedInputFactory.create(id=2, instrument__id=2, data='dummy')
+        factories.CollectedInputFactory.create(id=1, instrument__id=parent_instrument1.id, data='dummy')
+        factories.CollectedInputFactory.create(id=2, instrument__id=parent_instrument2.id, data='dummy')
         self.assertEqual(test_conditions([1, 'foo'], [2, 'bar']), True)
         self.assertEqual(test_conditions([1, 'xfoox'], [2, 'xbarx']), True)
         self.assertEqual(test_conditions([1, 'xfooxbarx'], [2, 'x']), False)
