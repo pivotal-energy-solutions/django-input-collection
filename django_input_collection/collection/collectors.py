@@ -124,9 +124,9 @@ class BaseCollector(object):
         return method
 
     # Instrument/Input runtime hooks
-    def get_conditional_input_value(self, collected_input):
+    def get_conditional_input_value(self, data):
         """ Coerces a CollectedInput's stored data for comparison with Case match data. """
-        return collected_input.data
+        return data
 
     def get_conditional_check_value(self, data):
         """ Coerces match data from a SuggestedResponse or Case for comparison with an input. """
