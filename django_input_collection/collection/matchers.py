@@ -62,6 +62,29 @@ def list_wrap(data, wrap_strings=True, coerce_iterables=False):
     return data
 
 
+def coerce_type(match_data, value):
+    value_type = type(value)
+
+    try:
+        match_data = eval(match_data, {}, {})
+    except:
+        pass  # Keep match_data as its source string
+
+    match_type = type(match_data)
+    if match_type == value_type:
+        return match_data
+
+    if value_type in (list, tuple, set):
+        match_data = list_wrap(match_data)
+
+    try:
+        return value_type(match_data)
+    except:
+        raise ValueError('Cannot convert sample match_data %r to incoming type %r (ex: %r)' % (
+            match_data, value_type, value,
+        ))
+
+
 class CaseMatchers(object):
     def any(self, data, **kwargs):
         data = list_wrap(data)
@@ -96,18 +119,18 @@ class CaseMatchers(object):
         return len(overlaps) > 0
 
     def match(self, data, match_data, **kwargs):
-        return list_wrap(data) == list_wrap(match_data)
+        return list_wrap(data) == list_wrap(coerce_type(match_data, data))
 
     def mismatch(self, data, match_data, **kwargs):
-        return list_wrap(data) != list_wrap(match_data)
+        return list_wrap(data) != list_wrap(coerce_type(match_data, data))
 
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        return any(map(lambda d: match_data in list_wrap(d, wrap_strings=False), data))
+        return any(map(lambda d: coerce_type(match_data, d) in six.text_type(list_wrap(d, wrap_strings=False)), data))
 
     def not_contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        return any(map(lambda d: match_data not in list_wrap(d, wrap_strings=False), data))
+        return any(map(lambda d: coerce_type(match_data, d) not in six.text_type(list_wrap(d, wrap_strings=False)), data))
 
 
 matchers = CaseMatchers()
