@@ -1,4 +1,5 @@
 import re
+import logging
 
 import six
 
@@ -6,6 +7,8 @@ from . import exceptions
 
 
 __all__ = ['Resolver', 'resolve']
+
+log = logging.getLogger(__name__)
 
 registry = []
 
@@ -22,6 +25,8 @@ def resolve(instrument, spec, fallback=None, **context):
                 data = resolver.resolve(instrument=instrument, **kwargs)
             except Exception as e:
                 data = fallback
+                log.info("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
+                         resolver.__class__, instrument.pk, kwargs, spec, e)
             return data
 
     raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
