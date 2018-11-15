@@ -123,11 +123,11 @@ class CaseMatchers(object):
 
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        return any(map(lambda d: coerce_type(match_data, d) in six.text_type(list_wrap(d, wrap_strings=False)), data))
+        return any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
 
     def not_contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        return any(map(lambda d: coerce_type(match_data, d) not in six.text_type(list_wrap(d, wrap_strings=False)), data))
+        return any(map(lambda d: coerce_type(match_data, d) not in list_wrap(d, wrap_strings=False), data))
 
 
 matchers = CaseMatchers()
