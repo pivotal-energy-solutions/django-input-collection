@@ -9,7 +9,7 @@ __all__ = ['Resolver', 'resolve']
 
 registry = []
 
-def resolve(instrument, spec, **context):
+def resolve(instrument, spec, fallback=None, **context):
     """
     Uses the first registered resolver where ``spec`` matches its pattern, and returns a dict of
     kwargs for ``collection.matchers.test_condition_case()``.
@@ -18,7 +18,11 @@ def resolve(instrument, spec, **context):
         result = resolver.apply(spec)
         if result is not False:
             kwargs = dict(context, **result)
-            return resolver.resolve(instrument=instrument, **kwargs)
+            try:
+                data = resolver.resolve(instrument=instrument, **kwargs)
+            except Exception as e:
+                data = fallback
+            return data
 
     raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
         spec, __name__, {resolver.pattern: resolver.__class__ for resolver in registry},

@@ -67,6 +67,8 @@ class BaseCollector(object):
 
     group = 'default'
 
+    condition_resolver_fallback = {'data': None}
+
     # TODO: Streamline how this will have to work for targetting response_policy settings, too.
     # I think it'll have to be something like a list of "match dicts" and the first one to match
     # all settings for the instrument will be used.
@@ -140,14 +142,18 @@ class BaseCollector(object):
                 allowed.append(child)
         return allowed
 
-    def is_instrument_allowed(self, instrument):
+    def is_instrument_allowed(self, instrument, resolver_fallback=None):
         """
-        Returns True when the given instrument passes all related conditions limiting its use.
+        Returns True when the given instrument passes all related conditions limiting its use.  The
+        ``resolver_fallback`` kwarg is forwarded to ``Condition.test()``, where a failed attempt at
+        resolving its ``data_getter`` will result in the use of the given default instead.
         """
+        if resolver_fallback is None:
+            resolver_fallback = self.condition_resolver_fallback
         key_input = self.get_conditional_input_value
         key_case = self.get_conditional_check_value
         return instrument.test_conditions(key_input=key_input, key_case=key_case,
-                                          context=self.context)
+                                          resolver_fallback=resolver_fallback, context=self.context)
 
     def is_input_allowed(self, instrument):
         """
