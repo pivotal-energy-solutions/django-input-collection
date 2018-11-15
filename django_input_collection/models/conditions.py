@@ -56,21 +56,21 @@ class Condition(DatesModel, models.Model):
             'condition_group': self.condition_group,
         }
 
-    def test(self, context=None, resolver_default=None, **kwargs):
+    def test(self, context=None, resolver_fallback=None, **kwargs):
         """
         Resolves and runs the ``data_getter`` value and sends it to the related ``condition_group``.
         ``kwargs`` are forwarded to ``collection.matchers.test_condition_case()``.  If the resolver
-        encounters an error while evaluating the ``data_getter`` spec, the ``resolver_default`` dict
+        encounters an error while evaluating the ``data_getter`` spec, the ``resolver_fallback`` dict
         will be used for kwargs in place of the anticipated resolver dict result.
 
         If CollectedInput is swapped and uses a complex ``data`` field type, you should use the
-        ``resolver_default`` kwarg to ensure this method falls back to a compatible data format.
+        ``resolver_fallback`` kwarg to ensure this method falls back to a compatible data format.
         """
         if context is None:
             context = {}
-        if resolver_default is None:
-            resolver_default = {'data': None}
-        data_kwargs = resolvers.resolve(self.instrument, self.data_getter, default=resolver_default,
+        if resolver_fallback is None:
+            resolver_fallback = {'data': None}
+        data_kwargs = resolvers.resolve(self.instrument, self.data_getter, fallback=resolver_fallback,
                                         **context)
         kwargs.update(data_kwargs)
         return self.condition_group.test(**kwargs)
