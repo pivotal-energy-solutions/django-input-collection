@@ -82,7 +82,8 @@ class CollectedInputAdmin(admin.ModelAdmin):
     
 @admin.register(models.Condition)
 class ConditionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'data_getter', 'instrument', 'condition_group']
+    list_display = ['id', '_instrument', '_data_getter', 'condition_group']
+    list_display_links = ['id', '_instrument']
     list_filter = ['date_created', 'date_modified']
     search_fields = ['instrument__text', 'data_getter', 'condition_group__nickname', 'condition_group__cases__nickname']
     date_hierarchy = 'date_created'
@@ -93,6 +94,14 @@ class ConditionAdmin(admin.ModelAdmin):
             kwargs['widget'] = Textarea
         return super(ConditionAdmin, self).formfield_for_dbfield(db_field, **kwargs)
 
+    def _instrument(self, instance):
+        return format_html('<div style="width: 200px;">{}</div>', instance.instrument)
+    _instrument.short_description = """Instrument"""
+
+    def _data_getter(self, instance):
+        data_getter = mark_safe('<div>{}</div>'.format(instance.data_getter))
+        return data_getter + self._resolver_info(instance)
+    _data_getter.short_description = """Data Getter"""
 
 
 @admin.register(models.ConditionGroup)
