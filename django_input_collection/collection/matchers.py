@@ -1,5 +1,7 @@
 import collections
 
+import six
+
 __all__ = ['test_condition_case', 'matchers']
 
 
@@ -23,10 +25,7 @@ def test_condition_case(values, match_type, match_data=None,
     if suggested_values is None:
         suggested_values = []
 
-    if isinstance(values, str) or not isinstance(values, collections.Iterable):
-        values = [values]
-    else:
-        values = list(values)
+    values = list_wrap(values, coerce_iterables=True)
 
     if key_input is not None:
         values = list(map(key_input, values))
@@ -45,8 +44,19 @@ def resolve_matcher(match_type):
     return getattr(matchers, match_type.replace('-', '_'))
 
 
-def list_wrap(data):
-    if not isinstance(data, (list, tuple, set)):
+def list_wrap(data, coerce_iterables=False):
+    """
+    Wraps ``data`` in a list if it is not inherantly iterable, or is a string or mapping.
+    If ``coerce_iterables`` is True, then non-mapping iterables will be forced to a list type
+    instead of being passed through.
+    """
+    is_string = isinstance(data, six.string_types)
+    is_iterable = isinstance(data, collections.Iterable)
+    is_mapping = isinstance(data, collections.Mapping)
+    if is_iterable and not is_mapping and not is_string:
+        if coerce_iterables:
+            data = list(data)
+    elif not is_string or wrap_strings:
         data = [data]
     return data
 
