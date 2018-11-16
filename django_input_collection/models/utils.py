@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import re
 from collections import Iterable
 
 from django.db import models
@@ -11,6 +12,17 @@ import swapper
 
 def get_input_model():
     return swapper.load_model('django_input_collection', 'CollectedInput')
+
+
+def lazy_clone(obj, exclude=[], **updates):
+    if 'id' not in exclude:
+        exclude.append('id')
+    Model = obj.__class__
+    attrs = Model.objects.filter(pk=obj.pk).values().get()
+    for k in exclude:
+        del attrs[k]
+    attrs.update(updates)
+    return Model.objects.create(**attrs)
 
 
 def isolate_response_policy(instrument):
@@ -57,6 +69,24 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
 
     policy = ResponsePolicy.objects.create(**create_kwargs)
     return policy
+
+
+
+def clone_collection_request(collection_request):
+    from . import CollectionInstrument, CollectionRequest
+    common_excludes = ['date_created', 'date_modified']
+    cloned = lazy_clone(collection_request, exclude=common_excludes)
+    for instrument in collection_request.collectioninstrument_set.all():
+        cloned_instrument = lazy_clone(instrument, exclude=common_excludes, **{
+            'collection_request_id': cloned.id,
+        })
+        for condition in cloned_instrument.conditions.all():
+            lazy_clone(condition, exclude=common_excludes, **{
+                'instrument_id': cloned_instrument.id,
+                'data_getter': re.sub(r'^instrument:\d+$', 'instrument:' + cloned_instrument.id, condition.data_getter)
+            })
+
+    return cloned
 
 
 class ConditionNode(Q):
