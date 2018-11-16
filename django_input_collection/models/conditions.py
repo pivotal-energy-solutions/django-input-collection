@@ -50,9 +50,9 @@ class Condition(DatesModel, models.Model):
     data_getter = models.CharField(max_length=512)
 
     def __str__(self):
-        return '[%(instrument)r depends on source=%(source)r via %(condition_group)r]' % {
+        return '[%(instrument)r depends on resolver=%(resolver)r via %(condition_group)r]' % {
             'instrument': self.instrument,
-            'source': self.data_getter,
+            'resolver': self.data_getter.split(':')[0],
             'condition_group': self.condition_group,
         }
 
