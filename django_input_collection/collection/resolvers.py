@@ -137,18 +137,18 @@ class AttributeResolver(Resolver):
     pattern = r'^attr:(?P<dotted_path>.*)$'
 
     def resolve(self, instrument, dotted_path, **context):
-        result = self.follow_dotted_path(instrument, dotted_path)
+        result = self.resolve_dotted_path(instrument, dotted_path)
         return {
             'data': result,
         }
 
-    def follow_dotted_path(self, obj, attr):
+    def resolve_dotted_path(self, obj, attr):
         remainder = None
 
         if isinstance(obj, dict):
             obj = obj[attr]
         elif isinstance(obj, (Manager, QuerySet, list, tuple, set)):
-            obj = [follow_dotted_path(item, attr) for item in obj]
+            obj = [self.resolve_dotted_path(item, attr) for item in obj]
         else:
             if '.' in attr:
                 attr, remainder = attr.split('.', 1)
@@ -161,7 +161,7 @@ class AttributeResolver(Resolver):
                 obj = obj()
 
         if remainder:
-            return self.follow_dotted_path(obj, remainder)
+            return self.resolve_dotted_path(obj, remainder)
 
         return obj
 
