@@ -126,13 +126,33 @@ class CaseMatchers(object):
     def mismatch(self, data, match_data, **kwargs):
         return list_wrap(data) != list_wrap(coerce_type(match_data, data))
 
+    def greater_than(self, data, match_data, **kwargs):
+        data = list_wrap(data)
+        if len(data) == 1:
+            data = data[0]
+        return list_wrap(data) > list_wrap(coerce_type(match_data, data))
+        
+    def less_than(self, data, match_data, **kwargs):
+        data = list_wrap(data)
+        if len(data) == 1:
+            data = data[0]
+        return list_wrap(data) < list_wrap(coerce_type(match_data, data))
+        
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
         return any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
 
     def not_contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        return any(map(lambda d: coerce_type(match_data, d) not in list_wrap(d, wrap_strings=False), data))
+        return not any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
+
+    def one(self, data, match_data, **kwargs):
+        data = list_wrap(data)
+        return any(map(lambda d: d in eval_sample(match_data), data))
+
+    def zero(self, data, match_data, **kwargs):
+        data = list_wrap(data)
+        return not any(map(lambda d: d in eval_sample(match_data), data))
 
 
 matchers = CaseMatchers()

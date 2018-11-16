@@ -171,8 +171,12 @@ class Case(DatesModel, models.Model):
         # Partial, relies on ``data`` field
         ('match', "Input matches this data"),
         ('mismatch', "Input doesn't match this data"),
+        ('greater_than', "Input is greater than this data"),
+        ('less_than', "Input is less than this data"),
         ('contains', "Input contains this data"),
         ('not-contains', "Input does not contain this data"),
+        ('one', "Input is in these values"),
+        ('zero', "Input is not in these values"),
     ))
     match_data = models.CharField(max_length=512, blank=True, null=True)
 
@@ -193,8 +197,12 @@ class Case(DatesModel, models.Model):
         (r"^Input (.*)", r'\1'),
         (r"matches this data", '={data}'),
         (r"doesn't match this data", '≠{data}'),
+        (r"is greater than this data", '>{data}'),
+        (r"is less than this data", '<{data}'),
         (r"contains this data", '*{data}*'),
         (r"doesn't contain this data", '!*{data}*'),
+        (r"is in these values", 'in {data}'),
+        (r"doesn't contain this data", '!in {data}'),
     )))
     def describe(self):
         if not self.pk:
