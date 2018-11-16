@@ -1,4 +1,5 @@
 import collections
+from itertools import chain
 
 import six
 
@@ -34,6 +35,8 @@ def test_condition_case(values, match_type, match_data=None,
         if match_data is not None:
             match_data = key_case(match_data)
 
+    # Flatten nested values that came in as a list from a single response (i.e., multiple=True)
+    values = list(chain(*[list_wrap(item) for item in values]))
     matcher = resolve_matcher(match_type)
     status = matcher(values, suggested_values=suggested_values, match_data=match_data)
 
