@@ -99,11 +99,15 @@ class InstrumentResolver(Resolver):
     SuggestedResponses, should they be needed for any Case match types that require them.
     """
 
-    pattern = r'^instrument:(?P<parent_pk>\d+)$'
+    pattern = r'^instrument:((?P<parent_pk>\d+)|(?P<measure>.+))$'
 
-    def resolve(self, instrument, parent_pk, **context):
+    def resolve(self, instrument, parent_pk=None, measure=None, **context):
         from ..models import CollectionInstrument
-        instrument = CollectionInstrument.objects.get(pk=parent_pk)
+        if parent_pk:
+            lookup = {'pk': measure}
+        elif measure:
+            lookup = {'measure_id': measure}
+        instrument = CollectionInstrument.objects.get(**lookup)
         inputs = instrument.collectedinput_set.filter_for_context(**context)
         values = list(inputs.values_list('data', flat=True))
 
