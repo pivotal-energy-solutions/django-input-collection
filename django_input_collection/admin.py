@@ -88,14 +88,13 @@ class CollectedInputAdmin(admin.ModelAdmin):
     
 @admin.register(models.Condition)
 class ConditionAdmin(admin.ModelAdmin):
-    list_display = ['id', '_instrument', '_data_getter', '_test', 'condition_group']
-    list_display_links = ['id', '_instrument']
+    list_display = ['_instrument', '_data_getter', 'condition_group', '_test_results']
     list_filter = ['date_created', 'date_modified']
     search_fields = ['instrument__text', 'data_getter', 'condition_group__nickname', 'condition_group__cases__nickname']
     date_hierarchy = 'date_created'
 
-    readonly_fields = ['_resolver_info', '_test']
-    fields = list(fields_for_model(models.Condition).keys()) + ['_resolver_info', '_test']
+    readonly_fields = ['_resolver_info', '_test_results']
+    fields = list(fields_for_model(models.Condition).keys()) + ['_resolver_info', '_test_results']
 
     def get_queryset(self, request):
         queryset = super(ConditionAdmin, self).get_queryset(request)
@@ -108,7 +107,21 @@ class ConditionAdmin(admin.ModelAdmin):
         return super(ConditionAdmin, self).formfield_for_dbfield(db_field, **kwargs)
 
     def _instrument(self, instance):
-        return format_html('<div style="width: 200px;">{}</div>', instance.instrument)
+        statuses = self._do_tests(instance)
+
+        def boolean_status(status):
+            if isinstance(status, Exception):
+                return None
+            return status
+
+        app_results = ''.join([_boolean_icon(boolean_status(status)) for label, status in statuses if not label.startswith('django_input_collection.')])
+        builtin_results = ''.join([_boolean_icon(boolean_status(status)) for label, status in statuses if label.startswith('django_input_collection.')])
+        return format_html('<div style="width: 200px;"><a href="{}">{}</a><hr><div>{}{}</div></div>', *[
+            instance.pk,
+            instance.instrument,
+            mark_safe(app_results + (' &bullet; ' if app_results else '')),
+            mark_safe(builtin_results),
+        ])
     _instrument.short_description = """Instrument"""
 
     def _data_getter(self, instance):
@@ -132,37 +145,41 @@ class ConditionAdmin(admin.ModelAdmin):
         )
     _resolver_info.short_description = """Resolver"""
 
-    def _test(self, instance):
-        try:
-            from .collection.collectors import registry
+    def _test_results(self, instance):
+        statuses = self._do_tests(instance)
 
-            if instance.pk is None:
-                return _boolean_icon(None)
+        for i, (label, status) in enumerate(statuses):
+            if isinstance(status, Exception):
+                # log.error('Exception during %s: %s', label, status)
+                status = format_html('<code style="color: red;">{}</code>', status)
+            else:
+                status = _boolean_icon(status)
+            statuses[i][1] = status
+        return mark_safe('<dl>%s</dl>' % (format_html_join('', '<dt>{}</dt><dd>{}</dd>', statuses),))
+    _test_results.short_description = """Results"""
 
-            collection_request = instance.instrument.collection_request
+    # Internals
+    def _do_tests(self, instance):
+        if instance.pk is None:
+            return []
 
-            statuses = []
-            context = {
-                'user': self.request.user,
-            }
+        from .collection.collectors import registry
+        collection_request = instance.instrument.collection_request
+        statuses = []
+        context = {'user': self.request.user}
 
-            for collector_class in sorted(registry.values(), key=lambda c: (c.__module__, c.__name__)):
-                status = '-'
-                try:
-                    collector = collector_class(collection_request=collection_request, context=context)
-                    status = _boolean_icon(collector.is_condition_successful(instance, raise_exception=False))
-                except Exception as e:
-                    log.exception(e)
-                    status = format_html('<code style="color: red;">{}</code>', e)
-                statuses.append([
-                    '.'.join((collector_class.__module__, collector_class.__name__)),
-                    status,
-                ])
-            return mark_safe('<dl>%s</dl>' % (format_html_join('', '<dt>{}</dt><dd>{}</dd>', statuses),))
-        except Exception as e:
-            log.exception(e)
-            return format_html('<code style="color: red;">{}</code>', e)
-    _test.short_description = """Test"""
+        for collector_class in sorted(registry.values(), key=lambda c: (c.__module__, c.__name__)):
+            try:
+                collector = collector_class(collection_request=collection_request, context=context)
+                status = collector.is_condition_successful(instance, raise_exception=False)
+            except Exception as e:
+                log.exception(e)
+                status = e
+            statuses.append([
+                '.'.join((collector_class.__module__, collector_class.__name__)),
+                status,
+            ])
+        return statuses
 
 
 @admin.register(models.ConditionGroup)
