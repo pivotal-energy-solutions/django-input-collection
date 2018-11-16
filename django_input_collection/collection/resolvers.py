@@ -34,7 +34,8 @@ def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
             kwargs = dict(context, **result)
             try:
                 data = resolver.resolve(instrument=instrument, **kwargs)
-            except Exception as error:
+            except Exception as e:
+                error = e
                 data = fallback
                 log.info("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
                          resolver.__class__, instrument.pk, kwargs, spec, error)
