@@ -1,12 +1,15 @@
 import re
 import logging
 
+from django.db.models import Manager
+from django.db.models.query import QuerySet
+
 import six
 
 from . import exceptions
 
 
-__all__ = ['Resolver', 'resolve']
+__all__ = ['resolve', 'Resolver', 'InstrumentResolver', 'AttributeResolver', 'DebugResolver']
 
 log = logging.getLogger(__name__)
 
@@ -120,6 +123,47 @@ class InstrumentResolver(Resolver):
             'data': values,
             'suggested_values': suggested_values,
         }
+
+
+class AttributeResolver(Resolver):
+    """
+    Accepts a dotted attribute path that will be traversed to produce data, starting from the
+    conditional instrument this condition is checking.  Dictionaries will use index lookup instead
+    of attributes.  Attributes that resolve to callables will be called with no arguments.
+    Attributes that resolve to simple iterables (including querysets and model managers) will each
+    trigger the remaining lookups, with the results compiled as a list.
+    """
+
+    pattern = r'^attr:(?P<dotted_path>.*)$'
+
+    def resolve(self, instrument, dotted_path, **context):
+        result = self.follow_dotted_path(instrument, dotted_path)
+        return {
+            'data': result,
+        }
+
+    def follow_dotted_path(self, obj, attr):
+        remainder = None
+
+        if isinstance(obj, dict):
+            obj = obj[attr]
+        elif isinstance(obj, (Manager, QuerySet, list, tuple, set)):
+            obj = [follow_dotted_path(item, attr) for item in obj]
+        else:
+            if '.' in attr:
+                attr, remainder = attr.split('.', 1)
+            obj = getattr(obj, attr)
+
+            # Convert types we don't want to handle directly
+            if isinstance(obj, Manager):
+                obj = obj.all()
+            elif callable(obj):
+                obj = obj()
+
+        if remainder:
+            return self.follow_dotted_path(obj, remainder)
+
+        return obj
 
 
 class DebugResolver(Resolver):
