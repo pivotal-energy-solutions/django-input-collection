@@ -65,15 +65,17 @@ def list_wrap(data, wrap_strings=True, coerce_iterables=False):
     return data
 
 
-def coerce_type(match_data, value):
-    value_type = type(value)
-
+def eval_sample(match_data):
     try:
-        match_data = eval(match_data, {}, {})
+        return eval(match_data, {}, {})
     except:
-        pass  # Keep match_data as its source string
+        return match_data
 
+
+def coerce_type(match_data, value):
+    match_data = eval_sample(match_data)
     match_type = type(match_data)
+    value_type = type(value)
     if match_type == value_type or value_type in (list, tuple, set):
         return match_data
 
