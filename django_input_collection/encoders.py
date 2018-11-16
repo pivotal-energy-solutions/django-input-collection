@@ -1,5 +1,6 @@
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Model
+from django.forms.models import model_to_dict
 from django.utils.functional import Promise
 from django.utils.encoding import force_text
 
