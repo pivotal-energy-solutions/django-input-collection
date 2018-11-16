@@ -115,3 +115,16 @@ class InstrumentResolver(Resolver):
             'data': values,
             'suggested_values': suggested_values,
         }
+
+
+class DebugResolver(Resolver):
+    """
+    Accepts a literal python value to be evaluated in-place.  The result should be a dict with at
+    least a ``data`` key, and possibly a ``suggested_values`` key set to a list.
+    """
+
+    pattern = r'^debug:(?P<expression>.*)$'
+
+    def resolve(self, instrument, expression, **context):
+        result = eval(expression, {}, {})
+        return result
