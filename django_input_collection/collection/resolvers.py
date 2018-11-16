@@ -105,7 +105,7 @@ class InstrumentResolver(Resolver):
     def resolve(self, instrument, parent_pk=None, measure=None, **context):
         from ..models import CollectionInstrument
         if parent_pk:
-            lookup = {'pk': measure}
+            lookup = {'pk': parent_pk}
         elif measure:
             lookup = {'measure_id': measure}
         instrument = CollectionInstrument.objects.get(**lookup)
