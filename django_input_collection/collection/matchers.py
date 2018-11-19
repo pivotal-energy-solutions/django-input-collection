@@ -76,7 +76,7 @@ def coerce_type(match_data, value):
     match_data = eval_sample(match_data)
     match_type = type(match_data)
     value_type = type(value)
-    if match_type == value_type or value_type in (list, tuple, set):
+    if value is None or match_type == value_type or value_type in (list, tuple, set):
         return match_data
 
     try:
