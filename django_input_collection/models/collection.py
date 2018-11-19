@@ -24,6 +24,9 @@ class Measure(DatesModel, models.Model):
     def __str__(self):
         return self.id
 
+    def __unicode__(self):
+        return unicode(str(self))
+
 
 class CollectionGroup(DatesModel, models.Model):
     """
@@ -33,6 +36,9 @@ class CollectionGroup(DatesModel, models.Model):
 
     def __str__(self):
         return self.id
+
+    def __unicode__(self):
+        return unicode(str(self))
 
 
 class CollectionRequest(DatesModel, models.Model):
@@ -60,6 +66,9 @@ class CollectionRequest(DatesModel, models.Model):
     def __str__(self):
         return str(self.id)
 
+    def __unicode__(self):
+        return unicode(str(self))
+
     def get_flags(self):
         return {
             'max_instrument_inputs_per_user': self.max_instrument_inputs_per_user,
@@ -72,6 +81,9 @@ class CollectionInstrumentType(DatesModel, models.Model):
 
     def __str__(self):
         return self.id
+
+    def __unicode__(self):
+        return unicode(str(self))
 
 
 class CollectionInstrument(DatesModel, models.Model):
@@ -107,6 +119,9 @@ class CollectionInstrument(DatesModel, models.Model):
 
     def __str__(self):
         return self.text
+
+    def __unicode__(self):
+        return unicode(str(self))
 
     def test_conditions(self, **kwargs):
         """ Checks data all Conditions gating this instrument. """
@@ -159,6 +174,9 @@ class ResponsePolicy(DatesModel, models.Model):
     def __str__(self):
         return self.nickname or ':'.join(sorted(self.get_flags().items(), key=operator.itemgetter(0)))
 
+    def __unicode__(self):
+        return unicode(str(self))
+
     def get_flags(self):
         return {
             'restrict': self.restrict,
@@ -179,6 +197,9 @@ class SuggestedResponse(DatesModel, models.Model):
 
     def __str__(self):
         return self.data.encode('utf-8')
+
+    def __unicode__(self):
+        return unicode(str(self))
 
 
 class AbstractCollectedInput(DatesModel, models.Model):
@@ -208,6 +229,9 @@ class AbstractCollectedInput(DatesModel, models.Model):
 
     def __str__(self):
         return str(self.data)
+
+    def __unicode__(self):
+        return unicode(str(self))
 
 
 MODEL_SWAP_SETTING = swapper.swappable_setting('input', 'CollectedInput')

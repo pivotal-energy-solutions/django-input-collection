@@ -56,6 +56,9 @@ class Condition(DatesModel, models.Model):
             'condition_group': self.condition_group,
         }
 
+    def __unicode__(self):
+        return unicode(str(self))
+
     def resolve(self, **kwargs):
         """
         Finds a resolver class for ``self.data_getter`` and returns a 3-tuple of the resolver,
@@ -108,6 +111,9 @@ class ConditionGroup(DatesModel, models.Model):
 
     def __str__(self):
         return self.nickname or self.describe()
+
+    def __unicode__(self):
+        return unicode(str(self))
 
     def get_flags(self):
         return {
@@ -186,6 +192,9 @@ class Case(DatesModel, models.Model):
 
     def __str__(self):
         return self.nickname or self.describe()
+
+    def __unicode__(self):
+        return unicode(str(self))
 
     def get_flags(self):
         return {
