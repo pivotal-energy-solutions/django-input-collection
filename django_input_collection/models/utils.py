@@ -85,6 +85,7 @@ def clone_collection_request(collection_request):
                 'instrument_id': cloned_instrument.id,
                 'data_getter': re.sub(r'^instrument:\d+$', 'instrument:' + cloned_instrument.id, condition.data_getter)
             })
+        cloned_instrument.suggested_responses.add(*instrument.suggested_responses.all())
 
     return cloned
 
