@@ -83,7 +83,7 @@ def clone_collection_request(collection_request):
         for condition in instrument.conditions.all():
             lazy_clone(condition, exclude=common_excludes, **{
                 'instrument_id': cloned_instrument.id,
-                'data_getter': re.sub(r'^instrument:\d+$', 'instrument:' + cloned_instrument.id, condition.data_getter)
+                'data_getter': re.sub(r'^instrument:\d+$', 'instrument:%d' % cloned_instrument.id, condition.data_getter)
             })
         cloned_instrument.suggested_responses.add(*instrument.suggested_responses.all())
 
