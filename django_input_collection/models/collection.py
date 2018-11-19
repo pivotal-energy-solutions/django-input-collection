@@ -137,8 +137,13 @@ class CollectionInstrument(DatesModel, models.Model):
 
     def get_child_instruments(self):
         """ Returns a list of instrument that this one enables via a Condition. """
+        # TODO: Add Resolver syntax that yields this list, given an instrument
+        data_getters = [
+            'instrument:%d' % (self.pk,),
+            'instrument:%s' % (self.measure_id,),
+        ]
         instruments = self.collection_request.collectioninstrument_set.all()
-        return instruments.filter(conditions__data_getter='instrument:%d' % (self.pk,))
+        return instruments.filter(conditions__data_getter__in=data_getters)
 
     def get_child_conditions(self):
         from .conditions import Condition
