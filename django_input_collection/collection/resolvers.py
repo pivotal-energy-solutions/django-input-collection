@@ -111,7 +111,7 @@ class InstrumentResolver(Resolver):
             lookup = {'pk': parent_pk}
         elif measure:
             lookup = {'measure_id': measure}
-        instrument = CollectionInstrument.objects.get(**lookup)
+        instrument = CollectionInstrument.objects.get(collection_request=instrument.collection_request, **lookup)
         inputs = instrument.collectedinput_set.filter_for_context(**context)
         values = list(inputs.values_list('data', flat=True))
 
