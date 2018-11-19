@@ -71,7 +71,6 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
     return policy
 
 
-
 def clone_collection_request(collection_request):
     from . import CollectionInstrument, CollectionRequest
     common_excludes = ['date_created', 'date_modified']
