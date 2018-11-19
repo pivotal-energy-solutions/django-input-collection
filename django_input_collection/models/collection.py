@@ -132,11 +132,13 @@ class CollectionInstrument(DatesModel, models.Model):
 
     def get_parent_instruments(self):
         """ Returns a list of instruments that enable this one via a Condition. """
-        return CollectionInstrument.objects.filter(conditions__instrument=self)
+        instruments = self.collection_request.collectioninstrument_set.all()
+        return instruments.filter(conditions__instrument=self)
 
     def get_child_instruments(self):
         """ Returns a list of instrument that this one enables via a Condition. """
-        return CollectionInstrument.objects.filter(conditions__data_getter='instrument:%d' % (self.pk,))
+        instruments = self.collection_request.collectioninstrument_set.all()
+        return instruments.filter(conditions__data_getter='instrument:%d' % (self.pk,))
 
     def get_child_conditions(self):
         from .conditions import Condition
