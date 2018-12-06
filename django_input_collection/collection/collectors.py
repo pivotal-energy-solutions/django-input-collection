@@ -124,9 +124,12 @@ class BaseCollector(object):
 
         return method
 
-    def get_instruments(self, active=None):
+    def get_instruments(self, active=None, required=None):
         """ Returns the queryset of instruments matching any flags that are set. """
         queryset = self.collection_request.collectioninstrument_set.all()
+
+        if required is not None:
+            queryset = queryset.filter(response_policy__required=required)
 
         if active:
             active_pks = []
