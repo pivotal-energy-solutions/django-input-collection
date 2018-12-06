@@ -124,6 +124,9 @@ class BaseCollector(object):
 
         return method
 
+    def get_instruments(self):
+        return self.collection_request.collectioninstrument_set.all()
+
     def get_instrument(self, measure):
         """ Returns the instrument corresponding to ``measure``, or None if one doesn't exist. """
         if isinstance(measure, Model):
