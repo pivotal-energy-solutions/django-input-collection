@@ -124,16 +124,18 @@ class BaseCollector(object):
 
         return method
 
-    def get_instruments(self):
-        return self.collection_request.collectioninstrument_set.all()
+    def get_instruments(self, active=None):
+        """ Returns the queryset of instruments matching any flags that are set. """
+        queryset = self.collection_request.collectioninstrument_set.all()
 
-    def get_active_instruments(self):
-        """ Returns an ordered list of currenty activated instruments. """
-        instruments = []
-        for instrument in self.get_instruments():
-            if self.is_instrument_allowed(instrument):
-                instruments.append(instrument)
-        return instruments
+        if active:
+            active_pks = []
+            for instrument in queryset:
+                if self.is_instrument_allowed(instrument):
+                    active_pks.append(instrument.pk)
+            queryset = self.collection_request.collectioninstrument_set.filter(pk__in=active_pks)
+
+        return queryset
 
     def get_instrument(self, measure):
         """ Returns the instrument corresponding to ``measure``, or None if one doesn't exist. """
