@@ -142,6 +142,20 @@ class BaseCollector(object):
 
         return self.get_instruments().filter(measure_id=measure).first()
 
+    def get_inputs(self, instrument=None, measure=None):
+        """
+        Returns the queryset of inputs for this collection request.  If ``instrument`` or
+        ``measure`` are given, 
+        """
+        queryset = self.collection_request.collectedinput_set.filter_for_context(**self.context)
+        if instrument or measure:
+            if instrument and measure:
+                raise ValueError("Can't specify both 'instrument' and 'measure'")
+            if measure:
+                instrument = self.get_instrument(measure)
+            queryset = queryset.filter(instrument=instrument)
+        return queryset
+
     # Instrument/Input runtime hooks
     def get_conditional_input_value(self, data):
         """ Coerces a CollectedInput's stored data for comparison with Case match data. """
