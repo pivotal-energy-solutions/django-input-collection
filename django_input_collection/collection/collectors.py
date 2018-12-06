@@ -68,6 +68,7 @@ class BaseCollector(object):
     group = 'default'
 
     condition_resolver_fallback = {'data': None}
+    specification_class = specifications.Specification
 
     # TODO: Streamline how this will have to work for targetting response_policy settings, too.
     # I think it'll have to be something like a list of "match dicts" and the first one to match
@@ -288,7 +289,6 @@ class BaseCollector(object):
 
 
 class Collector(BaseCollector):
-    specification_class = specifications.Specification
     group = 'default'
 
 
