@@ -5,6 +5,7 @@ import json
 
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
+from django.db.models import Model
 
 import six
 
@@ -126,6 +127,14 @@ class BaseCollector(object):
 
     def get_instruments(self):
         return self.collection_request.collectioninstrument_set.all()
+
+    def get_active_instruments(self):
+        """ Returns an ordered list of currenty activated instruments. """
+        instruments = []
+        for instrument in self.get_instruments():
+            if self.is_instrument_allowed(instrument):
+                instruments.append(instrument)
+        return instruments
 
     def get_instrument(self, measure):
         """ Returns the instrument corresponding to ``measure``, or None if one doesn't exist. """
