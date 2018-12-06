@@ -187,6 +187,10 @@ class BaseCollector(object):
         return instrument.test_conditions(key_input=key_input, key_case=key_case,
                                           context=self.context, **kwargs)
 
+    def is_measure_allowed(self, measure, **kwargs):
+        instrument = self.get_instrument(measure)
+        return self.is_instrument_allowed(instrument, **kwargs)
+
     def is_input_allowed(self, instrument):
         """
         Returns True when the given instrument passes checks against flags on its CollectionRequest.
