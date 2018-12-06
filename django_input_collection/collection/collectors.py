@@ -67,7 +67,6 @@ class BaseCollector(object):
     __noregister__ = True
 
     group = 'default'
-
     condition_resolver_fallback = {'data': None}
     specification_class = specifications.Specification
 
