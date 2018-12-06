@@ -124,6 +124,13 @@ class BaseCollector(object):
 
         return method
 
+    def get_instrument(self, measure):
+        """ Returns the instrument corresponding to ``measure``, or None if one doesn't exist. """
+        if isinstance(measure, Model):
+            measure = measure.pk
+
+        return self.get_instruments().filter(measure_id=measure).first()
+
     # Instrument/Input runtime hooks
     def get_conditional_input_value(self, data):
         """ Coerces a CollectedInput's stored data for comparison with Case match data. """
