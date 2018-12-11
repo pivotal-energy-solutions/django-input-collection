@@ -160,7 +160,8 @@ class BaseCollector(object):
         Returns a InstrumentType instance, determined by default by the instrument's type_id in
         ``types``.
         """
-        type_ref = types.InstrumentType
+        type_ref = methods.InputMethod
+
         if instrument.type_id in self.measure_types:
             type_ref = self.measure_types[instrument.type_id]
         elif instrument.type_id in self.types:
