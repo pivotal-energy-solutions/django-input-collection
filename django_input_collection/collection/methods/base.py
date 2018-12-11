@@ -43,6 +43,7 @@ class InputMethod(UserDict):
             init_dict = filter_safe_dict(cls.__dict__)
             self.data.update(init_dict)
 
+        # Do usual init
         self.update(*args, **kwargs)
 
     def __getattr__(self, k):
@@ -71,6 +72,7 @@ class InputMethod(UserDict):
                 list(sorted(self.data.keys())),
             ))
 
+    # Serialization
     def get_data(self, instrument):
         """ Gets a copy of the data that will be used for serialize(). """
         data = self.data.copy()
