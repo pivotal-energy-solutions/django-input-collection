@@ -1,5 +1,7 @@
 from functools import reduce
 
+from django.utils.text import format_lazy
+
 from ...compat import UserDict
 
 __all__ = ['InputMethod']
@@ -104,6 +106,43 @@ class InputMethod(UserDict):
         return self.get_data(instrument)
 
     # Cleaning
+    def clean_input(self, data):
+        """ Runs ``clean()`` and traps any exception as a ValidationError. """
+        try:
+            data = self.clean(data)
+        except Exception as exception:
+            error = self.get_error(exception, data=data, exception=exception)
+            raise ValidationError(error)
+        return data
+
     def clean(self, data):
         """ Runs ``cleaner`` callable with ``data``. """
         return self.cleaner(data)
+
+    # Errors
+    def get_error(self, code, **format_kwargs):
+        """ Returns a formatted message string for the given ``code``. """
+        if isinstance(code, Exception):
+            code = self.get_best_exception_code(code)
+
+        message = self.errors[code]
+        return format_lazy(message, **format_kwargs)
+
+    def get_best_exception_code(self, exception):
+        """ Translate given exception to best isinstance() match in the ``errors`` keys. """
+        exception_rules = list(
+            code for code, message in self.errors.items() if isinstance(code, Exception)
+        )
+
+        for lookup_types in exception_rules:
+            is_exception = isinstance(lookup_types, Exception)
+            use_isinstance = isinstance(lookup_types, tuple) and not isinstance(lookup_types[0], Exception)
+            if not is_exception and not use_isinstance:
+                continue
+
+            is_applicable = isinstance(exception, lookup_types)
+            is_more_specific = (best_code is None or isinstance(exception, best_code))
+            if is_applicable and is_more_specific:
+                best_code = lookup_types
+
+        return best_code
