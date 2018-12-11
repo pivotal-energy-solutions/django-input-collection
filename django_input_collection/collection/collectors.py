@@ -247,6 +247,10 @@ class BaseCollector(object):
 
         return True
 
+    def get_cleaners(self, instrument):
+        method = self.get_method(instrument)
+        return [method.clean]
+
     def clean_data(self, instrument, data):
         """ Cleans the block of input data for storage. """
 
@@ -284,9 +288,9 @@ class BaseCollector(object):
         # Ensure {'_suggested_response': pk} is swapped out for real underlying data
         data = utils.replace_data_for_suggested_responses(instrument, data)
 
-        # Let the method clean and do type coercion with a concrete data reference
-        method = self.get_method(instrument)
-        data = method.clean(data)
+        cleaners = self.get_cleaners(instrument)
+        for cleaner in cleaners:
+            data = cleaner(data)
 
         # Enforce the disallow_custom flag from clean_data()
         if allowed_values and not matchers.all_suggested(data, allowed_values):
