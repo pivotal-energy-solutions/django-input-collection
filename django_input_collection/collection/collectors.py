@@ -128,9 +128,7 @@ class BaseCollector(object):
         elif instrument.type_id in self.type_methods:
             method = self.type_methods[instrument.type_id]
 
-        if isclass(method):
-            method = method()
-
+        method = method()
         method_kwargs = self.get_method_kwargs(instrument)
         method.update(**method_kwargs)
 
