@@ -1,5 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
 
+import six
+
 from .base import InputMethod
 
 
@@ -7,7 +9,7 @@ __all__ = ['CharMethod', 'IntegerMethod', 'FloatMethod']
 
 
 class CharMethod(InputMethod):
-    cleaner = unicode  # FIXME: Definitely an encoding bug waiting to happen
+    cleaner = six.text_type  # FIXME: Definitely an encoding bug waiting to happen
 
 
 class IntegerMethod(InputMethod):
