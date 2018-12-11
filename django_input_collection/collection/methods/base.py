@@ -21,6 +21,10 @@ def filter_safe_dict(data, attrs=None):
     ))}
 
 
+base_errors = {
+    Exception: '{exception}',
+}
+
 class InputMethod(UserDict):
     """
     A stateless encapsulation of the components required to obtain and coerce data for an arbitrary
@@ -28,6 +32,9 @@ class InputMethod(UserDict):
     whatever external methodology is required to obtain data, and then to receive such data once
     that external methodology has complete.
     """
+
+    # Assigned at runtime via initialization kwargs
+    errors = None
 
     def __init__(self, *args, **kwargs):
         # NOTE: Avoid super() first because our primed defaults won't exist, and it'll think that's
@@ -45,6 +52,11 @@ class InputMethod(UserDict):
 
         # Do usual init
         self.update(*args, **kwargs)
+
+        # Flatten defined errors
+        if self.errors is None:
+            self.errors = {}
+        self.errors = dict(base_errors, **self.errors)
 
     def __getattr__(self, k):
         if k == 'data':
@@ -79,6 +91,11 @@ class InputMethod(UserDict):
         data['meta'] = {
             'method_class': '.'.join([self.__module__, self.__class__.__name__]),
         }
+
+        remove_fields = ['errors']
+        for field in repr_fields:
+            del data[field]
+
         return data
 
     def serialize(self, instrument):
