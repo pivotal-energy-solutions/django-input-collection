@@ -100,6 +100,10 @@ class BaseCollector(object):
         return self.specification_class(self)
 
     def get_type_methods(self):
+        """
+        Returns a dictionary of type_ids to an ``InputMethod`` subclass.  Note that this is
+        overridden by measure lookups specified in ``measure_methods``.
+        """
         return self.type_methods or {}
 
     def get_measure_methods(self):
