@@ -338,7 +338,7 @@ class BaseCollector(object):
         return data
 
     def raise_error(self, exception):
-        return exception
+        raise exception
 
     def serialize_data(self, data):
         """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
