@@ -103,12 +103,20 @@ class BaseCollector(object):
         return self.type_methods or {}
 
     def get_measure_methods(self):
+        """
+        Returns a dictionary of measure_ids to an ``InputMethod`` subclass.  Note that this
+        overrides measure lookups specified in ``type_methods``.
+        """
         return self.measure_methods or {}
 
     def get_method_kwargs(self, instrument):
         return {}
 
     def get_method(self, instrument):
+        """
+        Returns an InputMethod instance, determined by default by the instrument's measure_id in
+        ``measure_methods``, or its type_id in ``type_methods``.
+        """
         method = methods.InputMethod
 
         if instrument.measure_id in self.measure_methods:

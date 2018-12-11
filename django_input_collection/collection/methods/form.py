@@ -107,7 +107,7 @@ class FormFieldMethod(InputMethod):
         return data
 
     def clean(self, result):
-        """ Let the formfield try to validate it. """
+        """ Clean result via ``formfield.clean()``. """
         field = self.get_formfield()
         return field.clean(result)
 
