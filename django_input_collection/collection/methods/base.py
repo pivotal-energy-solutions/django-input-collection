@@ -34,6 +34,7 @@ class InputMethod(UserDict):
     """
 
     # Assigned at runtime via initialization kwargs
+    cleaner = None
     errors = None
 
     def __init__(self, *args, **kwargs):
@@ -102,6 +103,7 @@ class InputMethod(UserDict):
         """ Serializes a python representation of this input description. """
         return self.get_data(instrument)
 
-    def clean(self, result):
-        """ Clean the result and perform any necessary type coercion. """
-        return result
+    # Cleaning
+    def clean(self, data):
+        """ Runs ``cleaner`` callable with ``data``. """
+        return self.cleaner(data)
