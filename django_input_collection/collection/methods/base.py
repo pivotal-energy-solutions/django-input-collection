@@ -77,7 +77,7 @@ class InputMethod(UserDict):
         _raise = kwargs.pop('_raise', True)
         data = flatten_dicts(*args, **kwargs)
 
-        for k in filter_safe_dict(data, self.data.keys()):
+        for k in filter_safe_dict(data, self.data.keys(), allow_callable=True):
             setattr(self, k, data.pop(k))
 
         # Raise an error for leftover attributes
