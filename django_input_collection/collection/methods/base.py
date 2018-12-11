@@ -11,14 +11,15 @@ def flatten_dicts(*args, **kwargs):
     return reduce(lambda d, d2: dict(d, **d2), args + (kwargs,), {})
 
 
-def filter_safe_dict(data, attrs=None):
+def filter_safe_dict(data, attrs=None, allow_callable=False):
     """
-    Returns current names and values for valid writeable attributes. If ``attrs`` is given, then
-    the returned dict will contain only items named in that iterable.
+    Returns current names and values for valid writeable attributes. If ``attrs`` is given, the
+    returned dict will contain only items named in that iterable.  If ``strict`` is given, the
+    returned dict will keep values that are callable.
     """
     return {k: v for k, v in data.items() if all((
         not k.startswith('_'),
-        not callable(v) and not isinstance(v, (classmethod, staticmethod)),
+        allow_callable or (not callable(v) and not isinstance(v, (classmethod, staticmethod))),
         not attrs or (k in attrs),
     ))}
 
