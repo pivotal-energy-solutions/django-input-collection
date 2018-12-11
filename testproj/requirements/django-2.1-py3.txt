@@ -1,4 +1,4 @@
-Django==2.1
+Django>=2.1.2
 django-mysql==2.4.1
 djangorestframework==3.8.2
 factory-boy==2.11.1
