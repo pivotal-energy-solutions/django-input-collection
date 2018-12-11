@@ -70,6 +70,9 @@ class BaseCollector(object):
     condition_resolver_fallback = {'data': None}
     specification_class = specifications.Specification
 
+    types = None
+    measure_types = None
+
     # TODO: Streamline how this will have to work for targetting response_policy settings, too.
     # I think it'll have to be something like a list of "match dicts" and the first one to match
     # all settings for the instrument will be used.
@@ -82,6 +85,8 @@ class BaseCollector(object):
         if group:
             self.group = group
 
+        self.types = self.get_types()
+        self.measure_types = self.get_measure_types()
         self.type_methods = self.get_type_methods()
         self.measure_methods = self.get_measure_methods()
 
@@ -98,6 +103,12 @@ class BaseCollector(object):
     # Serialization utils
     def get_specification(self):
         return self.specification_class(self)
+
+    def get_types(self):
+        return self.types or {}
+
+    def get_measure_types(self):
+        return self.measure_types or {}
 
     def get_type_methods(self):
         """
@@ -133,6 +144,28 @@ class BaseCollector(object):
         method.update(**method_kwargs)
 
         return method
+
+    def get_type_kwargs(self, instrument):
+        """
+        Returns constructor kwargs for the InstrumentType subclass assigned to ``instrument``.
+        """
+        return {}
+
+    def get_type(self, instrument):
+        """
+        Returns a InstrumentType instance, determined by default by the instrument's type_id in
+        ``types``.
+        """
+        type_ref = types.InstrumentType
+        if instrument.type_id in self.measure_types:
+            type_ref = self.measure_types[instrument.type_id]
+        elif instrument.type_id in self.types:
+            type_ref = self.types[instrument.type_id]
+
+        type_kwargs = self.get_type_kwargs(instrument)
+        type_ref = type_ref(**type_kwargs)
+
+        return type_ref
 
     def get_instruments(self, active=None, required=None):
         """ Returns the queryset of instruments matching any flags that are set. """
