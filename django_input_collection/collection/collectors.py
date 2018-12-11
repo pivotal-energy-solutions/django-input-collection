@@ -125,7 +125,11 @@ class BaseCollector(object):
         return self.measure_methods or {}
 
     def get_method_kwargs(self, instrument):
-        return {}
+        """ Returns constructor kwargs for the InputMethod subclass assigned to ``instrument``. """
+        type_ref = self.get_type(instrument)
+        return {
+            'cleaner': type_ref.clean,
+        }
 
     def get_method(self, instrument):
         """
