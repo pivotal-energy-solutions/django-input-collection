@@ -96,8 +96,8 @@ class InputMethod(UserDict):
             'method_class': '.'.join([self.__module__, self.__class__.__name__]),
         }
 
-        remove_fields = ['errors']
-        for field in repr_fields:
+        remove_fields = ['errors', 'cleaner']
+        for field in remove_fields:
             del data[field]
 
         return data
