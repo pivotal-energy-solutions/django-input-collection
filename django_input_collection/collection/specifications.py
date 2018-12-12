@@ -120,7 +120,7 @@ class Specification(object):
         """
 
         method = self.collector.get_method(instrument)
-        method_info = method.serialize(instrument)
+        method_info = method.serialize(instrument=instrument)
         return method_info
 
 
