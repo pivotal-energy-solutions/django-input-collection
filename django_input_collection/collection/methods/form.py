@@ -48,8 +48,8 @@ class FormFieldMethod(InputMethod):
 
         self.copy_attrs(widget, *forward_attrs, **attrs)
 
-    def get_data(self, instrument):
-        data = super(FormFieldMethod, self).get_data(instrument)
+    def get_data(self, instrument, **kwargs):
+        data = super(FormFieldMethod, self).get_data(instrument=instrument, **kwargs)
 
         field = self.get_formfield()
         data['formfield'] = field
@@ -131,8 +131,8 @@ class FormMethod(InputMethod):
     def get_form(self):
         return self.form_class()
 
-    def get_data(self, instrument):
-        data = super(FormMethod, self).get_data(instrument)
+    def get_data(self, **kwargs):
+        data = super(FormMethod, self).get_data(**kwargs)
 
         data.pop('form_class', None)
         form = self.get_form()
@@ -147,7 +147,7 @@ class FormMethod(InputMethod):
                 'widget_template_name': widget_templates.get(name),
                 'option_template_name': option_templates.get(name),
             })
-            data['fields'][name] = sub_method.serialize(instrument)
+            data['fields'][name] = sub_method.serialize(**kwargs)
 
         data['meta'].update({
             'form_class': '.'.join([form.__module__, form.__class__.__name__]),

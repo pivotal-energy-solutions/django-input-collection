@@ -85,41 +85,12 @@ class InputMethodTests(TestCase):
     def test_init_kwarg_updates_attribute(self):
         self.assertEqual(FooMethod(foo1='foo1').foo1, 'foo1')
 
-    def test_init_kwarg_not_matching_existing_attributes_raises_error(self):
-        with self.assertRaises(AttributeError):
-            FooMethod(bar='bar')
-
-        class CustomFooMethod(FooMethod):  # Something we can monkeypatch without consequences
-            pass
-
-        with self.assertRaises(AttributeError):
-            CustomFooMethod(bar='bar')
-        CustomFooMethod.bar = None
-        self.assertEqual(CustomFooMethod(bar='bar').data, {'foo1': None, 'foo2': None, 'bar': 'bar'})
-
-    def test_update_modifies_attributes(self):
-        method = FooMethod()
-        method.update({'foo1': 'foo1'})
-        self.assertEqual(method.foo1, 'foo1')
-
-    def test_update_modifies_userdict_data(self):
+    def test_update_modifies_data(self):
         method = FooMethod()
         method.update({'foo1': 'foo1'})
         self.assertIn('foo1', method.data)
         self.assertEqual(method.data['foo1'], 'foo1')
         self.assertEqual(method.data, {'foo1': 'foo1', 'foo2': None})
-
-    def test_init_silencer_raises_no_error(self):
-        try:
-            FooMethod(bar='bar', _raise=False)
-        except AttributeError as e:
-            self.fail("Silencer did not stop AttributeError: %s" % (e,))
-
-    def test_update_silencer_raises_no_error(self):
-        try:
-            FooMethod(bar='bar', _raise=False)
-        except AttributeError as e:
-            self.fail("Silencer did not stop AttributeError: %s" % (e,))
 
 
 class CollectorStaticTests(TestCase):
@@ -191,12 +162,12 @@ class CollectorStaticTests(TestCase):
         default = InputMethod()
         foo = FooMethod()
 
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}), default)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={'a': foo}, type={}), foo)
-        self.assertEqual(self.with_methods(i, 'a', 'special', measure={}, type={}), default)
-        self.assertEqual(self.with_methods(i, 'a', 'special', measure={'a': foo}, type={}), foo)
-        self.assertEqual(self.with_methods(i, 'b', 'special', measure={'a': foo}, type={}), default)
-        self.assertEqual(self.with_methods(i, 'c', 'special', measure={'a': foo}, type={}), default)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={'a': foo}, type={}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'a', 'special', measure={}, type={}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'a', 'special', measure={'a': foo}, type={}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'b', 'special', measure={'a': foo}, type={}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'c', 'special', measure={'a': foo}, type={}).data, default.data)
 
     def test_get_method_retrieves_override_from_type_methods(self):
         i = factories.CollectionInstrumentFactory.create(**{
@@ -206,15 +177,15 @@ class CollectorStaticTests(TestCase):
         default = InputMethod()
         foo = FooMethod()
 
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}), default)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={None: foo}), foo)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}), default)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={None: foo}), foo)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={'special': foo}), default)
-        self.assertEqual(self.with_methods(i, 'a', 'special', measure={}, type={'special': foo}), foo)
-        self.assertEqual(self.with_methods(i, 'a', 'special', measure={}, type={None: foo}), default)
-        self.assertEqual(self.with_methods(i, 'b', 'special', measure={}, type={'special': foo}), foo)
-        self.assertEqual(self.with_methods(i, 'c', 'special', measure={}, type={'special': foo}), foo)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={None: foo}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={None: foo}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={'special': foo}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'a', 'special', measure={}, type={'special': foo}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'a', 'special', measure={}, type={None: foo}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'b', 'special', measure={}, type={'special': foo}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'c', 'special', measure={}, type={'special': foo}).data, foo.data)
 
     def test_get_method_retrieves_measure_methods_before_type_methods(self):
         i = factories.CollectionInstrumentFactory.create(**{
@@ -225,15 +196,15 @@ class CollectorStaticTests(TestCase):
         foo = FooMethod()
         bar = BarMethod()
 
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}), default)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={None: bar}), bar)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={'a': foo}, type={}), foo)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={'a': foo}, type={None: bar}), foo)
-        self.assertEqual(self.with_methods(i, 'a', None, measure={'b': foo}, type={'special': bar}), default)
-        self.assertEqual(self.with_methods(i, 'a', 'special', measure={'b': foo}, type={'special': bar}), bar)
-        self.assertEqual(self.with_methods(i, 'a', 'special', measure={'b': foo}, type={None: bar}), default)
-        self.assertEqual(self.with_methods(i, 'b', 'special', measure={'b': foo}, type={'special': bar}), foo)
-        self.assertEqual(self.with_methods(i, 'c', 'special', measure={'b': foo}, type={'special': bar}), bar)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={}, type={None: bar}).data, bar.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={'a': foo}, type={}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={'a': foo}, type={None: bar}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'a', None, measure={'b': foo}, type={'special': bar}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'a', 'special', measure={'b': foo}, type={'special': bar}).data, bar.data)
+        self.assertEqual(self.with_methods(i, 'a', 'special', measure={'b': foo}, type={None: bar}).data, default.data)
+        self.assertEqual(self.with_methods(i, 'b', 'special', measure={'b': foo}, type={'special': bar}).data, foo.data)
+        self.assertEqual(self.with_methods(i, 'c', 'special', measure={'b': foo}, type={'special': bar}).data, bar.data)
 
     def test_get_method_adds_get_method_kwargs_to_existing_instance(self):
         i = factories.CollectionInstrumentFactory.create(**{
@@ -249,7 +220,7 @@ class CollectorStaticTests(TestCase):
         method = self.with_measuremethods(i, 'a', {'a': foo})
         self.assertEqual(with_methodkwargs({'foo2': 'foo2'}).data, {'foo1': 'foo1', 'foo2': 'foo2'})
 
-    def test_get_method_raises_error_for_unrecognized_get_method_kwargs(self):
+    def test_get_method_raises_error_for_private_get_method_kwargs(self):
         i = factories.CollectionInstrumentFactory.create(**{
             'collection_request': self.collection_request,
         })
@@ -265,7 +236,7 @@ class CollectorStaticTests(TestCase):
 
         method = self.with_measuremethods(i, 'a', {'a': foo})
         with self.assertRaises(AttributeError):
-            with_methodkwargs({'bar': 'bar'})
+            with_methodkwargs({'_bar': 'bar'})
 
         # Now prove the AttributeError isn't a fluke
         foo.bar = None
