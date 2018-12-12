@@ -93,6 +93,8 @@ class CollectionInstrument(DatesModel, models.Model):
     phrasing, etc).
     """
 
+    objects = managers.CollectionInstrumentQuerySet.as_manager()
+
     collection_request = models.ForeignKey('CollectionRequest', on_delete=models.CASCADE)
     measure = models.ForeignKey('Measure', on_delete=models.CASCADE)
     group = models.ForeignKey('CollectionGroup', on_delete=models.CASCADE)

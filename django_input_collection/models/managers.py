@@ -4,6 +4,14 @@ from django.db.models import Q, Max, OuterRef, Subquery
 __all__ = ['CollectedInputQuerySet', 'UserLatestCollectedInputQuerySet']
 
 
+class CollectionInstrumentQuerySet(QuerySet):
+    """ Filter operations for CollectionInstrument. """
+    def filter_for_condition_resolver(self, name):
+        if name == '*':
+            return self.filter(conditions__isnull=False)
+        return self.filter(conditions__data_getter__startswith=name + ':')
+
+
 class CollectedInputQuerySet(QuerySet):
     """ Provides a clear hook for doing special operations with a context. """
     def filter_for_context(self, **context):
