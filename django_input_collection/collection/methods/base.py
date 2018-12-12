@@ -1,4 +1,5 @@
 from functools import reduce
+import inspect
 
 from django.core.exceptions import ValidationError
 from django.utils.text import format_lazy
@@ -12,18 +13,40 @@ def flatten_dicts(*args, **kwargs):
     return reduce(lambda d, d2: dict(d, **d2), args + (kwargs,), {})
 
 
-def filter_safe_dict(data, attrs=None, exclude=None, allow_callabes=False):
+def filter_safe_dict(data, attrs=None, exclude=None):
     """
     Returns current names and values for valid writeable attributes. If ``attrs`` is given, the
     returned dict will contain only items named in that iterable.
     """
-    return {k: v for k, v in data.items() if all((
-        not k.startswith('_'),
-        allow_callabes or not callable(v),
-        not isinstance(v, (classmethod, staticmethod, property)),
-        not attrs or (k in attrs),
-        not exclude or (k not in exclude),
-    ))}
+
+    def is_member(cls, k):
+        v = getattr(cls, k)
+        checks = [
+            not k.startswith('_'),
+            not inspect.ismethod(v) or getattr(v, 'im_self', True),
+            not inspect.isfunction(v),
+            not isinstance(v, (classmethod, staticmethod, property))
+        ]
+        return all(checks)
+
+    cls = None
+    if inspect.isclass(data):
+        cls = data
+        data = {k: getattr(cls, k) for k in dir(cls) if is_member(cls, k)}
+
+    ret = {}
+    for k, v in data.items():
+        checks = [
+            not k.startswith('_'),
+            not inspect.ismethod(v) or getattr(v, 'im_self', True),
+            not isinstance(v, (classmethod, staticmethod, property)),
+            not attrs or (k in attrs),
+            not exclude or (k not in exclude),
+        ]
+
+        if all(checks):
+            ret[k] = v
+    return ret
 
 
 base_errors = {
@@ -45,7 +68,7 @@ class InputMethod(object):
     def __init__(self, *args, **kwargs):
         # Collect all class-level default attribute values for the initial ``data`` dict
         for cls in reversed(self.__class__.__mro__):
-            init_dict = filter_safe_dict(cls.__dict__)
+            init_dict = filter_safe_dict(cls)
             self.update(init_dict)
 
         # Do usual init
@@ -60,7 +83,8 @@ class InputMethod(object):
         _raise = kwargs.pop('_raise', True)
 
         data = flatten_dicts(*args, **kwargs)
-        safe_data = filter_safe_dict(data, allow_callabes=True)
+
+        safe_data = filter_safe_dict(data)
         valid_keys = list(safe_data.keys())
 
         for k in valid_keys:
