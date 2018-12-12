@@ -48,11 +48,15 @@ class FormFieldMethod(InputMethod):
 
         self.copy_attrs(widget, *forward_attrs, **attrs)
 
-    def get_data(self, instrument, **kwargs):
-        data = super(FormFieldMethod, self).get_data(instrument=instrument, **kwargs)
+    def render(self, data, field, context):
+        content = field.widget._render(field.widget.template_name, context)
+        return content
 
+    def serialize(self, instrument, **kwargs):
+        data = super(FormFieldMethod, self).serialize(instrument=instrument, **kwargs)
+
+        data.pop('formfield', None)
         field = self.get_formfield()
-        data['formfield'] = field
 
         # Update field/widget to spec
         self.update_field(field, instrument)
@@ -82,27 +86,18 @@ class FormFieldMethod(InputMethod):
             if isinstance(v, str):
                 data['attrs'][k] = v.format(**dom_attrs_context)
 
-        # Extra
-        data['meta'].update({
-            'widget_class': '.'.join([field.widget.__module__, field.widget.__class__.__name__]),
-            'field_class': '.'.join([field.__module__, field.__class__.__name__]),
-        })
-
-        return data
-
-    def render(self, data, field, context):
-        content = field.widget._render(field.widget.template_name, context)
-        return content
-
-    def serialize(self, instrument):
-        data = super(FormFieldMethod, self).serialize(instrument)
-
-        field = data.pop('formfield')  # Don't want this to go through to final serialization
+        # Render template version of formfield
         field_name = 'instrument-%s' % (instrument.id)
         field_value = None
         context = field.widget.get_context(field_name, field_value, data['attrs'])
         context['method'] = data
         data['template'] = self.render(data, field, context)
+
+        # Extra
+        data['meta'].update({
+            'widget_class': '.'.join([field.widget.__module__, field.widget.__class__.__name__]),
+            'field_class': '.'.join([field.__module__, field.__class__.__name__]),
+        })
 
         return data
 
@@ -131,12 +126,16 @@ class FormMethod(InputMethod):
     def get_form(self):
         return self.form_class()
 
-    def get_data(self, **kwargs):
-        data = super(FormMethod, self).get_data(**kwargs)
+    def render(self, data, form, context):
+        if data['template_name']:
+            return render_to_string(data['template_name'], context=context)
+        return None
+
+    def serialize(self, **kwargs):
+        data = super(FormMethod, self).serialize(**kwargs)
 
         data.pop('form_class', None)
         form = self.get_form()
-        data['form'] = form
 
         data['fields'] = {}
         widget_templates = data['widget_template_name'] or {}
@@ -153,17 +152,7 @@ class FormMethod(InputMethod):
             'form_class': '.'.join([form.__module__, form.__class__.__name__]),
         })
 
-        return data
-
-    def render(self, data, form, context):
-        if data['template_name']:
-            return render_to_string(data['template_name'], context=context)
-        return None
-
-    def serialize(self, instrument):
-        data = super(FormMethod, self).serialize(instrument)
-
-        form = data.pop('form')
+        # Render template version of the form
         context = {
             'form': form,
             'fields': data['fields'],

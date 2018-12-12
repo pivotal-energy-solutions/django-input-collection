@@ -103,17 +103,13 @@ class InputMethod(object):
         ))
 
     # Serialization
-    def get_data(self, **kwargs):
-        """ Gets a copy of the data that will be used for serialize(). """
+    def serialize(self, **kwargs):
+        """ Serializes a simple representation of this input method. """
         data = self.data.copy()
         data['meta'] = {
             'method_class': '.'.join([self.__module__, self.__class__.__name__]),
         }
         return data
-
-    def serialize(self, **kwargs):
-        """ Serializes a python representation of this input description. """
-        return self.get_data(**kwargs)
 
     # Cleaning
     def clean_input(self, data):
