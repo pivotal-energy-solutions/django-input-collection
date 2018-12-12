@@ -61,9 +61,6 @@ class InputMethod(object):
 
         data = flatten_dicts(*args, **kwargs)
         safe_data = filter_safe_dict(data, allow_callabes=True)
-        # print('......', self.__dict__)
-        # print('------', safe_data)
-        # print('======', data)
         valid_keys = list(safe_data.keys())
 
         for k in valid_keys:
