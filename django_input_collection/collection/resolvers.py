@@ -46,7 +46,7 @@ def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
 
     if raise_exception:
         raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
-            spec, __name__, {resolver.pattern: resolver.__class__ for resolver in registry},
+            spec, __name__, {resolver.full_pattern: resolver.__class__ for resolver in registry},
         ))
     return (None, {}, None)
 
@@ -83,11 +83,16 @@ class Resolver(object):
     """
     __noregister__ = True
 
+    name = None
     pattern = None
+
+    @property
+    def full_pattern(self):
+        return r'^{}:{}$'.format(self.name, self.pattern)
 
     def apply(self, spec):
         """ Returns pattern match groups if the spec applies to this pattern, or False. """
-        match = re.match(self.pattern, spec)
+        match = re.match(self.full_pattern, spec)
         if match:
             return match.groupdict()
         return False
@@ -103,7 +108,8 @@ class InstrumentResolver(Resolver):
     SuggestedResponses, should they be needed for any Case match types that require them.
     """
 
-    pattern = r'^instrument:((?P<parent_pk>\d+)|(?P<measure>.+))$'
+    name = 'instrument'
+    pattern = r'((?P<parent_pk>\d+)|(?P<measure>.+))'
 
     def resolve(self, instrument, parent_pk=None, measure=None, **context):
         from ..models import CollectionInstrument
@@ -134,7 +140,8 @@ class AttributeResolver(Resolver):
     trigger the remaining lookups, with the results compiled as a list.
     """
 
-    pattern = r'^attr:(?P<dotted_path>.*)$'
+    name = 'attr'
+    pattern = r'(?P<dotted_path>.*)'
 
     def resolve(self, instrument, dotted_path, **context):
         result = self.resolve_dotted_path(instrument, dotted_path)
@@ -172,7 +179,8 @@ class DebugResolver(Resolver):
     least a ``data`` key, and possibly a ``suggested_values`` key set to a list.
     """
 
-    pattern = r'^debug:(?P<expression>.*)$'
+    name = 'debug'
+    pattern = r'(?P<expression>.*)'
 
     def resolve(self, instrument, expression, **context):
         result = eval(expression, {}, {})
