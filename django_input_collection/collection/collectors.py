@@ -174,18 +174,68 @@ class BaseCollector(object):
         return type_ref
 
     def get_instruments(self, active=None, required=None):
-        """ Returns the queryset of instruments matching any flags that are set. """
+        """
+        Returns the queryset of instruments matching any flags that are set.  ``None`` values for
+        ``active`` and ``required`` mean that instruments can be returned with mixed True and False
+        values for that particular flag.
+
+        ``active`` can alternatively be the shortname of an in-use condition resolver type, such as
+        'instrument' or 'attribute'.  Only instruments with conditions referencing that resolver
+        will be returned.
+
+        ``active`` can alternatively be a list of shortnames.
+
+        Any specified active value (direct or in a list) can be a dict mapping that one name to a
+        desired active status, True or False.  Specifying ``None`` is the equivalent of providing
+        the resolver name directly.
+
+        A ``None`` in a list will target instruments without any conditions at all.
+        A ``True`` or ``False`` in a list will include any passing/failing instrument, respectively.
+        """
         queryset = self.collection_request.collectioninstrument_set.all()
 
         if required is not None:
             queryset = queryset.filter(response_policy__required=required)
 
-        if active:
-            active_pks = []
-            for instrument in queryset:
-                if self.is_instrument_allowed(instrument):
-                    active_pks.append(instrument.pk)
-            queryset = self.collection_request.collectioninstrument_set.filter(pk__in=active_pks)
+        if active is not None:
+            if not isinstance(active, (list, tuple)):
+                active = [active]
+
+            include_pks = set()
+
+            # Interpret each active flag and add the resulting pks to the inclusion list.
+            for flag in active:
+                resolver_name = None
+                if flag is None:
+                    # Get instruments without conditions
+                    pk_list = queryset.filter(conditions=None).values_list('pk', flat=True)
+                    include_pks.add(set(pk_list))
+                else:
+                    active_queryset = queryset
+
+                    # Allow a dict syntax to specify active status, like {'foo_resolver': False}
+                    if isinstance(flag, dict):
+                        resolver_name, flag = flag.items()[0]
+                        if not isinstance(resolver_name, six.text_type):
+                            raise ValueError("Resolver reference '%r' must be a string.")
+
+                    if isinstance(flag, six.text_type):
+                        if flag[0] in '+-':
+                            resolver_name = flag[1:]
+                            flag = (flag[0] == '+')
+                        else:
+                            resolver_name = flag
+                            flag = None
+
+                        # Get instruments using the resolver named in the flag.
+                        active_queryset = queryset.filter_for_condition_resolver(resolver_name)
+
+                    # Check each instrument for the desired pass/fail result
+                    for instrument in active_queryset:
+                        if self.is_instrument_allowed(instrument) == flag:
+                            include_pks.add(instrument.pk)
+
+            queryset = queryset.filter(pk__in=include_pks)
 
         return queryset
 
