@@ -131,13 +131,18 @@ class BaseCollector(object):
             'cleaner': type_ref.clean,
         }
 
-    def get_method(self, instrument):
+    def get_method(self, instrument=None, measure=None):
         """
         Returns an InputMethod instance, determined by default by the instrument's measure_id in
         ``measure_methods``, or its type_id in ``type_methods``.
         """
-        method = methods.InputMethod
+        if instrument or measure:
+            if instrument and measure:
+                raise ValueError("Can't specify both 'instrument' and 'measure'")
+            if measure:
+                instrument = self.get_instrument(measure)
 
+        method = methods.InputMethod
         if instrument.measure_id in self.measure_methods:
             method = self.measure_methods[instrument.measure_id]
         elif instrument.type_id in self.type_methods:
