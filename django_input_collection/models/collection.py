@@ -1,5 +1,3 @@
-import operator
-
 from django.db import models
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
@@ -181,7 +179,7 @@ class ResponsePolicy(DatesModel, models.Model):
         verbose_name_plural = 'Response policies'
 
     def __str__(self):
-        return self.nickname or ':'.join(sorted(self.get_flags().items(), key=operator.itemgetter(0)))
+        return self.nickname or ':'.join('{}={}'.format(*sorted(self.get_flags().items())))
 
     def __unicode__(self):
         return unicode(str(self))
