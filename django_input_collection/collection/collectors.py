@@ -256,14 +256,32 @@ class BaseCollector(object):
         Returns the queryset of inputs for this collection request.  If ``instrument`` or
         ``measure`` are given, 
         """
-        queryset = self.collection_request.collectedinput_set.filter_for_context(**self.context)
+
         if instrument or measure:
             if instrument and measure:
                 raise ValueError("Can't specify both 'instrument' and 'measure'")
-            if measure:
-                instrument = self.get_instrument(measure)
-            queryset = queryset.filter(instrument=instrument)
-        return queryset
+
+        # Tidy as lists
+        instruments = instrument
+        if instrument and not isinstance(instruments, (list, tuple)):
+            instruments = [instrument]
+        measures = measure
+        if measure and not isinstance(measures, (list, tuple)):
+            measures = [measure]
+
+        # Convert to instrument references
+        if measure:
+            instruments = [self.get_instrument(measure) for measure in measures]
+
+        queryset = self.collection_request.collectedinput_set.filter_for_context(**self.context)
+
+        # Enforce filtering when filtering was requested.  An empty instruments list might not mean
+        # that no filter was requested at all.
+        if not instruments and not (instrument or measure):
+            return queryset
+
+        return queryset.filter(instrument__in=instruments)
+
 
     # Instrument/Input runtime hooks
     def get_conditional_input_value(self, data):
