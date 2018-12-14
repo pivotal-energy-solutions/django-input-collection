@@ -124,9 +124,8 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
             user = None
         data['user'] = user
 
-        instrument = data['instrument']
         try:
-            data = self.collector.clean(instrument, data)
+            data = self.collector.clean(data)
         except ValidationError as e:
             self.collector.raise_error(e)
         return data
