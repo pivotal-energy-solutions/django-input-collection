@@ -119,32 +119,14 @@ class CollectedInputSerializer(ReadWriteToggleMixin, serializers.ModelSerializer
         self.collector = self.context['collector']
 
     def validate(self, data):
-        instrument = data['instrument']
-
         user = self.context['request'].user
         if isinstance(user, AnonymousUser):
             user = None
         data['user'] = user
 
-        is_unavailable = (not self.collector.is_instrument_allowed(instrument))
-        if is_unavailable:
-            raise PermissionDenied("[CollectionInstrument=%r] Availability conditions failed. (user=%r, data=%r)" % (
-                instrument.pk,
-                user,
-                data['data'],
-            ))
-
-        at_capacity = (not self.collector.is_input_allowed(instrument))
-        if at_capacity:
-            raise PermissionDenied("[CollectionInstrument=%r] No new inputs allowed. (user=%r, data=%r)" % (
-                instrument.pk,
-                user,
-                data['data'],
-            ))
-
+        instrument = data['instrument']
         try:
-            data['data'] = self.collector.clean_data(instrument, data['data'])
-            data = self.collector.validate(instrument, data)
+            data = self.collector.clean(instrument, data)
         except ValidationError as e:
             self.collector.raise_error(e)
         return data
