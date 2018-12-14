@@ -61,6 +61,8 @@ class InputMethod(object):
     that external methodology has complete.
     """
 
+    data_type = None
+
     # Internals determined at runtime via initialization kwargs
     cleaner = None
     errors = None
@@ -108,6 +110,7 @@ class InputMethod(object):
         data = self.data.copy()
         data['meta'] = {
             'method_class': '.'.join([self.__module__, self.__class__.__name__]),
+            'data_type': self.data_type,
         }
         return data
 
