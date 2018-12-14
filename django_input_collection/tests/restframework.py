@@ -100,7 +100,7 @@ class InputSubmissionTests(RestFrameworkTestCase):
         user = User.objects.create(username='user')
         self.client.force_login(user)
         self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'foo'}), status.HTTP_201_CREATED)
-        self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'bar'}), status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'bar'}), status.HTTP_400_BAD_REQUEST)
 
     def test_submit_too_many_inputs_is_rejected(self):
         user = User.objects.create(username='user1')
@@ -113,4 +113,4 @@ class InputSubmissionTests(RestFrameworkTestCase):
 
         user = User.objects.create(username='user3')
         self.client.force_login(user)
-        self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'baz'}), status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.submit({'instrument': self.instrument.id, 'data': 'baz'}), status.HTTP_400_BAD_REQUEST)
