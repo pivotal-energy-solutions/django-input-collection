@@ -363,6 +363,37 @@ class BaseCollector(object):
         method = self.get_method(instrument)
         return [method.clean]
 
+    def clean(self, payload, instrument=None, measure=None):
+        """ Cleans a payload dict of kwargs for the current CollectedInput model. """
+        if instrument or measure:
+            if instrument and measure:
+                raise ValueError("Can't specify both 'instrument' and 'measure'")
+            if measure:
+                instrument = self.get_instrument(measure=measure)
+        else:
+            # Look for values in the payload instead.
+            # Note that both can be specified in this scenario since the payload can be arbitrary,
+            # but 'instrument' has priority, then 'measure'.
+            instrument = payload.get('instrument')
+            if instrument is None:
+                measure = payload.get('measure')
+                if measure:
+                    instrument = self.get_instrument(measure)
+                raise ValueError("Must call with one of 'instrument' or 'measure', or else include in the payload dict.")
+
+        is_unavailable = (not self.is_instrument_allowed(instrument))
+        if is_unavailable:
+            raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
+
+        at_capacity = (not self.is_input_allowed(instrument))
+        if at_capacity:
+            raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
+
+        payload['instrument'] = instrument
+        payload['data'] = self.clean_data(instrument, payload['data'])
+
+        return payload
+
     def clean_data(self, instrument, data):
         """ Cleans the block of input data for storage. """
 
