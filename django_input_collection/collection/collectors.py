@@ -474,6 +474,7 @@ class BaseCollector(object):
 
             # Disallow data integrity funnybusiness
             'collection_request': instrument.collection_request,
+            'user': self.context.get('user'),
         }
         kwargs.update(model_field_values)
 
