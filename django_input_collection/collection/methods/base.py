@@ -100,9 +100,10 @@ class InputMethod(object):
 
     @property
     def data(self):
-        return filter_safe_dict(self.__dict__, exclude=(
-            'cleaner', 'errors',
-        ))
+        exclude = ('cleaner', 'errors')
+        if self.data_type is None:
+            exclude += ('data_type',)
+        return filter_safe_dict(self.__dict__, exclude=exclude)
 
     # Serialization
     def serialize(self, **kwargs):
