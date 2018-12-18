@@ -65,7 +65,13 @@ class Condition(DatesModel, models.Model):
         the data yielded by the it, and any error raised during attribute traversal.
         """
         kwargs.update(kwargs.pop('context', None) or {})
-        return resolvers.resolve(self.instrument, self.data_getter, **kwargs)
+        resolver, data_kwargs, error = resolvers.resolve(self.instrument, self.data_getter, **kwargs)
+
+        if resolver and data_kwargs and 'data' not in data_kwargs:
+            raise ValueError("Resolver '%s' did not return a dict with a 'data' key: %r", (
+                resolver.__class__.__name__, data_kwargs
+            ))
+        return resolver, data_kwargs, error
 
     def test(self, **kwargs):
         """
