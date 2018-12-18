@@ -229,13 +229,6 @@ class BaseCollector(object):
                             raise ValueError("Resolver reference %r must be a string, not %s." % (resolver_name, type(resolver_name)))
 
                     if isinstance(flag, six.text_type):
-                        if flag[0] in '+-':
-                            resolver_name = flag[1:]
-                            flag = (flag[0] == '+')
-                        else:
-                            resolver_name = flag
-                            flag = None
-
                         # Get instruments using the resolver named in the flag.
                         active_queryset = queryset.filter_for_condition_resolver(resolver_name)
 
