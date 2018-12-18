@@ -6,10 +6,10 @@ __all__ = ['CollectedInputQuerySet', 'UserLatestCollectedInputQuerySet']
 
 class CollectionInstrumentQuerySet(QuerySet):
     """ Filter operations for CollectionInstrument. """
-    def filter_for_condition_resolver(self, name):
+    def filter_for_condition_resolver(self, name, sep=':'):
         if name == '*':
             return self.filter(conditions__isnull=False)
-        return self.filter(conditions__data_getter__startswith=name + ':')
+        return self.filter(conditions__data_getter__startswith=name + sep)
 
 
 class CollectedInputQuerySet(QuerySet):
