@@ -32,17 +32,20 @@ def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
 
     for resolver in registry:
         result = resolver.apply(spec)
-        if result is not False:
-            error = None
-            kwargs = dict(context, **result)
-            try:
-                data = resolver.resolve(instrument=instrument, **kwargs)
-            except Exception as e:
-                error = e
-                data = fallback
-                log.info("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
-                         resolver.__class__, instrument.pk, kwargs, spec, error)
-            return (resolver, data, error)
+        if result is False:
+            continue
+
+        error = None
+        kwargs = dict(context, **result)
+        try:
+            data = resolver.resolve(instrument=instrument, **kwargs)
+        except Exception as e:
+            error = e
+            data = fallback
+            log.info("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
+                     resolver.__class__, instrument.pk, kwargs, spec, error)
+
+        return (resolver, data, error)
 
     if raise_exception:
         raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
