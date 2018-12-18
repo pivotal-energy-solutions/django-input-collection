@@ -225,7 +225,7 @@ class BaseCollector(object):
                     # Allow a dict syntax to specify active status, like {'foo_resolver': False}
                     if isinstance(flag, dict):
                         resolver_name, flag = flag.items()[0]
-                        if not isinstance(resolver_name, six.text_type):
+                        if not isinstance(resolver_name, six.string_types):
                             raise ValueError("Resolver reference '%r' must be a string.")
 
                     if isinstance(flag, six.text_type):
