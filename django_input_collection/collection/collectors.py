@@ -560,7 +560,7 @@ class BaseCollector(object):
         elif single_given:
             self.staged_data = payloads[0]
         else:
-            self.staged_data = payloads
+            self.staged_data = payloads  # List with extend False (or None)
 
         if not extend:
             self._clean_index = 0
