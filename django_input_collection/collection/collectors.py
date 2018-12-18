@@ -79,6 +79,10 @@ class BaseCollector(object):
     type_methods = None
     measure_methods = None
 
+    # Internals
+    staged_data = None
+    cleaned_data = None
+
     def __init__(self, collection_request, group=None, **context):
         self.collection_request = collection_request
         self.context = context
@@ -363,36 +367,69 @@ class BaseCollector(object):
         method = self.get_method(instrument)
         return [method.clean]
 
-    def clean(self, payload, instrument=None, measure=None):
-        """ Cleans a payload dict of kwargs for the current CollectedInput model. """
+    def clean(self, payload=None, instrument=None, measure=None):
+        """
+        Cleans a payload dict of kwargs for the current CollectedInput model.  If the payload is not
+        given, the data last remembered by ``collector.stage(data_list)`` will be used.  Note that
+        when the payload is an iterable, providing ``instrument`` or ``message`` will overwrite the
+        instrument reference for all items in the list.  To use different instruments, set the
+        same key in the payload data where it can be locally discovered.
+        """
+
+        if not hasattr(self, '_clean_index') or not isinstance(self.staged_data, list):
+            self._clean_index = 0  # Set to default
+
+        if payload is None:
+            payload = self.staged_data
+            if payload is None:
+                raise ValueError("Must provide 'payload' argument or use collector.stage(payload_list).")
+
         if instrument or measure:
             if instrument and measure:
                 raise ValueError("Can't specify both 'instrument' and 'measure'")
             if measure:
                 instrument = self.get_instrument(measure=measure)
-        else:
-            # Look for values in the payload instead.
-            # Note that both can be specified in this scenario since the payload can be arbitrary,
-            # but 'instrument' has priority, then 'measure'.
-            instrument = payload.get('instrument')
-            if instrument is None:
-                measure = payload.get('measure')
-                if measure:
-                    instrument = self.get_instrument(measure)
-                raise ValueError("Must call with one of 'instrument' or 'measure', or else include in the payload dict.")
 
-        is_unavailable = (not self.is_instrument_allowed(instrument))
-        if is_unavailable:
-            raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
+        payload_list = payload
+        single = isinstance(payload, dict)
+        if single:
+            payload_list = [payload]
 
-        at_capacity = (not self.is_input_allowed(instrument))
-        if at_capacity:
-            raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
+        for payload in payload_list[self._clean_index:]:
+            if not instrument:
+                # Look for values in the payload instead.
+                # Note that both can be specified in this scenario since the payload can be
+                # arbitrary, but 'instrument' has priority, then 'measure'.
+                instrument = payload.get('instrument')
+                if instrument is None:
+                    measure = payload.get('measure')
+                    if measure:
+                        instrument = self.get_instrument(measure)
+                    if instrument is None:
+                        raise ValueError("Data does not have 'instrument' or 'measure': %r" % (payload,))
 
-        payload['instrument'] = instrument
-        payload['data'] = self.clean_data(instrument, payload['data'])
+            is_unavailable = (not self.is_instrument_allowed(instrument))
+            if is_unavailable:
+                raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
 
-        return payload
+            at_capacity = (not self.is_input_allowed(instrument))
+            if at_capacity:
+                raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
+
+            payload['instrument'] = instrument
+            payload['data'] = self.clean_data(instrument, payload['data'])
+
+            if single:
+                self.cleaned_data = payload  # Loop will end asap and return this reference
+            else:
+                if not isinstance(self.cleaned_data, list):
+                    self.cleaned_data = [self.cleaned_data]
+                self.cleaned_data.append(payload)
+
+        # Resume after these items if called again (after calls to ``stage(data, clean=False)``)
+        self._clean_index = len(payload_list)
+
+        return self.cleaned_data
 
     def clean_data(self, instrument, data):
         """ Cleans the block of input data for storage. """
@@ -455,7 +492,7 @@ class BaseCollector(object):
         """
         return data
 
-    # Data-altering methods
+    # Granular storage api
     def store(self, instrument, data, instance=None, **model_field_values):
         """
         Creates a new CollectedInput instance for the given data.  Any additional kwargs are sent to
@@ -488,6 +525,66 @@ class BaseCollector(object):
     def remove(self, instrument, instance):
         """ Removes a given CollectedInput from the instrument. """
         instance.delete()
+
+    # Bulk data handling
+    def clear(self):
+        self.staged_data = None
+        self.cleaned_data = None
+
+    def stage(self, *payloads, clean=True, extend=None, **kwargs):
+        """
+        Remembers given ``data`` (dict or list of dicts) for a future call to ``clean()`` and
+        ``save()``.  Any new 
+        """
+        if not payloads:
+            raise ValueError("At least one payload dict must be provided.")
+
+        self.cleaned_data = None
+
+        payloads = list(payloads)
+        for payload in payloads:
+            payload.update(kwargs)
+
+        single_staged = (self.staged_data is not None and isinstance(self.staged_data, dict))
+        single_given = (len(payloads) == 1)
+        if extend is None and single_given and single_staged:
+            extend = True
+            self.staged_data = [self.staged_data]  # Prep for extend()
+
+        if extend:
+            self.staged_data.extend(payloads)
+        elif single_given:
+            self.staged_data = payloads[0]
+        else:
+            self.staged_data = payloads
+
+        if not extend:
+            self._clean_index = 0
+
+        # Clean all at once so self.cleaned_data is not just the last individual clean result
+        if clean:
+            self.clean()
+
+    def save(self, **kwargs):
+        """ Calls store() for current staged data or data list. """
+        if self.staged_data is None:
+            raise ValueError("First use collector.stage([data_iterable]).")
+        if self.cleaned_data is None:
+            raise ValueError("Data is not cleaned.")
+
+        save_list = self.cleaned_data
+        single = isinstance(self.save_list, dict)
+        if single:
+            save_list = [single]
+
+        items = []
+        for payload in save_list:
+            item_kwargs = dict(payload, **kwargs)
+            items.append(self.store(**item_kwargs))
+
+        if single:
+            return items[0]
+        return items
 
 
 class Collector(BaseCollector):
