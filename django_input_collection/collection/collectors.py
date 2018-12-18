@@ -214,13 +214,20 @@ class BaseCollector(object):
 
             # Interpret each active flag and add the resulting pks to the inclusion list.
             for flag in active:
+                flagged_pks = set()
                 resolver_name = None
                 if flag is None:
                     # Get instruments without conditions
                     pk_list = queryset.filter(conditions=None).values_list('pk', flat=True)
                     include_pks.add(set(pk_list))
                 else:
-                    active_queryset = queryset
+                    flag_queryset = queryset
+
+                    if isinstance(flag, six.string_types):
+                        # Get instruments using the resolver named in the flag.
+                        resolver_name = flag
+                        flag = True
+                        flag_queryset = queryset.filter_for_condition_resolver(resolver_name)
 
                     # Allow a dict syntax to specify active status, like {'foo_resolver': False}
                     if isinstance(flag, dict):
@@ -228,14 +235,12 @@ class BaseCollector(object):
                         if not isinstance(resolver_name, six.string_types):
                             raise ValueError("Resolver reference %r must be a string, not %s." % (resolver_name, type(resolver_name)))
 
-                    if isinstance(flag, six.text_type):
-                        # Get instruments using the resolver named in the flag.
-                        active_queryset = queryset.filter_for_condition_resolver(resolver_name)
-
                     # Check each instrument for the desired pass/fail result
                     for instrument in active_queryset:
                         if self.is_instrument_allowed(instrument) == flag:
-                            include_pks.add(instrument.pk)
+                            flagged_pks.add(instrument.pk)
+
+                include_pks |= flagged_pks
 
             queryset = queryset.filter(pk__in=include_pks)
 
