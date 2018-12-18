@@ -226,7 +226,7 @@ class BaseCollector(object):
                     if isinstance(flag, dict):
                         resolver_name, flag = flag.items()[0]
                         if not isinstance(resolver_name, six.string_types):
-                            raise ValueError("Resolver reference '%r' must be a string.")
+                            raise ValueError("Resolver reference %r must be a string, not %s." % (resolver_name, type(resolver_name)))
 
                     if isinstance(flag, six.text_type):
                         if flag[0] in '+-':
