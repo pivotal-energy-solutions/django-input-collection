@@ -354,9 +354,80 @@ class CollectorRuntimeTests(TestCase):
         self.assertEqual(with_store('a').id, with_store('b').id)
         self.assertEqual(inputs.new.data, 'b')
 
-    # def test_store_forwards_kwargs_to_model(self):
-    #     def with_store(data, **kwargs):
-    #         self.instrument.collectedinput_set.all().delete()
-    #         return self.collector.store(self.instrument, data, instance=None, **kwargs)
-    #
-    #     self.assertEqual(with_store('a', foo='foo').foo, 'foo')
+    def test_clean_reads_instrument_from_payload(self):
+        def with_stage(data, **kwargs):
+            payload = {'data': data, 'instrument': self.instrument}
+            self.collector.stage(payload, **kwargs)
+            return self.collector
+
+        self.assertEqual(with_stage('a').cleaned_data['instrument'], self.instrument)
+
+    def test_clean_reads_measure_from_payload(self):
+        def with_stage(data, **kwargs):
+            payload = {'data': data, 'measure': self.instrument.measure}
+            self.collector.stage(payload, **kwargs)
+            return self.collector
+
+        self.assertEqual(with_stage('a').cleaned_data['instrument'], self.instrument)
+
+    def test_stage_cleans_data_by_default(self):
+        def with_stage(data, **kwargs):
+            payload = {'data': data, 'instrument': self.instrument}
+            self.collector.stage(payload, **kwargs)
+            return self.collector
+
+        self.assertEqual(with_stage('a').cleaned_data['data'], 'a')
+        self.assertEqual(with_stage('a', clean=False).cleaned_data, None)
+
+    def test_stage_without_clean_clears_cleaned_data(self):
+        def with_stage(data, **kwargs):
+            payload = {'data': data, 'instrument': self.instrument}
+            self.collector.stage(payload, clean=False, **kwargs)
+            return self.collector
+
+        self.assertEqual(with_stage('a').cleaned_data, None)
+
+    def test_stage_sets_staged_data(self):
+        def with_stage(*data, **kwargs):
+            self.collector.clear()
+            payloads = [{'data': item, 'instrument': self.instrument} for item in data]
+            self.collector.stage(*payloads, **kwargs)
+            return self.collector
+
+        self.assertEqual(with_stage('a').staged_data['data'], 'a')
+        self.assertEqual(len(with_stage('a', 'b').staged_data), 2)
+        self.assertEqual(with_stage('a', 'b').staged_data[0]['data'], 'a')
+        self.assertEqual(with_stage('a', 'b').staged_data[1]['data'], 'b')
+
+    def test_clear_removes_staged_data(self):
+        def with_stage(data, **kwargs):
+            payload = {'data': data, 'instrument': self.instrument}
+            self.collector.stage(payload, **kwargs)
+            self.collector.clear()
+            return self.collector
+
+        self.assertEqual(with_stage('a').staged_data, None)
+
+    def test_clear_removes_cleaned_data(self):
+        def with_stage(data, **kwargs):
+            payload = {'data': data, 'instrument': self.instrument}
+            self.collector.stage(payload, **kwargs)
+            self.collector.clear()
+            return self.collector
+
+        self.assertEqual(with_stage('a').cleaned_data, None)
+
+    def test_clean_resumes_after_last_cleaned_index(self):
+        def and_stage(*data, **kwargs):
+            payloads = [{'data': item, 'instrument': self.instrument} for item in data]
+            self.collector.stage(*payloads, **kwargs)
+            return self.collector
+
+        self.assertEqual(and_stage('a')._clean_index, 1)
+        self.assertEqual(and_stage('b')._clean_index, 2)
+
+        def after_clean():
+            self.collector.clean()
+            return self.collector
+
+        self.assertEqual(after_clean()._clean_index, 2)
