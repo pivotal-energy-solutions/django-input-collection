@@ -236,8 +236,8 @@ class BaseCollector(object):
                             raise ValueError("Resolver reference %r must be a string, not %s." % (resolver_name, type(resolver_name)))
 
                     # Check each instrument for the desired pass/fail result
-                    for instrument in active_queryset:
-                        if self.is_instrument_allowed(instrument) == flag:
+                    for instrument in flag_queryset:
+                        if flag is None or self.is_instrument_allowed(instrument) == flag:
                             flagged_pks.add(instrument.pk)
 
                 include_pks |= flagged_pks
