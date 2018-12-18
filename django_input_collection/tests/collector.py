@@ -391,7 +391,7 @@ class CollectorRuntimeTests(TestCase):
         def with_stage(*data, **kwargs):
             self.collector.clear()
             payloads = [{'data': item, 'instrument': self.instrument} for item in data]
-            self.collector.stage(*payloads, **kwargs)
+            self.collector.stage(payloads, **kwargs)
             return self.collector
 
         self.assertEqual(with_stage('a').staged_data['data'], 'a')
@@ -420,7 +420,7 @@ class CollectorRuntimeTests(TestCase):
     def test_clean_resumes_after_last_cleaned_index(self):
         def and_stage(*data, **kwargs):
             payloads = [{'data': item, 'instrument': self.instrument} for item in data]
-            self.collector.stage(*payloads, **kwargs)
+            self.collector.stage(payloads, **kwargs)
             return self.collector
 
         self.assertEqual(and_stage('a')._clean_index, 1)

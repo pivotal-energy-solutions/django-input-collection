@@ -531,7 +531,7 @@ class BaseCollector(object):
         self.staged_data = None
         self.cleaned_data = None
 
-    def stage(self, *payloads, clean=True, extend=None, **kwargs):
+    def stage(self, payloads, clean=True, extend=None, **kwargs):
         """
         Remembers given ``data`` (dict or list of dicts) for a future call to ``clean()`` and
         ``save()``.  Any new 
@@ -541,7 +541,11 @@ class BaseCollector(object):
 
         self.cleaned_data = None
 
-        payloads = list(payloads)
+        if isinstance(payloads, dict):
+            payloads = [payloads]
+        else:
+            payloads = list(payloads)
+
         for payload in payloads:
             payload.update(kwargs)
 
