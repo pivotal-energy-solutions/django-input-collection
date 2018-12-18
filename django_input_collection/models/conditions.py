@@ -83,6 +83,10 @@ class Condition(DatesModel, models.Model):
         resolver, data_kwargs, error = self.resolve(**resolver_kwargs)
 
         kwargs.update(data_kwargs)
+
+        # We will allow the condition test to run even if there is an error, since a 'fallback'
+        # value might ensure that resolution-related errors are kept quiet.  It will be up to the
+        # resolver to raise errors that prevent the test from even happening.
         return self.condition_group.test(**kwargs)
 
 
