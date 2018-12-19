@@ -111,7 +111,7 @@ class CollectionInstrument(DatesModel, models.Model):
     # Also available:
     #
     # self.conditions.all()  # Conditions toward enabling this instrument
-    # self.suggestedresponse_set.all()
+    # self.suggested_responses.all()
     # self.collectedinput_set.all()
 
     class Meta:
