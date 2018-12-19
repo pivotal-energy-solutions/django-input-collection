@@ -408,7 +408,9 @@ class BaseCollector(object):
                     self.cleaned_data = [self.cleaned_data]
                 self.cleaned_data.append(payload)
 
-        # Resume after these items if called again (after calls to ``stage(data, clean=False)``)
+        # Note that this should be 1 after a single unwrapped payload dict is cleaned.  That item
+        # went to self.cleaned_data as a direct reference, but subsequent calls to clean() may want
+        # to wrap a list around what's already there so it can append to that.
         self._clean_index = len(payload_list)
 
         return self.cleaned_data
