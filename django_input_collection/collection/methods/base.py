@@ -98,6 +98,9 @@ class InputMethod(object):
                 self.__class__.__name__, data,
             ))
 
+    def get_constraints(self):
+        return {}
+
     @property
     def data(self):
         exclude = ('cleaner', 'errors')
@@ -113,6 +116,7 @@ class InputMethod(object):
             'method_class': '.'.join([self.__module__, self.__class__.__name__]),
             'data_type': self.data_type,
         }
+        data['constraints'] = self.get_constraints()
         return data
 
     # Cleaning
