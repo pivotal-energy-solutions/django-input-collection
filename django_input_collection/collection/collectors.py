@@ -365,21 +365,22 @@ class BaseCollector(object):
         method = self.get_method(instrument)
         return [method.clean]
 
-    def clean(self, payload=None, instrument=None, measure=None):
+    def clean(self, *payloads, **kwargs):
         """
-        Cleans a payload dict of kwargs for the current CollectedInput model.  If the payload is not
-        given, the data last remembered by ``collector.stage(data_list)`` will be used.  Note that
-        when the payload is an iterable, providing ``instrument`` or ``message`` will overwrite the
-        instrument reference for all items in the list.  To use different instruments, set the
-        same key in the payload data where it can be locally discovered.
+        Sends all given payloads to ``clean_payload()`` and stores then returns their
+        ``cleaned_data`` as a list to match.  If a single payload is given, a direct reference will
+        be stored instead of a single-item list holding it.
+
+        If no payloads are given, the data currently remembered by ``stage()`` will be used instead,
+        be it a list or direct payload reference.
         """
 
         if not hasattr(self, '_clean_index') or not isinstance(self.staged_data, list):
             self._clean_index = 0  # Set to default
 
-        if payload is None:
-            payload = self.staged_data
-            if payload is None:
+        if not payloads:
+            payloads = self.staged_data
+            if payloads is None:
                 raise ValueError("Must provide 'payload' argument or use collector.stage(payload_list).")
 
         if instrument or measure:
@@ -388,10 +389,10 @@ class BaseCollector(object):
             if measure:
                 instrument = self.get_instrument(measure=measure)
 
-        payload_list = payload
-        single = isinstance(payload, dict)
+        payload_list = payloads
+        single = isinstance(payloads, dict)  # staged_data could be a single direct ref
         if single:
-            payload_list = [payload]
+            payload_list = [payloads]
 
         for payload in payload_list[self._clean_index:]:
             payload = self.clean_payload(payload)
