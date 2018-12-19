@@ -404,8 +404,8 @@ class BaseCollector(object):
             if single:
                 self.cleaned_data = payload  # Loop will end asap and return this reference
             else:
-                if not isinstance(self.cleaned_data, list):
-                    self.cleaned_data = [self.cleaned_data]
+                if self.cleaned_data is None:
+                    self.cleaned_data = []
                 self.cleaned_data.append(payload)
 
         # Note that this should be 1 after a single unwrapped payload dict is cleaned.  That item
