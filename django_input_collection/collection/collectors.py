@@ -394,28 +394,7 @@ class BaseCollector(object):
             payload_list = [payload]
 
         for payload in payload_list[self._clean_index:]:
-            if not instrument:
-                # Look for values in the payload instead.
-                # Note that both can be specified in this scenario since the payload can be
-                # arbitrary, but 'instrument' has priority, then 'measure'.
-                instrument = payload.get('instrument')
-                if instrument is None:
-                    measure = payload.get('measure')
-                    if measure:
-                        instrument = self.get_instrument(measure)
-                    if instrument is None:
-                        raise ValueError("Data does not have 'instrument' or 'measure': %r" % (payload,))
-
-            is_unavailable = (not self.is_instrument_allowed(instrument))
-            if is_unavailable:
-                raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
-
-            at_capacity = (not self.is_input_allowed(instrument))
-            if at_capacity:
-                raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
-
-            payload['instrument'] = instrument
-            payload['data'] = self.clean_data(instrument, payload['data'])
+            payload = self.clean_payload(payload)
 
             if single:
                 self.cleaned_data = payload  # Loop will end asap and return this reference
@@ -428,6 +407,39 @@ class BaseCollector(object):
         self._clean_index = len(payload_list)
 
         return self.cleaned_data
+
+    def clean_payload(self, payload, instrument=None, measure=None):
+        """
+        Cleans a payload dict of kwargs for the current CollectedInput model.  If the payload is not
+        given, the data last remembered by ``collector.stage(data_list)`` will be used.  Note that
+        when the payload is an iterable, providing ``instrument`` or ``message`` will overwrite the
+        instrument reference for all items in the list.  To use different instruments, set the
+        same key in the payload data where it can be locally discovered.
+        """
+
+        if not instrument:
+            # Look for values in the payload instead.
+            # Note that both can be specified in this scenario since the payload can be
+            # arbitrary, but 'instrument' has priority, then 'measure'.
+            instrument = payload.get('instrument')
+            if instrument is None:
+                measure = payload.get('measure')
+                if measure:
+                    instrument = self.get_instrument(measure)
+                if instrument is None:
+                    raise ValueError("Data does not have 'instrument' or 'measure': %r" % (payload,))
+
+        is_unavailable = (not self.is_instrument_allowed(instrument))
+        if is_unavailable:
+            raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
+
+        at_capacity = (not self.is_input_allowed(instrument))
+        if at_capacity:
+            raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
+
+        payload['instrument'] = instrument
+        payload['data'] = self.clean_data(instrument, payload['data'])
+        return payload
 
     def clean_data(self, instrument, data):
         """ Cleans the block of input data for storage. """
