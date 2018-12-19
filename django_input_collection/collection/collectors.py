@@ -383,11 +383,15 @@ class BaseCollector(object):
             if payloads is None:
                 raise ValueError("Must provide 'payload' argument or use collector.stage(payload_list).")
 
+        # Do an early resolve of these kwargs that are destined for clean_payload(), so that this
+        # doesn't have to be done once for each payload.
+        instrument = kwargs.get('instrument')
+        measure = kwargs.pop('measure', None)
         if instrument or measure:
             if instrument and measure:
                 raise ValueError("Can't specify both 'instrument' and 'measure'")
             if measure:
-                instrument = self.get_instrument(measure=measure)
+                kwargs['instrument'] = self.get_instrument(measure=measure)
 
         payload_list = payloads
         single = isinstance(payloads, dict)  # staged_data could be a single direct ref
