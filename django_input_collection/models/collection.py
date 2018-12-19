@@ -149,6 +149,10 @@ class CollectionInstrument(DatesModel, models.Model):
         from .conditions import Condition
         return Condition.objects.filter(data_getter='instrument:%d' % (self.pk,))
 
+    def get_choices(self):
+        """ Returns a list of SuggestedResponse ``data`` values. """
+        return list(self.suggested_responses.values_list('data', flat=True))
+
 
 class ResponsePolicy(DatesModel, models.Model):
     """
