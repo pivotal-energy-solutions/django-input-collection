@@ -432,7 +432,7 @@ class BaseCollector(object):
 
         return self.cleaned_data
 
-    def clean_payload(self, payload, instrument=None, measure=None):
+    def clean_payload(self, payload, instrument=None, measure=None, **skip_options):
         """
         Cleans a payload dict of kwargs for the current CollectedInput model.  If the payload is not
         given, the data last remembered by ``collector.stage(data_list)`` will be used.  Note that
@@ -453,13 +453,15 @@ class BaseCollector(object):
                 if instrument is None:
                     raise ValueError("Data does not have 'instrument' or 'measure': %r" % (payload,))
 
-        is_unavailable = (not self.is_instrument_allowed(instrument))
-        if is_unavailable:
-            raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
+        if not skip_options.get('skip_availability'):
+            is_unavailable = (not self.is_instrument_allowed(instrument))
+            if is_unavailable:
+                raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
 
-        at_capacity = (not self.is_input_allowed(instrument))
-        if at_capacity:
-            raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
+        if not skip_options.get('skip_capacity'):
+            at_capacity = (not self.is_input_allowed(instrument))
+            if at_capacity:
+                raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
 
         payload['instrument'] = instrument
         payload['data'] = self.clean_data(instrument, payload['data'])
