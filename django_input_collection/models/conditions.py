@@ -67,8 +67,8 @@ class Condition(DatesModel, models.Model):
         kwargs.update(kwargs.pop('context', None) or {})
         resolver, data_kwargs, error = resolvers.resolve(self.instrument, self.data_getter, **kwargs)
 
-        if resolver and data_kwargs and 'data' not in data_kwargs:
-            raise ValueError("Resolver '%s' did not return a dict with a 'data' key: %r", (
+        if resolver and (not isinstance(data_kwargs, dict) or 'data' not in data_kwargs):
+            raise ValueError("Resolver '%s' did not return a dict with a 'data' key: %r" % (
                 resolver.__class__.__name__, data_kwargs
             ))
         return resolver, data_kwargs, error
