@@ -1,6 +1,3 @@
-__all__ = ['replace_data_for_suggested_responses']
-
-
 def replace_data_for_suggested_responses(instrument, *responses):
     """
     Maps any {'_suggested_response': pk} values to the actual data that the response represents.
