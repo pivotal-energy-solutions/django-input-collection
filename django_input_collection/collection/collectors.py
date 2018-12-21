@@ -284,6 +284,23 @@ class BaseCollector(object):
 
         return queryset.filter(instrument__in=instruments)
 
+    def get_data_display(self, instrument=None, measure=None):
+        """ Formats the CollectedInput queryset for the given instrument as a string. """
+        method = self.get_method(instrument=instrument, measure=measure)
+
+        queryset = self.get_inputs(instrument=instrument, measure=measure)
+        single = (queryset.count() == 1)
+        if single:
+            values = [queryset.get().data['input']]
+        else:
+            values = list(queryset.values('data__input'))
+
+        for i, value in enumerate(values):
+            values[i] = method.get_data_display(value)
+
+        if single:
+            return values[0]
+        return ', '.join(map(unicode, values))
 
     # Instrument/Input runtime hooks
     def get_conditional_input_value(self, data):

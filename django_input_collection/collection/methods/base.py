@@ -101,6 +101,9 @@ class InputMethod(object):
     def get_constraints(self):
         return {}
 
+    def get_data_display(self, value):
+        return unicode(value)
+
     @property
     def data(self):
         exclude = ('cleaner', 'errors')

@@ -244,6 +244,37 @@ class AbstractCollectedInput(DatesModel, models.Model):
     def __unicode__(self):
         return unicode(str(self))
 
+    def get_context(self, fields=None):
+        """
+        Returns the context dict of this input's model field values.  If ``fields`` is given, it
+        should be a whitelist list of fields that should appear in the returned dict.
+        """
+
+        if fields is None:
+            fields = ['user']
+
+        return {
+            field: getattr(self, field) for field in fields if self._meta.get_field(field)
+        }
+
+    def get_data_display(self, collector=None, method=None):
+        """
+        If ``method`` is given, then that method instance will render the input object.  If a
+        ``collector`` is given instead, it will be used to look up a method for the input's
+        instrument.  If no arguments are provided, the default method will coerce the object to
+        unicode, as is the behavior of the default InputMethod class.
+        """
+        from ..collection import Collector
+
+        if not collector and not method:
+            context = self.get_context()
+            collector = Collector(self.collection_request, **context)
+
+        if collector and not method:
+            method = collector.get_method(self.instrument)
+
+        return method.get_data_display(self.data['input'])
+
 
 MODEL_SWAP_SETTING = swapper.swappable_setting('input', 'CollectedInput')
 
