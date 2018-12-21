@@ -517,6 +517,20 @@ class BaseCollector(object):
     def raise_error(self, exception):
         raise exception
 
+    def make_payload(self, instrument, data, **model_field_values):
+        """ Returns a dict of model field values for storage. """
+        db_data = self.serialize_data(data)
+        payload = {
+            'instrument': instrument,
+            'data': db_data,
+
+            # Disallow data integrity funnybusiness
+            'collection_request': instrument.collection_request,
+            'user': self.context.get('user'),
+        }
+        payload.update(model_field_values)
+        return payload
+
     def serialize_data(self, data):
         """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
         return data
@@ -539,22 +553,12 @@ class BaseCollector(object):
         from .. import models
         CollectedInput = models.get_input_model()
 
-        db_data = self.serialize_data(data)
-
-        kwargs = {
-            'instrument': instrument,
-            'data': db_data,
-
-            # Disallow data integrity funnybusiness
-            'collection_request': instrument.collection_request,
-            'user': self.context.get('user'),
-        }
-        kwargs.update(model_field_values)
+        payload = self.make_payload(instrument, data, **model_field_values)
 
         pk = None
         if instance is not None:
             pk = instance.pk
-        instance, created = CollectedInput.objects.update_or_create(pk=pk, defaults=kwargs)
+        instance, created = CollectedInput.objects.update_or_create(pk=pk, defaults=payload)
 
         return instance
 
