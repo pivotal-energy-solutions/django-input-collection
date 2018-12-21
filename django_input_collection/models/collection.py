@@ -288,11 +288,3 @@ class CollectedInput(AbstractCollectedInput):
 
     class Meta:
         swappable = MODEL_SWAP_SETTING  # 'INPUT_COLLECTEDINPUT_MODEL'
-
-    def serialize_data(self, data):
-        """ Enforce strings for CharField compatibility. """
-        return str(data)
-
-    def deserialize_data(self, data):
-        """ Pass data straight out as a string. """
-        return data
