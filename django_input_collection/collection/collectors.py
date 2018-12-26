@@ -447,10 +447,13 @@ class BaseCollector(object):
             # arbitrary, but 'instrument' has priority, then 'measure'.
             instrument = payload.get('instrument')
             if instrument is None:
-                measure = payload.get('measure')
-                if measure:
-                    instrument = self.get_instrument(measure)
-                if instrument is None:
+                if 'measure' in payload:
+                    measure = payload['measure']
+                    if measure:
+                        instrument = self.get_instrument(measure)
+                    if instrument is None:
+                        raise ValueError("Invalid measure %r, no instrument can be resolved for: %r" % (measure, payload))
+                else:
                     raise ValueError("Data does not have 'instrument' or 'measure': %r" % (payload,))
 
         if not skip_options.get('skip_availability'):
