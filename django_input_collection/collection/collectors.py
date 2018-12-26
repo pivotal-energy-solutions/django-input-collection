@@ -620,7 +620,7 @@ class BaseCollector(object):
             raise ValueError("Data is not cleaned.")
 
         save_list = self.cleaned_data
-        single = isinstance(self.save_list, dict)
+        single = isinstance(save_list, dict)
         if single:
             save_list = [single]
 
