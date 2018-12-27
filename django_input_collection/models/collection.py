@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
 
@@ -132,12 +133,23 @@ class CollectionInstrument(DatesModel, models.Model):
 
     def get_parent_instruments(self):
         """
-        Returns a list of instruments that enable this one via a Condition.  Note that a Condition
-        with a non-instrument resolver (like 'attr:') will return a queryset including a reference
-        to itself.
+        Returns a list of instruments that enable this one via a Condition.
         """
         instruments = self.collection_request.collectioninstrument_set.all()
-        return instruments.filter(conditions__instrument=self).distinct()
+        parents = instruments.filter(conditions__instrument=self)
+        parent_ids = []
+        parent_measures = []
+        parent_getters = list(parents.values_list('conditions__data_getter', flat=True))
+        for spec in parent_getters:
+            resolver, reference = spec.split(':', 1)
+            if resolver == 'instrument':
+                # Parse the reference to find the parent
+                try:
+                    parent_ids.append(long(reference))
+                except:
+                    parent_measures.append(reference)
+        
+        return instruments.filter(Q(id__in=parent_ids) | Q(measure_id__in=parent_measures)).distinct()
 
     def get_child_instruments(self):
         """ Returns a list of instrument that this one enables via a Condition. """
