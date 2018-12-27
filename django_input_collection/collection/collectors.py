@@ -350,15 +350,18 @@ class BaseCollector(object):
         instrument = self.get_instrument(measure)
         return self.is_instrument_allowed(instrument, **kwargs)
 
-    def is_input_allowed(self, instrument):
+    def is_input_allowed(self, instrument, user=None):
         """
         Returns True when the given instrument passes checks against flags on its CollectionRequest.
+        If ``user`` is given, it will be used instead of self.context['user'] for checking the
+        per-user max on the related response_policy.
         """
         manager = instrument.collectedinput_set
 
         request_flags = instrument.collection_request.get_flags()
 
-        user = self.context['user']
+        if user is None:
+            user = self.context.get('user')
         if user and not isinstance(user, AnonymousUser):
             user_max = request_flags['max_instrument_inputs_per_user']
             if user_max is not None:
@@ -370,7 +373,7 @@ class BaseCollector(object):
         total_max = request_flags['max_instrument_inputs']
         if total_max is not None:
             no_user_context = self.context.copy()
-            no_user_context.pop('user')
+            no_user_context.pop('user', None)
             existing_inputs = manager.filter_for_context(**no_user_context)
             input_count = existing_inputs.count()
             if input_count >= total_max:
