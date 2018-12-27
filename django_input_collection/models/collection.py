@@ -131,7 +131,11 @@ class CollectionInstrument(DatesModel, models.Model):
         return True
 
     def get_parent_instruments(self):
-        """ Returns a list of instruments that enable this one via a Condition. """
+        """
+        Returns a list of instruments that enable this one via a Condition.  Note that a Condition
+        with a non-instrument resolver (like 'attr:') will return a queryset including a reference
+        to itself.
+        """
         instruments = self.collection_request.collectioninstrument_set.all()
         return instruments.filter(conditions__instrument=self).distinct()
 
