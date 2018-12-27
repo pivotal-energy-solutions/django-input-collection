@@ -184,7 +184,7 @@ class Case(DatesModel, models.Model):
         ('all-custom', "All custom"),
         ('one-custom', "At least one custom"),
 
-        # Partial, relies on ``data`` field
+        # Partial, relies on ``match_data`` field
         ('match', "Input matches this data"),
         ('mismatch', "Input doesn't match this data"),
         ('greater_than', "Input is greater than this data"),
