@@ -223,17 +223,17 @@ class BaseCollector(object):
                 else:
                     flag_queryset = queryset
 
+                    # Unpack syntaxes
                     if isinstance(flag, six.string_types):
-                        # Get instruments using the resolver named in the flag.
+                        # Direct string reference
                         resolver_name = flag
                         flag = True
-                        flag_queryset = queryset.filter_for_condition_resolver(resolver_name)
-
-                    # Allow a dict syntax to specify active status, like {'foo_resolver': False}
                     if isinstance(flag, dict):
+                        # Single-item dict, string reference mapping to a desired active flag
                         resolver_name, flag = flag.items()[0]
-                        if not isinstance(resolver_name, six.string_types):
-                            raise ValueError("Resolver reference %r must be a string, not %s." % (resolver_name, type(resolver_name)))
+
+                    if resolver_name:
+                        flag_queryset = queryset.filter_for_condition_resolver(resolver_name)
 
                     # Check each instrument for the desired pass/fail result
                     for instrument in flag_queryset:
