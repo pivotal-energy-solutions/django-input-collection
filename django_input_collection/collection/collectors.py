@@ -67,6 +67,7 @@ class BaseCollector(object):
     __noregister__ = True
 
     group = None
+    groups = None
     condition_resolver_fallback = {'data': None}
     specification_class = specifications.Specification
 
@@ -83,11 +84,22 @@ class BaseCollector(object):
     staged_data = None
     cleaned_data = None
 
-    def __init__(self, collection_request, group=None, **context):
+    def __init__(self, collection_request, group=None, groups=None, **context):
         self.collection_request = collection_request
         self.context = context
-        if group:
+
+        if group is not None:
             self.group = group
+        if groups is not None:
+            self.groups = groups
+        if (self.group is not None) and (self.groups is None):
+            self.groups = [self.group]
+
+        # If both 'group' and 'groups' are available, we can do a soft early validation.
+        if (self.group is not None) and (self.group not in self.groups):
+            raise ValueError("Invalid group %r (from valid list %r): Declare it on the collector class's 'groups' or send 'groups' via keyword." % (
+                self.group, self.groups,
+            ))
 
         self.types = self.get_types()
         self.measure_types = self.get_measure_types()

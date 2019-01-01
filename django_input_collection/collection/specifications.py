@@ -23,6 +23,7 @@ class Specification(object):
             'collector': identifier,
             'collection_request': collection_request_info,
             'group': self.collector.group,
+            'groups': self.collector.groups,
             'instruments_info': instruments_info,
             'collected_inputs': inputs_info,
         }
