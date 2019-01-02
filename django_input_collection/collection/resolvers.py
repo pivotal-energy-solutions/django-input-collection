@@ -158,7 +158,17 @@ class AttributeResolver(Resolver):
         if isinstance(obj, dict):
             obj = obj[attr]
         elif isinstance(obj, (Manager, QuerySet, list, tuple, set)):
-            obj = [self.resolve_dotted_path(item, attr) for item in obj]
+            branch_objs = []
+            for branch_obj in obj:
+                try:
+                    branch_obj = self.resolve_dotted_path(branch_obj, attr)
+                except Exception as error:
+                    branch_obj = None
+                    log.info("Resolver %r trapped an inner exception while iterating attr=%r (%s) object %r: %s",
+                             self.__class__, attr, obj.__class__.__name__, branch_obj, error)
+                branch_objs.append(branch_obj)
+            obj = branch_objs
+            log.info("Branch resolved: %r", obj)
         else:
             if '.' in attr:
                 attr, remainder = attr.split('.', 1)
