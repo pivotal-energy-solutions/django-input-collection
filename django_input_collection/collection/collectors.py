@@ -61,6 +61,9 @@ class CollectorType(type):
         fail_registration_action(cls, "Collector %(cls)r with __noregister__=True cannot be registered.")
 
 
+instrument_cache = {}  # collection_request_id: {measure_id: instrument}
+
+
 @six.add_metaclass(CollectorType)
 class BaseCollector(object):
     __version__ = (0, 0, 0, 'dev')
@@ -263,7 +266,11 @@ class BaseCollector(object):
         if isinstance(measure, Model):
             measure = measure.pk
 
-        return self.get_instruments().filter(measure_id=measure).first()
+        cache = instrument_cache.setdefault(self.collection_request.id, {})
+        if measure not in cache:
+            instrument = self.get_instruments().filter(measure_id=measure).first()
+            cache[measure] = instrument
+        return cache[measure]
 
     def get_inputs(self, instrument=None, measure=None):
         """
