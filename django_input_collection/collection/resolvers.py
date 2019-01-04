@@ -168,7 +168,6 @@ class AttributeResolver(Resolver):
                              self.__class__, attr, obj.__class__.__name__, branch_obj, error)
                 branch_objs.append(branch_obj)
             obj = branch_objs
-            log.info("Branch resolved: %r", obj)
         else:
             if '.' in attr:
                 attr, remainder = attr.split('.', 1)
