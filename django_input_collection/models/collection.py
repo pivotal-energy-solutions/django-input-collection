@@ -148,7 +148,6 @@ class CollectionInstrument(DatesModel, models.Model):
                     parent_ids.append(long(reference))
                 except:
                     parent_measures.append(reference)
-        
         return instruments.filter(Q(id__in=parent_ids) | Q(measure_id__in=parent_measures)).distinct()
 
     def get_child_instruments(self):
