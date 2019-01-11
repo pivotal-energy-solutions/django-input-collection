@@ -544,10 +544,9 @@ class BaseCollector(object):
 
     def make_payload(self, instrument, data, **model_field_values):
         """ Returns a dict of model field values for storage. """
-        db_data = self.serialize_data(data)
         payload = {
             'instrument': instrument,
-            'data': db_data,
+            'data': self.make_payload_data(data),
 
             # Disallow data integrity funnybusiness
             'collection_request': instrument.collection_request,
@@ -556,15 +555,8 @@ class BaseCollector(object):
         payload.update(model_field_values)
         return payload
 
-    def serialize_data(self, data):
+    def make_payload_data(self, data):
         """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
-        return data
-
-    def deserialize_data(self, data):
-        """
-        Coerces retrieved ``data`` from the active input model (CollectedInput or swapped) to an
-        appropriate object for its type.
-        """
         return data
 
     # Granular storage api
