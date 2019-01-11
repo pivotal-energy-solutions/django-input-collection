@@ -318,11 +318,7 @@ class BaseCollector(object):
         method = self.get_method(instrument=instrument, measure=measure)
 
         queryset = self.get_inputs(instrument=instrument, measure=measure)
-        single = (queryset.count() == 1)
-        if single:
-            values = [queryset.get().data['input']]
-        else:
-            values = list(queryset.values('data__input'))
+        values = list(queryset.values_list('data', flat=True))
 
         for i, value in enumerate(values):
             values[i] = method.get_data_display(value)
