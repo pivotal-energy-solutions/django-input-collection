@@ -319,7 +319,7 @@ class BaseCollector(object):
         method = self.get_method(instrument=instrument, measure=measure)
 
         queryset = self.get_inputs(instrument=instrument, measure=measure)
-        values = list(queryset.values_list('data', flat=True))
+        values = list(map(self.extract_data_input, queryset.values_list('data', flat=True)))
 
         for i, value in enumerate(values):
             values[i] = method.get_data_display(value)
@@ -562,6 +562,10 @@ class BaseCollector(object):
 
     def make_payload_data(self, instrument, data, **kwargs):
         """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
+        return data
+
+    def extract_data_input(self, data):
+        """ Extracts the data contained in a well-formed payload['data'] value. """
         return data
 
     # Granular storage api
