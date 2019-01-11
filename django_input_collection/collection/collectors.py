@@ -237,6 +237,7 @@ class BaseCollector(object):
             for flag in active:
                 flagged_pks = set()
                 resolver_name = None
+                predicate = lambda i, f: self.is_instrument_allowed(i) == f
                 if flag is None:
                     # Get instruments without conditions
                     pk_list = queryset.filter(conditions=None).values_list('pk', flat=True)
@@ -249,16 +250,19 @@ class BaseCollector(object):
                         # Direct string reference
                         resolver_name = flag
                         flag = True
-                    if isinstance(flag, dict):
+                    elif isinstance(flag, dict):
                         # Single-item dict, string reference mapping to a desired active flag
                         resolver_name, flag = flag.items()[0]
+                    elif callable(flag):
+                        predicate = flag
+                        flag = False
 
                     if resolver_name:
                         flag_queryset = queryset.filter_for_condition_resolver(resolver_name)
 
                     # Check each instrument for the desired pass/fail result
                     for instrument in flag_queryset:
-                        if flag is None or self.is_instrument_allowed(instrument) == flag:
+                        if flag is None or predicate(instrument, flag):
                             flagged_pks.add(instrument.pk)
 
                 include_pks |= flagged_pks
