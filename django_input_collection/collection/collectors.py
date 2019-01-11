@@ -161,11 +161,14 @@ class BaseCollector(object):
             if measure:
                 instrument = self.get_instrument(measure)
 
-        method = methods.InputMethod
-        if instrument.measure_id in self.measure_methods:
+        if instrument is None:
+            method = methods.InputMethod
+        elif instrument.measure_id in self.measure_methods:
             method = self.measure_methods[instrument.measure_id]
         elif instrument.type_id in self.type_methods:
             method = self.type_methods[instrument.type_id]
+        else:
+            method = methods.InputMethod
 
         if isclass(method):
             method = method()
@@ -185,12 +188,15 @@ class BaseCollector(object):
         Returns a InstrumentType instance, determined by default by the instrument's type_id in
         ``types``.
         """
-        type_ref = methods.InputMethod
 
-        if instrument.type_id in self.measure_types:
+        if instrument is None:
+            type_ref = methods.InputMethod
+        elif instrument.type_id in self.measure_types:
             type_ref = self.measure_types[instrument.type_id]
         elif instrument.type_id in self.types:
             type_ref = self.types[instrument.type_id]
+        else:
+            type_ref = methods.InputMethod
 
         type_kwargs = self.get_type_kwargs(instrument)
         type_ref = type_ref(**type_kwargs)
