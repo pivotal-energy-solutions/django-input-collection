@@ -514,7 +514,7 @@ class BaseCollector(object):
         if not is_plural:
             data = [data]
         for i, item in enumerate(data):
-            data[i] = self.clean_input(instrument, item, allowed_values)
+            data[i] = self.clean_input(instrument, item, allowed_values=allowed_values)
         if not is_plural:
             data = data[0]
 
