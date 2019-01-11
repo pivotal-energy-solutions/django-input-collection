@@ -323,8 +323,6 @@ class BaseCollector(object):
         for i, value in enumerate(values):
             values[i] = method.get_data_display(value)
 
-        if single:
-            return values[0]
         return ', '.join(map(unicode, values))
 
     # Instrument/Input runtime hooks
