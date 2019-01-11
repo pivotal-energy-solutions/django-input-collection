@@ -548,20 +548,20 @@ class BaseCollector(object):
     def raise_error(self, exception):
         raise exception
 
-    def make_payload(self, instrument, data, **model_field_values):
+    def make_payload(self, instrument, data, **kwargs):
         """ Returns a dict of model field values for storage. """
         payload = {
             'instrument': instrument,
-            'data': self.make_payload_data(data),
+            'data': self.make_payload_data(instrument, data, **kwargs),
 
             # Disallow data integrity funnybusiness
             'collection_request': instrument.collection_request,
             'user': self.context.get('user'),
         }
-        payload.update(model_field_values)
+        payload.update(kwargs)
         return payload
 
-    def make_payload_data(self, data):
+    def make_payload_data(self, instrument, data, **kwargs):
         """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
         return data
 
