@@ -407,7 +407,7 @@ class BaseCollector(object):
         return True
 
     def get_cleaners(self, instrument=None, measure=None):
-        method = self.get_method(instrument=None, measure=None)
+        method = self.get_method(instrument=instrument, measure=measure)
         return [method.clean]
 
     def clean(self, *payloads, **kwargs):
