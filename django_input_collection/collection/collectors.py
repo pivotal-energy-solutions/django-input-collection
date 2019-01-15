@@ -327,10 +327,6 @@ class BaseCollector(object):
         return ', '.join(map(unicode, values))
 
     # Instrument/Input runtime hooks
-    def get_conditional_input_value(self, data):
-        """ Coerces a CollectedInput's stored data for comparison with Case match data. """
-        return data
-
     def get_conditional_check_value(self, data):
         """ Coerces match data from a SuggestedResponse or Case for comparison with an input. """
         return data
@@ -353,7 +349,7 @@ class BaseCollector(object):
         """
         if 'resolver_fallback' not in kwargs:
             kwargs['resolver_fallback'] = self.condition_resolver_fallback
-        key_input = self.get_conditional_input_value
+        key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
         return condition.test(key_input=key_input, key_case=key_case, **kwargs)
 
@@ -365,7 +361,7 @@ class BaseCollector(object):
         """
         if 'resolver_fallback' not in kwargs:
             kwargs['resolver_fallback'] = self.condition_resolver_fallback
-        key_input = self.get_conditional_input_value
+        key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
         return instrument.test_conditions(key_input=key_input, key_case=key_case,
                                           context=self.context, **kwargs)
