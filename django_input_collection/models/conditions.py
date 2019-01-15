@@ -65,13 +65,13 @@ class Condition(DatesModel, models.Model):
         the data yielded by the it, and any error raised during attribute traversal.
         """
         kwargs.update(kwargs.pop('context', None) or {})
-        resolver, data_kwargs, error = resolvers.resolve(self.instrument, self.data_getter, **kwargs)
+        resolver, data_info, error = resolvers.resolve(self.instrument, self.data_getter, **kwargs)
 
-        if resolver and (not isinstance(data_kwargs, dict) or 'data' not in data_kwargs):
+        if resolver and (not isinstance(data_info, dict) or 'data' not in data_info):
             raise ValueError("Resolver '%s' did not return a dict with a 'data' key: %r" % (
-                resolver.__class__.__name__, data_kwargs
+                resolver.__class__.__name__, data_info
             ))
-        return resolver, data_kwargs, error
+        return resolver, data_info, error
 
     def test(self, **kwargs):
         """
@@ -84,11 +84,11 @@ class Condition(DatesModel, models.Model):
             resolver_kwargs['raise_exception'] = kwargs.pop('raise_exception')
         if 'context' in kwargs:
             resolver_kwargs['context'] = kwargs.pop('context')
-        if 'resolver_fallback' in kwargs:
-            resolver_kwargs['fallback'] = kwargs.pop('resolver_fallback')
-        resolver, data_kwargs, error = self.resolve(**resolver_kwargs)
+        if 'resolver_fallback_data' in kwargs:
+            resolver_kwargs['fallback'] = kwargs.pop('resolver_fallback_data')
+        resolver, data_info, error = self.resolve(**resolver_kwargs)
 
-        kwargs.update(data_kwargs)
+        kwargs.update(data_info)
 
         # We will allow the condition test to run even if there is an error, since a 'fallback'
         # value might ensure that resolution-related errors are kept quiet.  It will be up to the
