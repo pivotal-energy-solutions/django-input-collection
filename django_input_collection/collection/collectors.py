@@ -71,7 +71,6 @@ class BaseCollector(object):
 
     group = None
     groups = None
-    condition_resolver_fallback = {'data': None}
     specification_class = specifications.Specification
 
     types = None
@@ -345,10 +344,10 @@ class BaseCollector(object):
         """
         Like ``is_instrument_allowed()``, except that it tests only the given condition.  Using this
         method instead of ``condition.test()`` directly has the benefit of allowing the collector
-        to implicitly send ``key_input``, ``key_case``, and ``condition_resolver_fallback``.
+        to implicitly send ``key_input``, ``key_case``, and ``resolver_fallback_data``.
         """
-        if 'resolver_fallback' not in kwargs:
-            kwargs['resolver_fallback'] = self.condition_resolver_fallback
+        if 'resolver_fallback_data' not in kwargs:
+            kwargs['resolver_fallback_data'] = self.make_payload_data(condition.instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
         return condition.test(key_input=key_input, key_case=key_case, **kwargs)
@@ -356,11 +355,11 @@ class BaseCollector(object):
     def is_instrument_allowed(self, instrument, **kwargs):
         """
         Returns True when the given instrument passes all related conditions limiting its use.  The
-        ``resolver_fallback`` kwarg is forwarded to ``Condition.test()``, where a failed attempt at
+        ``resolver_fallback_data`` kwarg is forwarded to ``Condition.test()``, where a failed attempt at
         resolving its ``data_getter`` will result in the use of the given default instead.
         """
-        if 'resolver_fallback' not in kwargs:
-            kwargs['resolver_fallback'] = self.condition_resolver_fallback
+        if 'resolver_fallback_data' not in kwargs:
+            kwargs['resolver_fallback_data'] = self.make_payload_data(instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
         return instrument.test_conditions(key_input=key_input, key_case=key_case,
@@ -557,7 +556,10 @@ class BaseCollector(object):
         return payload
 
     def make_payload_data(self, instrument, data, **kwargs):
-        """ Coerces ``data`` for storage on the active input model (CollectedInput or swapped). """
+        """
+        Coerces ``data`` for storage on the active input model (CollectedInput or swapped).  Note
+        that ``data`` may be sent as None to represent an empty version of the payload 'data' value.
+        """
         return data
 
     def extract_data_input(self, data):

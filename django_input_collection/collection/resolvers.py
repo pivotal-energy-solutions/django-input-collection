@@ -16,19 +16,13 @@ log = logging.getLogger(__name__)
 registry = []
 
 
-class unset(object):
-    pass
-
-
-def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
+def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
     """
     Uses the first registered resolver where ``spec`` matches its pattern, and returns a 3-tuple of
     the resolver used, the dict of kwargs for ``collection.matchers.test_condition_case()``, and
     any exception raised during attribute traversal.
     """
 
-    if fallback is unset:
-        fallback = {'data': None}
 
     for resolver in registry:
         result = resolver.apply(spec)
@@ -38,14 +32,16 @@ def resolve(instrument, spec, fallback=unset, raise_exception=True, **context):
         error = None
         kwargs = dict(context, **result)
         try:
-            data = resolver.resolve(instrument=instrument, **kwargs)
+            data_info = resolver.resolve(instrument=instrument, **kwargs)
         except Exception as e:
             error = e
-            data = fallback
+            data_info = {
+                'data': fallback,
+            }
             log.info("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
                      resolver.__class__, instrument.pk, kwargs, spec, error)
 
-        return (resolver, data, error)
+        return (resolver, data_info, error)
 
     if raise_exception:
         raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
