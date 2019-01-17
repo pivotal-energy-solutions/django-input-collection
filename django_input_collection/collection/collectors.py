@@ -548,12 +548,13 @@ class BaseCollector(object):
         # Ensure {'_suggested_response': pk} is swapped out for real underlying data
         data = utils.replace_data_for_suggested_responses(instrument, data)
 
-        cleaners = self.get_cleaners(instrument)
         # Keep a possible SuggestedResponse result for invoking its ``clean()``
         suggested_response = None
         if isinstance(data, SuggestedResponse):
             suggested_response = data
             data = suggested_response.data
+
+        cleaners = self.get_cleaners(instrument, suggested_response=suggested_response)
         for cleaner in cleaners:
             data = cleaner(data)
 
