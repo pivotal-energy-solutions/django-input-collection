@@ -546,7 +546,9 @@ class BaseCollector(object):
         disallow_custom = policy_flags['restrict']
 
         # Ensure {'_suggested_response': pk} is swapped out for real underlying data
-        data = utils.replace_data_for_suggested_responses(instrument, data)
+        suggested_responses = self.get_suggested_responses(instrument)
+        response_lookups = suggested_responses.in_bulk()
+        data = utils.expand_suggested_responses(instrument, response_lookups, data)
 
         # Keep a possible SuggestedResponse result for invoking its ``clean()``
         suggested_response = None
