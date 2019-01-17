@@ -515,34 +515,34 @@ class BaseCollector(object):
 
         # Ensure ResponsePolicy flags are respected
         policy_flags = instrument.response_policy.get_flags()
-
-        disallow_custom = policy_flags['restrict']
         allows_multiple = policy_flags['multiple']
         if allows_multiple and not isinstance(data, list):
             data = [data]
         if not allows_multiple and isinstance(data, list):
             raise ValidationError("Multiple inputs are not allowed")
 
-        allowed_values = None
-        if disallow_custom:
-            allowed_values = set(instrument.suggested_responses.values_list('data', flat=True))
-
         # Process each bit in the input, forcing a list in case there is only one
         is_plural = isinstance(data, list)
         if not is_plural:
             data = [data]
+
         for i, item in enumerate(data):
-            data[i] = self.clean_input(instrument, item, allowed_values=allowed_values)
+            data[i] = self.clean_input(instrument, item)
+
         if not is_plural:
             data = data[0]
 
         return data
 
-    def clean_input(self, instrument, data, allowed_values=None):
+    def clean_input(self, instrument, data):
         """
         Cleans a single input data point for storage, either directly or within a list of plural
         inputs (if ``response_policy.multiple`` allows it).
         """
+
+        # Ensure ResponsePolicy flags are respected
+        policy_flags = instrument.response_policy.get_flags()
+        disallow_custom = policy_flags['restrict']
 
         # Ensure {'_suggested_response': pk} is swapped out for real underlying data
         data = utils.replace_data_for_suggested_responses(instrument, data)
@@ -552,8 +552,14 @@ class BaseCollector(object):
             data = cleaner(data)
 
         # Enforce the disallow_custom flag from clean_data()
-        if allowed_values and not matchers.all_suggested(data, allowed_values):
-            raise ValidationError("Input %r is not from the list of suggested responses" % (data,))
+        allowed_values = None
+        if disallow_custom:
+            allowed_values = set(suggested_responses.values_list('data', flat=True))
+            if allowed_values and not matchers.all_suggested(data, allowed_values):
+                raise ValidationError("[CollectionInstrument id=%r] Input %r is not from the list of suggested responses" % (
+                    instrument.id,
+                    data
+                ))
 
         return data
 
