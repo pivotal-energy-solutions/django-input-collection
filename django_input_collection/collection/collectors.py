@@ -282,6 +282,17 @@ class BaseCollector(object):
             cache[measure] = instrument
         return cache[measure]
 
+    def get_suggested_responses(self, instrument=None, measure=None):
+        if instrument or measure:
+            if instrument and measure:
+                raise ValueError("Can't specify both 'instrument' and 'measure'")
+            if measure:
+                instrument = self.get_instrument(measure)
+        else:
+            raise ValueError("Must specify one of 'instrument' and 'measure'")
+
+        return instrument.suggested_responses.all()
+
     def get_inputs(self, instrument=None, measure=None):
         """
         Returns the queryset of inputs for this collection request.  If ``instrument`` or
