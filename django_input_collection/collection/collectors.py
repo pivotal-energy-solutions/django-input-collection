@@ -411,9 +411,16 @@ class BaseCollector(object):
 
         return True
 
-    def get_cleaners(self, instrument=None, measure=None):
+    def get_cleaners(self, instrument=None, measure=None, suggested_response=None):
+        cleaners = []
+
         method = self.get_method(instrument=instrument, measure=measure)
-        return [method.clean]
+        cleaners.append(method.clean)
+
+        if suggested_response:
+            cleaners.append(suggested_response.clean)
+
+        return cleaners
 
     def clean(self, *payloads, **kwargs):
         """
