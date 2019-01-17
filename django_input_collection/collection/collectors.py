@@ -10,6 +10,7 @@ from django.db.models import Model
 import six
 
 from ..encoders import CollectionSpecificationJSONEncoder
+from ..models import SuggestedResponse
 from .matchers import matchers
 from . import specifications
 from . import methods
@@ -548,6 +549,11 @@ class BaseCollector(object):
         data = utils.replace_data_for_suggested_responses(instrument, data)
 
         cleaners = self.get_cleaners(instrument)
+        # Keep a possible SuggestedResponse result for invoking its ``clean()``
+        suggested_response = None
+        if isinstance(data, SuggestedResponse):
+            suggested_response = data
+            data = suggested_response.data
         for cleaner in cleaners:
             data = cleaner(data)
 
