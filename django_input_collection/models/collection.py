@@ -212,9 +212,7 @@ class ResponsePolicy(DatesModel, models.Model):
 
 
 class SuggestedResponse(DatesModel, models.Model):
-    """
-    A pre-identified valid response for a CollectionInstrument.
-    """
+    """ A pre-identified valid response for a CollectionInstrument. """
     data = models.CharField(max_length=512)
 
     # Also available:
@@ -295,8 +293,6 @@ class AbstractCollectedInput(DatesModel, models.Model):
         return method.get_data_display(self.data['input'])
 
 
-MODEL_SWAP_SETTING = swapper.swappable_setting('input', 'CollectedInput')
-
 class CollectedInput(AbstractCollectedInput):
     """
     A single point of data collected for a given Measure, related to the CollectionInstrument used
@@ -306,4 +302,5 @@ class CollectedInput(AbstractCollectedInput):
     data = models.CharField(max_length=512)
 
     class Meta:
-        swappable = MODEL_SWAP_SETTING  # 'INPUT_COLLECTEDINPUT_MODEL'
+        # swappable = 'INPUT_COLLECTEDINPUT_MODEL'
+        swappable = swapper.swappable_setting('input', 'CollectedInput')
