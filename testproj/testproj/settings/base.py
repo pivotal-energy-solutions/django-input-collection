@@ -7,7 +7,8 @@ from . import env
 # Things available to override in settings modules
 DEBUG = True
 ALLOWED_HOSTS = []
-INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'  # Explicit use of the default value
+INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
+INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = 'django_input_collection.BoundSuggestedResponse'
 
 
 # Things overridden at your own peril
