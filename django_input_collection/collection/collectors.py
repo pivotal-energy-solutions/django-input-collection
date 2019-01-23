@@ -564,7 +564,7 @@ class BaseCollector(object):
         # Enforce the disallow_custom flag from clean_data()
         allowed_values = None
         if disallow_custom:
-            allowed_values = set(suggested_responses.values_list('data', flat=True))
+            allowed_values = set(bound_responses.values_list('suggested_response__data', flat=True))
             if allowed_values and not matchers.all_suggested(data, allowed_values):
                 raise ValidationError("[CollectionInstrument id=%r] Input %r is not from the list of suggested responses" % (
                     instrument.id,

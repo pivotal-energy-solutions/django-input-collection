@@ -92,7 +92,8 @@ def clone_collection_request(collection_request):
                 'instrument_id': cloned_instrument.id,
                 'data_getter': re.sub(r'^instrument:\d+$', 'instrument:%d' % cloned_instrument.id, condition.data_getter)
             })
-        cloned_instrument.suggested_responses.add(*instrument.suggested_responses.all())
+        for bound_response in instrument.bound_suggested_responses.all():
+            lazy_clone(bound_response, collection_instrument_id=cloned_instrument.id)
 
     return cloned
 
