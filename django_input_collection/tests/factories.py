@@ -80,6 +80,15 @@ class CollectionInstrumentFactory(factory.django.DjangoModelFactory):
             self.condition_set.add(*extracted)
 
 
+class BoundSuggestedResponseFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL
+        django_get_or_create = ('collection_instrument', 'suggested_response')
+
+    collection_instrument = factory.SubFactory(CollectionInstrumentFactory)
+    suggested_response = factory.SubFactory(SuggestedResponseFactory)
+
+
 class CollectedInputFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = settings.INPUT_COLLECTEDINPUT_MODEL

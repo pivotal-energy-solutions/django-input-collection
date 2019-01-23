@@ -63,20 +63,24 @@ class ContextualCollectedInputsSerializer(serializers.Serializer):
         return serializer.data
 
 
-class SuggestedResponseSerializer(serializers.ModelSerializer):
+BoundSuggestedResponse = models.get_boundsuggestedresponse_model()
+
+class BoundSuggestedResponseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.SuggestedResponse
-        exclude = ['date_created', 'date_modified']
+        model = BoundSuggestedResponse
+        exclude = ['date_created', 'date_modified', 'collection_instrument']
 
     def to_representation(self, obj):
-        data = super(SuggestedResponseSerializer, self).to_representation(obj)
-        data['_suggested_response'] = data['id']
+        data = super(BoundSuggestedResponseSerializer, self).to_representation(obj)
+
+        data['_suggested_response'] = obj.id
+        data['data'] = obj.suggested_response.data
         return data
 
 
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     response_policy = serializers.SerializerMethodField()
-    suggested_responses = SuggestedResponseSerializer(many=True, read_only=True)
+    suggested_responses = BoundSuggestedResponseSerializer(source='bound_suggested_responses', many=True, read_only=True)
     collectedinput_set = ContextualCollectedInputsSerializer()
     is_condition_met = serializers.SerializerMethodField()
     parent_instruments = serializers.PrimaryKeyRelatedField(source='get_parent_instruments',

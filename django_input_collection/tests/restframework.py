@@ -88,11 +88,17 @@ class InputSubmissionTests(RestFrameworkTestCase):
             'collection_request': self.collection_request,
             'response_policy__nickname': 'no custom',
             'response_policy__restrict': True,
-            'suggested_responses': [
-                factories.SuggestedResponseFactory.create(data='foo'),
-                factories.SuggestedResponseFactory.create(data='bar'),
-            ],
         })
+
+        def bind(instrument, data, **fields):
+            suggested_response = factories.SuggestedResponseFactory.create(data=data)
+            fields['suggested_response'] = suggested_response
+            fields['collection_instrument'] = instrument
+            factories.BoundSuggestedResponseFactory.create(**fields)
+
+        bind(restrict_instrument, 'foo')
+        bind(restrict_instrument, 'bar')
+
         self.assertEqual(self.submit({'instrument': restrict_instrument.id, 'data': 'baz'}), status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.submit({'instrument': restrict_instrument.id, 'data': 'foo'}), status.HTTP_201_CREATED)
 

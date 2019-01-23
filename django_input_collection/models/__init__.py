@@ -1,4 +1,4 @@
 from .base import *
 from .collection import *
 from .conditions import *
-from .utils import get_input_model
+from .utils import get_input_model, get_boundsuggestedresponse_model
