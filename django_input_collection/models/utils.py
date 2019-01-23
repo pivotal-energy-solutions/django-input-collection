@@ -10,8 +10,16 @@ from django.utils.encoding import force_str, force_text
 import swapper
 
 
+def get_swapped_model(name):
+    return swapper.load_model('django_input_collection', name)
+
+
 def get_input_model():
-    return swapper.load_model('django_input_collection', 'CollectedInput')
+    return get_swapped_model('CollectedInput')
+
+
+def get_boundsuggestedresponse_model():
+    return get_swapped_model('BoundSuggestedResponse')
 
 
 def lazy_clone(obj, exclude=[], **updates):
