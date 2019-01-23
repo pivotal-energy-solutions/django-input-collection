@@ -10,13 +10,13 @@ def expand_suggested_responses(instrument, lookups, *responses):
 
         # Transform data referring to a SuggestedResponse into that instance directly
         if isinstance(data, dict) and '_suggested_response' in data:
-            suggested_response_id = data['_suggested_response']
-            if suggested_response_id in lookups:
-                data = lookups[suggested_response_id]
+            bound_response_id = data['_suggested_response']
+            if bound_response_id in lookups:
+                data = lookups[bound_response_id]
             else:
-                raise ValueError("[CollectionInstrument id=%r] Invalid SuggestedResponse id=%r in choices: %r" % (
+                raise ValueError("[CollectionInstrument id=%r] Invalid bound response id=%r in choices: %r" % (
                     instrument.id,
-                    suggested_response_id,
+                    bound_response_id,
                     lookups,
                 ))
 

@@ -5,12 +5,12 @@ import json
 
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
-from django.db.models import Model
+from django.db.models import Model, F
 
 import six
 
 from ..encoders import CollectionSpecificationJSONEncoder
-from ..models import SuggestedResponse
+from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
 from . import specifications
 from . import methods
@@ -292,7 +292,8 @@ class BaseCollector(object):
         else:
             raise ValueError("Must specify one of 'instrument' and 'measure'")
 
-        return instrument.suggested_responses.all()
+        # Return swappable model references with the associated input
+        return instrument.bound_suggested_responses.annotate(data=F('suggested_response__data'))
 
     def get_inputs(self, instrument=None, measure=None):
         """
@@ -546,13 +547,13 @@ class BaseCollector(object):
         disallow_custom = policy_flags['restrict']
 
         # Ensure {'_suggested_response': pk} is swapped out for real underlying data
-        suggested_responses = self.get_suggested_responses(instrument)
-        response_lookups = suggested_responses.in_bulk()
-        data = utils.expand_suggested_responses(instrument, response_lookups, data)
+        bound_responses = self.get_suggested_responses(instrument)
+        bound_lookups = bound_responses.in_bulk()
+        data = utils.expand_suggested_responses(instrument, bound_lookups, data)
 
         # Keep a possible SuggestedResponse result for invoking its ``clean()``
         suggested_response = None
-        if isinstance(data, SuggestedResponse):
+        if isinstance(data, AbstractBoundSuggestedResponse):
             suggested_response = data
             data = suggested_response.data
 
