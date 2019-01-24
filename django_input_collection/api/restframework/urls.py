@@ -8,9 +8,14 @@ from . import api
 
 router = routers.SimpleRouter()
 
-router.register(r'measure', api.MeasureViewSet, base_name='measure')
-router.register(r'group', api.CollectionGroupViewSet, base_name='group')
+# Always available
 router.register(r'collection-request', api.CollectionRequestViewSet, base_name='collection-request')
+router.register(r'measure', api.MeasureViewSet, base_name='measure')
+
+# Requires a collector in the request args
+# NOTE: The use of url parameter is tempting, but this is an explicit deference to the simplicity
+# in building data for a static url, not both the data and the url.
+router.register(r'group', api.CollectionGroupViewSet, base_name='group')
 router.register(r'instrument', api.CollectionInstrumentViewSet, base_name='instrument')
 router.register(r'input', api.CollectedInputViewSet, base_name='input')
 
