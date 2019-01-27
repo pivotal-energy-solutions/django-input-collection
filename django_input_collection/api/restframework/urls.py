@@ -9,7 +9,7 @@ from . import api
 router = routers.SimpleRouter()
 
 # Always available
-router.register(r'collection-request', api.CollectionRequestViewSet, base_name='collection-request')
+router.register(r'request', api.CollectionRequestViewSet, base_name='request')
 router.register(r'measure', api.MeasureViewSet, base_name='measure')
 
 # Requires a collector in the request args
