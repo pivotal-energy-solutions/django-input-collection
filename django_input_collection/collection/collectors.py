@@ -578,15 +578,14 @@ class BaseCollector(object):
 
     def make_payload(self, instrument, data, **kwargs):
         """ Returns a dict of model field values for storage. """
-        payload = {
+        payload = dict(kwargs, **{
             'instrument': instrument,
             'data': self.make_payload_data(instrument, data, **kwargs),
 
             # Disallow data integrity funnybusiness
             'collection_request': instrument.collection_request,
             'user': self.context.get('user'),
-        }
-        payload.update(kwargs)
+        })
         return payload
 
     def make_payload_data(self, instrument, data, **kwargs):
