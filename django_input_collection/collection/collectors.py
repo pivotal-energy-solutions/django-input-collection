@@ -585,6 +585,13 @@ class BaseCollector(object):
             # Disallow data integrity funnybusiness
             'collection_request': instrument.collection_request,
             'user': self.context.get('user'),
+            'collector_class': '.'.join(filter(bool, (
+                self.__class__.__module__,
+                self.__class__.__name__,
+            ))),
+            'collector_id': self.get_identifier(),
+            'collector_version': '.'.join(map(unicode, self.__version__)),
+            'version': '.'.join(map(unicode, BaseCollector.__version__)),
         })
         return payload
 

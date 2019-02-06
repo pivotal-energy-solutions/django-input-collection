@@ -277,6 +277,13 @@ class AbstractCollectedInput(DatesModel, models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
 
+    # Recordkeeping details
+    version = models.CharField(max_length=128)
+    collector_class = models.CharField(max_length=256)
+    collector_id = models.CharField(max_length=64)
+    collector_version = models.CharField(max_length=128)
+    collector_comment = models.TextField(blank=True, null=True)
+
     class Meta:
         abstract = True
 
