@@ -213,6 +213,8 @@ class ResponsePolicy(DatesModel, models.Model):
 
 
 class AbstractBoundSuggestedResponse(DatesModel, models.Model):
+    # NOTE: These fk references MUST include this app's label, since otherwise, anyone inheriting
+    # from this abstract base will end up with ForeignKey references that appear local.
     collection_instrument = models.ForeignKey('django_input_collection.CollectionInstrument', on_delete=models.CASCADE,
                                               related_name='bound_suggested_responses')
     suggested_response = models.ForeignKey('django_input_collection.SuggestedResponse', on_delete=models.CASCADE)
@@ -264,8 +266,8 @@ class AbstractCollectedInput(DatesModel, models.Model):
 
     objects = managers.CollectedInputQuerySet.as_manager()
 
-    # Note that these fk references MUST include this app's label, since otherwise, anyone
-    # inheriting from this abstract base will end up with ForeignKey references that appear local.
+    # NOTE: These fk references MUST include this app's label, since otherwise, anyone inheriting
+    # from this abstract base will end up with ForeignKey references that appear local.
     collection_request = models.ForeignKey('django_input_collection.CollectionRequest',
                                            related_name='collectedinput_set',
                                            on_delete=models.CASCADE)
