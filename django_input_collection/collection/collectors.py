@@ -336,7 +336,7 @@ class BaseCollector(object):
         for i, value in enumerate(values):
             values[i] = method.get_data_display(value)
 
-        return ', '.join(map(unicode, values))
+        return ', '.join(map(six.text_type, values))
 
     # Instrument/Input runtime hooks
     def get_conditional_check_value(self, data):
@@ -590,8 +590,8 @@ class BaseCollector(object):
                 self.__class__.__name__,
             ))),
             'collector_id': self.get_identifier(),
-            'collector_version': '.'.join(map(unicode, self.__version__)),
-            'version': '.'.join(map(unicode, BaseCollector.__version__)),
+            'collector_version': '.'.join(map(six.text_type, self.__version__)),
+            'version': '.'.join(map(six.text_type, BaseCollector.__version__)),
         })
         return payload
 
