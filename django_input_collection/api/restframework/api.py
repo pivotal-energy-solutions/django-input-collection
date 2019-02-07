@@ -72,9 +72,9 @@ class CollectorEnabledMixin(object):
         return kwargs
 
     def get_collector_context(self):
-        context = {
-            'user': self.request.user,
-        }
+        context = {}
+        if self.request.user.is_authenticated:
+            context['user'] = self.request.user
         return context
 
 
