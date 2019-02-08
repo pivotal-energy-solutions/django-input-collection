@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('django_input_collection', '0006_auto_20190122_2117'),
-        migrations.swappable_dependency('%s.__latest__' % INPUT_BOUNDSUGGESTEDRESPONSE_MODEL),
+        swapper.dependency('django_input_collection', 'BoundSuggestedResponse'),
     ]
 
     operations = [
