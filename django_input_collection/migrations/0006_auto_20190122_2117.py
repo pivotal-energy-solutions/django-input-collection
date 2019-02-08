@@ -6,6 +6,9 @@ import django.db.models.deletion
 import swapper
 
 
+INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = swapper.get_model_name('django_input_collection', 'BoundSuggestedResponse')
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -29,6 +32,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='collectioninstrument',
             name='suggested_responses_new',
-            field=models.ManyToManyField(blank=True, related_name='collectioninstrument_new', through=settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, to='django_input_collection.SuggestedResponse'),
+            field=models.ManyToManyField(blank=True, related_name='collectioninstrument_new', through=INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, to='django_input_collection.SuggestedResponse'),
         ),
     ]

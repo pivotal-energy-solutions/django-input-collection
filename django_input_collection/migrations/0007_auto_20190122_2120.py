@@ -2,6 +2,10 @@
 
 from django.conf import settings
 from django.db import migrations, models
+import swapper
+
+
+INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = swapper.get_model_name('django_input_collection', 'BoundSuggestedResponse')
 
 
 class Migration(migrations.Migration):
@@ -23,6 +27,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='collectioninstrument',
             name='suggested_responses',
-            field=models.ManyToManyField(blank=True, through=settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, to='django_input_collection.SuggestedResponse'),
+            field=models.ManyToManyField(blank=True, through=INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, to='django_input_collection.SuggestedResponse'),
         ),
     ]
