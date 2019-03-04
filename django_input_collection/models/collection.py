@@ -97,7 +97,10 @@ class CollectionInstrument(DatesModel, models.Model):
 
     collection_request = models.ForeignKey('CollectionRequest', on_delete=models.CASCADE)
     measure = models.ForeignKey('Measure', on_delete=models.CASCADE)
-    group = models.ForeignKey('CollectionGroup', on_delete=models.CASCADE)
+    segment = models.ForeignKey('CollectionGroup', blank=True, null=True,
+                                related_name='segment_instruments', on_delete=models.SET_NULL)
+    group = models.ForeignKey('CollectionGroup', blank=True, null=True,
+                                related_name='group_instruments', on_delete=models.SET_NULL)
     type = models.ForeignKey('CollectionInstrumentType', blank=True, null=True,
                              on_delete=models.SET_NULL)
 

@@ -88,7 +88,7 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
 
     class Meta:
         model = models.CollectionInstrument
-        fields = ['id', 'collection_request', 'measure', 'group', 'type', 'order', 'text',
+        fields = ['id', 'collection_request', 'measure', 'segment', 'group', 'type', 'order', 'text',
                   'description', 'help', 'is_condition_met', 'response_policy', 'parent_instruments',
                   'suggested_responses', 'collectedinput_set']
 

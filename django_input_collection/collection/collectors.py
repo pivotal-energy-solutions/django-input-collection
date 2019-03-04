@@ -70,6 +70,7 @@ class BaseCollector(object):
     __version__ = (0, 0, 0, 'dev')
     __noregister__ = True
 
+    segment = None
     group = None
     groups = None
     specification_class = specifications.Specification
@@ -87,22 +88,23 @@ class BaseCollector(object):
     staged_data = None
     cleaned_data = None
 
-    def __init__(self, collection_request, group=None, groups=None, **context):
+    def __init__(self, collection_request, segment=None, group=None, groups=None, **context):
         self.collection_request = collection_request
         self.context = context
 
-        if group is not None:
+        if segment:
+            self.segment = segment
+        if group:
             self.group = group
-        if groups is not None:
-            self.groups = groups
-        if (self.group is not None) and (self.groups is None):
-            self.groups = [self.group]
-
-        # If both 'group' and 'groups' are available, we can do a soft early validation.
-        if (self.group is not None) and (self.group not in self.groups):
-            raise ValueError("Invalid group %r (from valid list %r): Declare it on the collector class's 'groups' or send 'groups' via keyword." % (
-                self.group, self.groups,
-            ))
+        if groups:
+            # Unpack into segment and group, if possible
+            if not self.segment:
+                self.segment, *self.groups = groups
+            if self.groups and not self.group:
+                self.group, *self.groups = self.groups
+        else:
+            # Build from disparate args
+            self.groups = list(filter(bool, [self.segment, self.group]))
 
         self.types = self.get_types()
         self.measure_types = self.get_measure_types()
@@ -298,7 +300,7 @@ class BaseCollector(object):
     def get_inputs(self, instrument=None, measure=None):
         """
         Returns the queryset of inputs for this collection request.  If ``instrument`` or
-        ``measure`` are given, 
+        ``measure`` are given,
         """
 
         if instrument or measure:
@@ -638,7 +640,7 @@ class BaseCollector(object):
     def stage(self, payloads, clean=True, extend=None, **kwargs):
         """
         Remembers given ``data`` (dict or list of dicts) for a future call to ``clean()`` and
-        ``save()``.  Any new 
+        ``save()``.  Any new
         """
         if not payloads:
             raise ValueError("At least one payload dict must be provided.")
@@ -696,7 +698,7 @@ class BaseCollector(object):
 
 
 class Collector(BaseCollector):
-    group = 'default'
+    segment = 'default'
 
 
 class BaseAPICollector(Collector):

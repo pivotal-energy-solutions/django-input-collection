@@ -40,6 +40,7 @@ class RestFrameworkCollector(BaseAPICollector):
     model_codenames = {
         models.Measure: 'measure',
         models.CollectionRequest: 'request',
+        models.CollectionGroup: 'segment',
         models.CollectionGroup: 'group',
         models.CollectionInstrument: 'instrument',
         models.get_input_model(): 'input',
@@ -52,6 +53,7 @@ class RestFrameworkCollector(BaseAPICollector):
     default_serializer_classes = {
         'measure': serializers.MeasureSerializer,
         'request': serializers.CollectionRequestSerializer,
+        'segment': serializers.CollectionGroupSerializer,
         'group': serializers.CollectionGroupSerializer,
         'instrument': serializers.CollectionInstrumentSerializer,
         'input': serializers.CollectedInputSerializer,

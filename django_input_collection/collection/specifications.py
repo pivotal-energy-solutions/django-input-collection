@@ -22,6 +22,7 @@ class Specification(object):
             'meta': meta_info,
             'collector': identifier,
             'collection_request': collection_request_info,
+            'segment': self.collector.segment,
             'group': self.collector.group,
             'groups': self.collector.groups,
             'instruments_info': instruments_info,

@@ -66,6 +66,7 @@ class CollectorEnabledMixin(object):
     def get_collector_kwargs(self):
         kwargs = {
             'collection_request': self.get_collection_request(),
+            'segment': self._get_value('segment'),
             'group': self._get_value('group'),
         }
         kwargs.update(self.get_collector_context())
@@ -115,6 +116,9 @@ class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         queryset = queryset.filter(collection_request=collection_request)
 
         filters = {}
+        segment = self._get_value('segment')
+        if segment:
+            filters['segment'] = segment
         group = self._get_value('group')
         if group:
             filters['group'] = group

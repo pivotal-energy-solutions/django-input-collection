@@ -30,11 +30,11 @@ class CollectionRequestAdmin(admin.ModelAdmin):
 
 @admin.register(models.CollectionInstrument)
 class CollectionInstrumentAdmin(admin.ModelAdmin):
-    list_display = ['id', 'collection_request', 'measure', 'group', 'type', '_text_preview',
+    list_display = ['id', 'collection_request', 'measure', 'segment', 'group', 'type', '_text_preview',
                     '_has_description', '_has_help', 'response_policy', '_suggested_responses']
-    list_filter = ['date_created', 'date_modified', 'group', 'type', 'response_policy']
+    list_filter = ['date_created', 'date_modified', 'segment', 'group', 'type', 'response_policy']
     date_hierarchy = 'date_created'
-    search_fields = ['measure_id', 'group_id', 'type_id', 'text', 'description', 'help']
+    search_fields = ['measure_id', 'segment_id', 'group_id', 'type_id', 'text', 'description', 'help']
 
     def _text_preview(self, instance):
         max_length = self._text_preview.max_length
@@ -85,7 +85,7 @@ class CollectedInputAdmin(admin.ModelAdmin):
     search_fields = ['data']
     date_hierarchy = 'date_created'
 
-    
+
 @admin.register(models.Condition)
 class ConditionAdmin(admin.ModelAdmin):
     list_display = ['_instrument', '_data_getter', 'condition_group', '_test_results']
