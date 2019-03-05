@@ -92,19 +92,20 @@ class BaseCollector(object):
         self.collection_request = collection_request
         self.context = context
 
-        if segment:
-            self.segment = segment
-        if group:
-            self.group = group
-        if groups:
-            # Unpack into segment and group, if possible
-            if not self.segment:
-                self.segment, *self.groups = groups
-            if self.groups and not self.group:
-                self.group, *self.groups = self.groups
-        else:
-            # Build from disparate args
-            self.groups = list(filter(bool, [self.segment, self.group]))
+        def getfirst(first=None, *args):
+            return first
+
+        # Use 'segment' and 'groups' for the scope of the collection effort.
+        # When 'segment' isn't given, translate a bare use of 'group' to 'segment'.
+        self.groups = groups or []
+        if segment and group:
+            self.groups.append(group)
+        self.segment = segment or group
+
+        # Specifying the 'groups' list 'group' is empty will, for a unofficial period of backward
+        # compatibility, promote the first value to 'group', which was something like the behavior
+        # before.
+        self.group = group or (groups[0] if groups else None)
 
         self.types = self.get_types()
         self.measure_types = self.get_measure_types()
