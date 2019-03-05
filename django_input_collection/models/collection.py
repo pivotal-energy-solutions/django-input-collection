@@ -123,7 +123,7 @@ class CollectionInstrument(DatesModel, models.Model):
         ordering = ('order', 'pk')
 
     def __str__(self):
-        return self.text
+        return self.text or '(No text)'
 
     def __unicode__(self):
         return unicode(str(self))
