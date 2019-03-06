@@ -100,7 +100,7 @@ class BaseCollector(object):
         self.groups = groups or []
         if segment and group:
             self.groups.append(group)
-        self.segment = segment or group
+        self.segment = (segment or self.segment or group)
 
         # Specifying the 'groups' list 'group' is empty will, for a unofficial period of backward
         # compatibility, promote the first value to 'group', which was something like the behavior
