@@ -120,7 +120,7 @@ class CollectionInstrument(DatesModel, models.Model):
     # self.collectedinput_set.all()
 
     class Meta:
-        ordering = ('segment_id', 'group_id', 'order', 'pk')
+        ordering = ('segment_id', 'order', 'pk')
 
     def __str__(self):
         return self.text or '(No text)'
