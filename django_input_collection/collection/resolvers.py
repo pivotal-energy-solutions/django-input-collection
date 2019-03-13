@@ -38,7 +38,7 @@ def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
             data_info = {
                 'data': fallback,
             }
-            log.info("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
+            log.debug("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
                      resolver.__class__, instrument.pk, kwargs, spec, error)
 
         return (resolver, data_info, error)
@@ -160,7 +160,7 @@ class AttributeResolver(Resolver):
                     branch_obj = self.resolve_dotted_path(branch_obj, attr)
                 except Exception as error:
                     branch_obj = None
-                    log.info("Resolver %r trapped an inner exception while iterating attr=%r (%s) object %r: %s",
+                    log.debug("Resolver %r trapped an inner exception while iterating attr=%r (%s) object %r: %s",
                              self.__class__, attr, obj.__class__.__name__, branch_obj, error)
                 branch_objs.append(branch_obj)
             obj = branch_objs
