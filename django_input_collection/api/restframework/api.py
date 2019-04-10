@@ -102,7 +102,6 @@ class CollectionRequestViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         return response
 
     def get_collection_request(self):
-        instance = self.get_object()
         if 'pk' in self.kwargs:
             return self.get_object()
         return super(CollectionRequestViewSet, self).get_collection_request()
