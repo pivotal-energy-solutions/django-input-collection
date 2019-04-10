@@ -34,6 +34,11 @@ class CollectionGroup(DatesModel, models.Model):
     """
     id = models.CharField(max_length=100, primary_key=True)
 
+    # Also available:
+    #
+    # self.segment_instruments.all()
+    # self.group_instruments.all()
+
     def __str__(self):
         return self.id
 
