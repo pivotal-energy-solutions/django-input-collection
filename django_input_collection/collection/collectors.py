@@ -122,6 +122,15 @@ class BaseCollector(object):
     def specification_json(self):
         return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
 
+    @property
+    def serialized_data(self):
+        instruments = self.get_instruments()
+        serializer_class = self.get_serializer_class('instrument')
+        serializer = serializer_class(instance=instruments, many=True, context={
+            'collector': self,
+        })
+        return serializer.data
+
     # Serialization utils
     def get_specification(self):
         return self.specification_class(self)
