@@ -8,7 +8,6 @@ def expand_suggested_responses(instrument, lookups, *responses):
     values = []
     for response in responses:
         data = None
-        bound_response_id = None
 
         # Transform data referring to a SuggestedResponse into that instance directly
         if isinstance(response, dict):
@@ -19,10 +18,10 @@ def expand_suggested_responses(instrument, lookups, *responses):
             data = data_lookups[response]
 
         if data is None:
-            raise ValueError("[CollectionInstrument id=%r] Invalid bound response=%r in choices: %r" % (
+            raise ValueError("[CollectionInstrument id=%r] Invalid bound response id=%r in choices: %r" % (
                 instrument.id,
-                bound_response_id or response,
-                lookups if bound_response_id else data_lookups,
+                bound_response_id,
+                lookups,
             ))
 
         values.append(data)
