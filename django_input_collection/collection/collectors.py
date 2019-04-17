@@ -327,7 +327,7 @@ class BaseCollector(object):
 
         # Convert to instrument references
         if measure:
-            instruments = [self.get_instrument(measure) for measure in measures]
+            instruments = [self.get_instrument(m) for m in measures]
 
         queryset = self.collection_request.collectedinput_set.filter_for_context(**self.context)
 
