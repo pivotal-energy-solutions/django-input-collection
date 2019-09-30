@@ -9,6 +9,7 @@ python:
   - "2.7"
   - "3.5"
   - "3.6"
+  - "3.7"
 env:
   - DJANGO=1.11
   - DJANGO=2.0
@@ -18,7 +19,7 @@ install:
   - pip install -qqq -r requirements.txt
   - pip install -qqq -r requirements-tests.txt
 script:
-  - cd testproj && ./manage.py test --settings=testproj.settings.test
+  - python testproj/manage.py test --settings=testproj.settings.test
 
 matrix:
   exclude:
