@@ -1,5 +1,6 @@
 from functools import reduce
 import inspect
+import six
 
 from django.core.exceptions import ValidationError
 from django.utils.text import format_lazy
@@ -53,6 +54,7 @@ base_errors = {
     Exception: '{exception}',
 }
 
+
 class InputMethod(object):
     """
     A stateless encapsulation of the components required to obtain and coerce data for an arbitrary
@@ -102,7 +104,7 @@ class InputMethod(object):
         return {}
 
     def get_data_display(self, value):
-        return unicode(value)
+        return six.u(value)
 
     @property
     def data(self):

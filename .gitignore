@@ -8,9 +8,11 @@ node_modules
 # Local
 .env
 .venv
+.venv37
 .pycharm
 .vscode
 *.vscode-workspace
 .python-version
 db.sqlite3
 .DS_Store
+.idea

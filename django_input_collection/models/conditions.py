@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import re
 import operator
+import six
 from collections import OrderedDict
 try:
     from functools import reduce
@@ -33,6 +34,8 @@ def substitute(s, substitutions):
     return s
 
 
+
+@six.python_2_unicode_compatible
 class Condition(DatesModel, models.Model):
     """
     Condition that relates a conditional CollectionInstrument to a ConditionGroup.  The
@@ -55,9 +58,6 @@ class Condition(DatesModel, models.Model):
             'resolver': self.data_getter.split(':')[0],
             'condition_group': self.condition_group,
         }
-
-    def __unicode__(self):
-        return unicode(str(self))
 
     def resolve(self, **kwargs):
         """
@@ -96,6 +96,7 @@ class Condition(DatesModel, models.Model):
         return self.condition_group.test(**kwargs)
 
 
+@six.python_2_unicode_compatible
 class ConditionGroup(DatesModel, models.Model):
     """ Recusive grouping mechanism for controlling AND/OR/NONE logic between other groups. """
 
@@ -121,9 +122,6 @@ class ConditionGroup(DatesModel, models.Model):
 
     def __str__(self):
         return self.nickname or self.describe()
-
-    def __unicode__(self):
-        return unicode(str(self))
 
     def get_flags(self):
         return {
@@ -170,6 +168,7 @@ class ConditionGroup(DatesModel, models.Model):
         return True
 
 
+@six.python_2_unicode_compatible
 class Case(DatesModel, models.Model):
     nickname = models.CharField(max_length=100, unique=True, blank=True, null=True)
 
@@ -202,9 +201,6 @@ class Case(DatesModel, models.Model):
 
     def __str__(self):
         return self.nickname or self.describe()
-
-    def __unicode__(self):
-        return unicode(str(self))
 
     def get_flags(self):
         return {
