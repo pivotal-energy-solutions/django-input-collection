@@ -149,7 +149,7 @@ class CollectionInstrument(DatesModel, models.Model):
                 # Parse the reference to find the parent
                 try:
                     if six.PY3:
-                        parent_ids.append(reference)
+                        parent_ids.append(int(reference))
                     else:
                         parent_ids.append(long(reference))
                 except:
