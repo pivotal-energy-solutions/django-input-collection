@@ -5,4 +5,3 @@ include *.md
 include LICENSE
 
 recursive-include django_input_collection/static *
-recursive-include agreements/templates/ *
