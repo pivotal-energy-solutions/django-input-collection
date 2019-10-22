@@ -169,7 +169,7 @@ var DjangoInputCollection = (function(){
             return new Promise(function(resolve, reject) {
                 doRequest(function(result){
                     var obj = JSON.parse(result.currentTarget.response);
-                    resolve(obj);
+                    resolve(obj, result.currentTarget.status);
                 });
             });
         },
