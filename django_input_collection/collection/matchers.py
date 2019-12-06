@@ -13,7 +13,7 @@ def test_condition_case(values, match_type, match_data=None,
     inputs (filtered by **context kwargs) or a list of raw values representing the same. If
     ``match_type`` requires the an outside data helper (such as the 'contains' test), it must be
     supplied here as ``data`` (the name of the field on the a Case model).
-                        
+
     Match types relying on the distinction between suggested and custom values will expect the
     ``suggested_values`` kwarg to be given, or else will be treated as an empty list and likely
     produce unexpected behavior.
@@ -137,7 +137,7 @@ class CaseMatchers(object):
         if len(data) == 1:
             data = data[0]
         return list_wrap(data) < list_wrap(coerce_type(match_data, data))
-        
+
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
         return any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
