@@ -127,11 +127,12 @@ class CaseMatchers(object):
         return list_wrap(data) != list_wrap(coerce_type(match_data, data))
 
     def greater_than(self, data, match_data, **kwargs):
-        data = list_wrap(data)
-        if len(data) == 1:
-            data = data[0]
-        return list_wrap(data) > list_wrap(coerce_type(match_data, data))
-        
+        match_data = list_wrap(coerce_type(match_data, data))
+        for d in list_wrap(data):
+            if any(d > candidate_match for candidate_match in match_data):
+                return True
+        return False
+
     def less_than(self, data, match_data, **kwargs):
         data = list_wrap(data)
         if len(data) == 1:
