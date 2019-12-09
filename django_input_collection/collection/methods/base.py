@@ -104,7 +104,9 @@ class InputMethod(object):
         return {}
 
     def get_data_display(self, value):
-        return six.u(value)
+        if six.PY3:
+            return six.u(value)
+        return unicode(value)
 
     @property
     def data(self):
