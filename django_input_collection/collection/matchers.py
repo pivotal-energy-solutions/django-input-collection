@@ -129,14 +129,14 @@ class CaseMatchers(object):
     def greater_than(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
         for d in list_wrap(data):
-            if any(d > candidate_match for candidate_match in match_data):
+            if d is not None and any(d > candidate_match for candidate_match in match_data):
                 return True
         return False
 
     def less_than(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
         for d in list_wrap(data):
-            if any(d < candidate_match for candidate_match in match_data):
+            if d is not None and any(d < candidate_match for candidate_match in match_data):
                 return True
         return False
 
