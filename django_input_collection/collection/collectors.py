@@ -264,7 +264,7 @@ class BaseCollector(object):
                         flag = True
                     elif isinstance(flag, dict):
                         # Single-item dict, string reference mapping to a desired active flag
-                        resolver_name, flag = flag.items()[0]
+                        resolver_name, flag = list(flag.items())[0]
 
                     if callable(flag):
                         predicate = flag

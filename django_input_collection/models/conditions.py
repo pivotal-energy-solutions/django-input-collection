@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import logging
 import re
 import operator
 import six
@@ -19,6 +20,9 @@ from .base import DatesModel
 from .utils import ConditionNode
 
 __all__ = ['Condition', 'ConditionGroup', 'Case']
+
+
+log = logging.getLogger(__name__)
 
 
 def set_substitutions(d):
@@ -93,7 +97,12 @@ class Condition(DatesModel, models.Model):
         # We will allow the condition test to run even if there is an error, since a 'fallback'
         # value might ensure that resolution-related errors are kept quiet.  It will be up to the
         # resolver to raise errors that prevent the test from even happening.
-        return self.condition_group.test(**kwargs)
+        value = self.condition_group.test(**kwargs)
+        if value:
+            log.info("Inst. Cond. - {} ({}) - {}".format(self.instrument, self.pk, value))
+        # else:
+        #     log.debug("Inst. Cond. - {} ({}) - {}".format(self.instrument, self.pk, value))
+        return value
 
 
 @six.python_2_unicode_compatible
@@ -149,6 +158,16 @@ class ConditionGroup(DatesModel, models.Model):
         has_failed = False
         has_passed = False
         testables = list(self.child_groups.all()) + list(self.cases.all())
+
+        _should_log = False
+        # if isinstance(data, list) and len(data):
+        #     _should_log = True
+        # elif isinstance(data, dict) and data.get('input'):
+        #     _should_log = True
+
+        if testables and _should_log:
+            log.debug("%d Tests will be conducted on ConditionGroup (%s) using %r",
+                      len(testables), self.pk, data)
         for item in testables:
             if item.test(data, **kwargs):
                 has_passed = True
@@ -156,15 +175,30 @@ class ConditionGroup(DatesModel, models.Model):
                 has_failed = True
 
             if has_failed and self.requirement_type == 'all-pass':
+                if _should_log:
+                    log.debug("{} ({}) {} Conditional all-pass Group: {} - FAIL".format(
+                        self.nickname, self.pk, len(testables), item.describe()))
                 return False
             elif has_passed and self.requirement_type == 'all-fail':
+                if _should_log:
+                    log.debug("{} ({}) {} Conditional all-fail Group: {} - FAIL".format(
+                        self.nickname, self.pk, len(testables), item.describe()))
                 return False
             elif has_passed and self.requirement_type == 'one-pass':
+                if _should_log:
+                    log.debug("{} ({}) {} Conditional one-pass Group: {} - TRUE".format(
+                        self.nickname, self.pk, len(testables), item.describe()))
                 return True
 
         if not has_passed and self.requirement_type == 'one-pass':
+            if _should_log:
+                log.debug("{} ({}) {} Conditional one-pass Group: ALL FAILED".format(
+                          self.nickname, self.pk, len(testables)))
             return False
 
+        if _should_log:
+            log.debug("{} ({}) {} Conditional Group: ALL PASSED".format(
+                      self.nickname, self.pk, len(testables)))
         return True
 
 
