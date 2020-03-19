@@ -73,9 +73,20 @@ def eval_sample(match_data):
 
 
 def coerce_type(match_data, value):
+    """This will try to coerse the value to the match data.  Value is typically the answer
+    provided and match data is the spec.  In the case of instrument validations this is typically
+    a list"""
     match_data = eval_sample(match_data)
     match_type = type(match_data)
+
+    # Most values are almost always a list?
     value_type = type(value)
+    if isinstance(value, (list, tuple, set)):
+        _value_types = list(set([type(x) for x in value]))
+        if len(_value_types) == 1:
+            value_type = _value_types[0]
+
+
     if value is None or match_type == value_type or value_type in (list, tuple, set):
         return match_data
 
