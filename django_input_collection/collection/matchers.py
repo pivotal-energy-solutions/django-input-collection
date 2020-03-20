@@ -144,7 +144,7 @@ class CaseMatchers(object):
         match_data = list_wrap(coerce_type(match_data, data))
         match = set(list_wrap(data)) != set(match_data)
         log.debug("mismatch: %s %s %s", set(data), "!=" if match else "==", set(match_data))
-        return list_wrap(data) != list_wrap(coerce_type(match_data, data))
+        return match
 
     def greater_than(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
