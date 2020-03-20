@@ -90,7 +90,7 @@ def coerce_type(match_data, value):
             # log.debug("Coercing list to %s", _value_types[0])
             value_type = _value_types[0]
 
-    if value is None or match_type == value_type or value_type in (list, tuple, set):
+    if value is None or value_type in (list, tuple, set, type(None)) or match_type == value_type:
         return match_data
 
     try:
