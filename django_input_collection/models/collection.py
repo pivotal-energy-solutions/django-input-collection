@@ -1,3 +1,4 @@
+import logging
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import AnonymousUser
@@ -8,6 +9,8 @@ import six
 
 from . import managers
 from .base import DatesModel
+
+log = logging.getLogger(__name__)
 
 __all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrumentType',
            'CollectionInstrument', 'ResponsePolicy', 'AbstractBoundSuggestedResponse',
@@ -129,9 +132,14 @@ class CollectionInstrument(DatesModel, models.Model):
 
     def test_conditions(self, **kwargs):
         """ Checks data all Conditions gating this instrument. """
-        for condition in self.conditions.all():
+        idx = 0
+        for idx, condition in enumerate(self.conditions.all(), start=1):
             if not condition.test(**kwargs):
+                if idx > 1:
+                    log.debug("Condition %s/%s FAILED", idx, self.conditions.count())
                 return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
+        if idx > 1:
+            log.debug("Conditions %s/%s PASSED", idx, self.conditions.count())
         return True
 
     def get_parent_instruments(self):
