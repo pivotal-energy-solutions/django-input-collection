@@ -98,10 +98,7 @@ class Condition(DatesModel, models.Model):
         # value might ensure that resolution-related errors are kept quiet.  It will be up to the
         # resolver to raise errors that prevent the test from even happening.
         value = self.condition_group.test(**kwargs)
-        if value:
-            log.info("Inst. Cond. - {} ({}) - {}".format(self.instrument, self.pk, value))
-        # else:
-        #     log.debug("Inst. Cond. - {} ({}) - {}".format(self.instrument, self.pk, value))
+        log.info("Instrument Condition Group - %s (%s) - %s", self.condition_group, self.pk, value)
         return value
 
 
