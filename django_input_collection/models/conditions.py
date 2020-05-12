@@ -98,7 +98,8 @@ class Condition(DatesModel, models.Model):
         # value might ensure that resolution-related errors are kept quiet.  It will be up to the
         # resolver to raise errors that prevent the test from even happening.
         value = self.condition_group.test(**kwargs)
-        log.info("Instrument Condition Group - %s (%s) - %s", self.condition_group, self.pk, value)
+        log.info("Instrument Condition Group - %s (%s) Test Result: %s",
+                 self.condition_group, self.condition_group.pk, value)
         return value
 
 
@@ -231,7 +232,7 @@ class Case(DatesModel, models.Model):
     # self.conditiongroup_set.all()
 
     def __str__(self):
-        return self.nickname or self.describe()
+        return self.nickname or self.describe().decode('utf-8')
 
     def get_flags(self):
         return {
