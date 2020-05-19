@@ -119,11 +119,11 @@ class MatchTypesTests(TestCase):
         self.assertEqual(matchers.match(['foo'], match_data=['foo']), True)
 
     def test_match_type_match_ints(self):
-        self.assertEqual(matchers.match('1', match_data=[1]), False)
         self.assertEqual(matchers.match([1], match_data=['1']), True)
         self.assertEqual(matchers.match(['1'], match_data=[1]), True)
         self.assertEqual(matchers.match([1], match_data=['1']), True)
         self.assertEqual(matchers.match([1], match_data='1'), True)
+        self.assertEqual(matchers.match('1', match_data=[1]), False)
 
     def test_match_type_mismatch(self):
         self.assertEqual(matchers.mismatch('foo', match_data='foo'), False)
@@ -137,11 +137,11 @@ class MatchTypesTests(TestCase):
         self.assertEqual(matchers.mismatch(['foo'], match_data=['foo']), False)
 
     def test_match_type_mismatch_ints(self):
-        self.assertEqual(matchers.mismatch('1', match_data=[1]), True)
         self.assertEqual(matchers.mismatch([1], match_data=['1']), False)
         self.assertEqual(matchers.mismatch(['1'], match_data=[1]), False)
         self.assertEqual(matchers.mismatch([1], match_data=['1']), False)
         self.assertEqual(matchers.mismatch([1], match_data='1'), False)
+        self.assertEqual(matchers.mismatch('1', match_data=[1]), True)
 
     def test_match_type_contains(self):
         self.assertEqual(matchers.contains('foo', match_data='foo'), True)
