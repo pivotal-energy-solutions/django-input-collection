@@ -79,30 +79,33 @@ def eval_sample(match_data):
 
 
 def coerce_type(match_data, value):
-    """This will try to coerce the value to the match data.  Value is typically the answer
-    provided and match data is the spec.  In the case of instrument validations this is typically
-    a list"""
     match_data = eval_sample(match_data)
     match_type = type(match_data)
-
-    # Most values are almost always a list?
     value_type = type(value)
+
+    list_value_type = None
     if isinstance(value, (list, tuple, set)):
         _value_types = list(set([type(x) for x in value]))
         if len(_value_types) == 1:
-            # log.debug("Coercing list to %s", _value_types[0])
-            value_type = _value_types[0]
+            # print("Coercing list to %s", _value_types[0])
+            list_value_type = _value_types[0]
 
-    if value is None or value_type in (list, tuple, set, type(None)) or match_type == value_type:
+    # print("Match data:", match_data, "match Type:", match_type,
+    #       "Value:", value, "Value Type:", value_type,
+    #       "List Value Type:", list_value_type)
+
+    if value is None or match_type == value_type or value_type in (list, tuple, set):
+        if isinstance(match_data, (list, set, tuple)) and list_value_type is not None:
+            return [list_value_type(x) for x in match_data]
         return match_data
 
     try:
+        print("Ret: ", value_type(match_data))
         return value_type(match_data)
     except:
         raise ValueError('Cannot convert sample match_data %r (%r) to incoming %r (%r)' % (
             match_data, match_type, value, value_type,
         ))
-
 
 class CaseMatchers(object):
     def any(self, data, **kwargs):
@@ -139,6 +142,7 @@ class CaseMatchers(object):
 
     def match(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
+        print(list_wrap(data), match_data)
         match = set(list_wrap(data)) == set(match_data)
         if _should_log:
             log.debug("match: %s %s %s", set(data), "==" if match else "!=", set(match_data))
