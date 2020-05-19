@@ -12,7 +12,8 @@ from .base import DatesModel
 from ..apps import input_config_app
 
 log = logging.getLogger(__name__)
-_should_log = input_config_app.VERBOSE_LOGGING
+
+_should_log = getattr(input_config_app, 'VERBOSE_LOGGING', False)
 
 __all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrumentType',
            'CollectionInstrument', 'ResponsePolicy', 'AbstractBoundSuggestedResponse',

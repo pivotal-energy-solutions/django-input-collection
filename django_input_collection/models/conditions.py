@@ -25,7 +25,8 @@ __all__ = ['Condition', 'ConditionGroup', 'Case']
 
 log = logging.getLogger(__name__)
 
-_should_log = input_config_app.VERBOSE_LOGGING
+_should_log = getattr(input_config_app, 'VERBOSE_LOGGING', False)
+
 
 def set_substitutions(d):
     def decorator(f):
