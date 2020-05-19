@@ -79,6 +79,8 @@ def eval_sample(match_data):
 
 
 def coerce_type(match_data, value):
+    _early_match = match_data
+    _early_match_type = type(match_data)
     match_data = eval_sample(match_data)
     match_type = type(match_data)
     value_type = type(value)
@@ -92,12 +94,19 @@ def coerce_type(match_data, value):
 
     # print("Match data:", match_data, "match Type:", match_type,
     #       "Value:", value, "Value Type:", value_type,
-    #       "List Value Type:", list_value_type)
+    #       "List Value Type:", list_value_type, '_early_match:', _early_match,
+    #       'early_match_type:', _early_match_type)
 
     if value is None or match_type == value_type or value_type in (list, tuple, set):
         if isinstance(match_data, (list, set, tuple)) and list_value_type is not None:
             return [list_value_type(x) for x in match_data]
+        if list_value_type is not None and _early_match_type == list_value_type:
+            return list_value_type(match_data)
         return match_data
+
+    if isinstance(_early_match, six.string_types) and \
+            isinstance(list_value_type, six.string_types):
+        return _early_match
 
     try:
         return value_type(match_data)

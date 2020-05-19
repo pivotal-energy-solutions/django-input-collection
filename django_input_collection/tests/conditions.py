@@ -121,9 +121,17 @@ class MatchTypesTests(TestCase):
     def test_match_type_match_ints(self):
         self.assertEqual(matchers.match([1], match_data=['1']), True)
         self.assertEqual(matchers.match(['1'], match_data=[1]), True)
-        self.assertEqual(matchers.match([1], match_data=['1']), True)
         self.assertEqual(matchers.match([1], match_data='1'), True)
         self.assertEqual(matchers.match('1', match_data=[1]), False)
+
+    def test_match_type_match_floats(self):
+        self.assertEqual(matchers.match([13.0], match_data=['13.0']), True)
+        self.assertEqual(matchers.match([13.1], match_data=['13.1']), True)
+        self.assertEqual(matchers.match(['19.0'], match_data=[19.0]), True)
+        self.assertEqual(matchers.match(['19.1'], match_data=[19.1]), True)
+        self.assertEqual(matchers.match([12.2], match_data='12.2'), True)
+        self.assertEqual(matchers.match([12.0], match_data='12.0'), True)
+        self.assertEqual(matchers.match('11.0', match_data=[11.0]), False)
 
     def test_match_type_mismatch(self):
         self.assertEqual(matchers.mismatch('foo', match_data='foo'), False)
@@ -142,6 +150,15 @@ class MatchTypesTests(TestCase):
         self.assertEqual(matchers.mismatch([1], match_data=['1']), False)
         self.assertEqual(matchers.mismatch([1], match_data='1'), False)
         self.assertEqual(matchers.mismatch('1', match_data=[1]), True)
+
+    def test_match_type_mismatch_floats(self):
+        self.assertEqual(matchers.mismatch([13.0], match_data=['13.0']), False)
+        self.assertEqual(matchers.mismatch([13.1], match_data=['13.1']), False)
+        self.assertEqual(matchers.mismatch(['19.0'], match_data=[19.0]), False)
+        self.assertEqual(matchers.mismatch(['19.1'], match_data=[19.1]), False)
+        self.assertEqual(matchers.mismatch([12.2], match_data='12.2'), False)
+        self.assertEqual(matchers.mismatch([12.0], match_data='12.0'), False)
+        self.assertEqual(matchers.mismatch('11.0', match_data=[11.0]), True)
 
     def test_match_type_contains(self):
         self.assertEqual(matchers.contains('foo', match_data='foo'), True)
