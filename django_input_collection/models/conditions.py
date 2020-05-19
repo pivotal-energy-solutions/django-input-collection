@@ -18,11 +18,14 @@ from ..collection import matchers
 from ..collection import resolvers
 from .base import DatesModel
 from .utils import ConditionNode
+from ..apps import input_config_app
 
 __all__ = ['Condition', 'ConditionGroup', 'Case']
 
 
 log = logging.getLogger(__name__)
+
+_should_log = getattr(input_config_app, 'VERBOSE_LOGGING', False)
 
 
 def set_substitutions(d):
@@ -98,8 +101,10 @@ class Condition(DatesModel, models.Model):
         # value might ensure that resolution-related errors are kept quiet.  It will be up to the
         # resolver to raise errors that prevent the test from even happening.
         value = self.condition_group.test(**kwargs)
-        log.info("Instrument Condition Group - %s (%s) Test Result: %s",
-                 self.condition_group, self.condition_group.pk, value)
+
+        if _should_log:
+            log.debug("Instrument Condition Group - %s (%s) Test Result: %s",
+                     self.condition_group, self.condition_group.pk, value)
         return value
 
 
@@ -156,12 +161,6 @@ class ConditionGroup(DatesModel, models.Model):
         has_failed = False
         has_passed = False
         testables = list(self.child_groups.all()) + list(self.cases.all())
-
-        _should_log = False
-        # if isinstance(data, list) and len(data):
-        #     _should_log = True
-        # elif isinstance(data, dict) and data.get('input'):
-        #     _should_log = True
 
         if testables and _should_log:
             log.debug("%d Tests will be conducted on ConditionGroup (%s) using %r",

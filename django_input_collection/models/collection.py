@@ -9,8 +9,11 @@ import six
 
 from . import managers
 from .base import DatesModel
+from ..apps import input_config_app
 
 log = logging.getLogger(__name__)
+
+_should_log = getattr(input_config_app, 'VERBOSE_LOGGING', False)
 
 __all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrumentType',
            'CollectionInstrument', 'ResponsePolicy', 'AbstractBoundSuggestedResponse',
@@ -135,10 +138,10 @@ class CollectionInstrument(DatesModel, models.Model):
         idx = 0
         for idx, condition in enumerate(self.conditions.all(), start=1):
             if not condition.test(**kwargs):
-                if idx > 1:
+                if idx > 1 and _should_log:
                     log.debug("Condition %s/%s FAILED", idx, self.conditions.count())
                 return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
-        if idx > 1:
+        if idx > 1 and _should_log:
             log.debug("Conditions %s/%s PASSED", idx, self.conditions.count())
         return True
 
