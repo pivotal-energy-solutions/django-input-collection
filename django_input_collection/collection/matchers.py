@@ -100,7 +100,6 @@ def coerce_type(match_data, value):
         return match_data
 
     try:
-        print("Ret: ", value_type(match_data))
         return value_type(match_data)
     except:
         raise ValueError('Cannot convert sample match_data %r (%r) to incoming %r (%r)' % (
