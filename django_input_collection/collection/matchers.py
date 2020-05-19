@@ -3,10 +3,14 @@ from itertools import chain
 import logging
 
 import six
+from ..apps import input_config_app
+
 
 __all__ = ['test_condition_case', 'matchers']
 
 log = logging.getLogger(__name__)
+
+_should_log = input_config_app.VERBOSE_LOGGING
 
 
 def test_condition_case(values, match_type, match_data=None,
@@ -137,55 +141,69 @@ class CaseMatchers(object):
     def match(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
         match = set(list_wrap(data)) == set(match_data)
-        log.debug("match: %s %s %s", set(data), "==" if match else "!=", set(match_data))
+        if _should_log:
+            log.debug("match: %s %s %s", set(data), "==" if match else "!=", set(match_data))
         return match
 
     def mismatch(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
         match = set(list_wrap(data)) != set(match_data)
-        log.debug("mismatch: %s %s %s", set(data), "!=" if match else "==", set(match_data))
+        if _should_log:
+            log.debug("mismatch: %s %s %s", set(data), "!=" if match else "==", set(match_data))
         return match
 
     def greater_than(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
         for d in list_wrap(data):
             if d is not None and any(d > candidate_match for candidate_match in match_data):
-                log.debug("greater_than: %s > %s", data, match_data)
+                if _should_log:
+                    log.debug("greater_than: %s > %s", data, match_data)
                 return True
-        log.debug("greater_than: %s !> %s", data, match_data)
+        if _should_log:
+            log.debug("greater_than: %s !> %s", data, match_data)
         return False
 
     def less_than(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
         for d in list_wrap(data):
             if d is not None and any(d < candidate_match for candidate_match in match_data):
-                log.debug("less_than: %s < %s", data, match_data)
+                if _should_log:
+                    log.debug("less_than: %s < %s", data, match_data)
                 return True
-        log.debug("less_than: %s !< %s", data, match_data)
+        if _should_log:
+            log.debug("less_than: %s !< %s", data, match_data)
         return False
 
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
         match = any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
-        log.debug("contains: %s %s %s", match_data, "contained in" if match else "not contained in", data)
+        if _should_log:
+            log.debug("contains: %s %s %s", match_data, "contained in" if match else "not contained in", data)
         return match
 
     def not_contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
         match = not any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
-        log.debug("not_contains: %s %s %s", match_data, "not contained in" if match else "contained in", data)
+        if _should_log:
+            log.debug("not_contains: %s %s %s", match_data, "not contained in" if match else "contained in", data)
         return match
 
     def one(self, data, match_data, **kwargs):
-        data = list_wrap(data)
-        result = any(map(lambda d: d in eval_sample(match_data), data))
-        log.debug("one: %s %s %s", data, "in" if result else "not in", match_data)
+        evaled_sample = eval_sample(match_data)
+        if isinstance(evaled_sample, int):
+            evaled_sample = [evaled_sample]
+        result = any(map(lambda d: d in evaled_sample, data))
+        if _should_log:
+            log.debug("one: %s %s %s", data, "in" if result else "not in", match_data)
         return result
 
     def zero(self, data, match_data, **kwargs):
-        data = list_wrap(data)
-        result = not any(map(lambda d: d in eval_sample(match_data), data))
-        log.debug("zero: %s %s %s", data, "not in" if result else "in", match_data)
+        evaled_sample = eval_sample(match_data)
+        if isinstance(evaled_sample, int):
+            evaled_sample = [evaled_sample]
+        result = not any(map(lambda d: d in evaled_sample, data))
+        if _should_log:
+            log.debug("zero: %s %s %s", data, "not in" if result else "in", match_data)
         return result
 
 
