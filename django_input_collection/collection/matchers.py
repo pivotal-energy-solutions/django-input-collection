@@ -150,7 +150,6 @@ class CaseMatchers(object):
 
     def match(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
-        print(list_wrap(data), match_data)
         match = set(list_wrap(data)) == set(match_data)
         if _should_log:
             log.debug("match: %s %s %s", set(data), "==" if match else "!=", set(match_data))

@@ -192,6 +192,33 @@ class MatchTypesTests(TestCase):
         self.assertEqual(matchers.not_contains('xfooxbarx', match_data='xbarx'), False)
         self.assertEqual(matchers.not_contains(['xfooxbarx'], match_data='foo'), False)
 
+    def test_match_one(self):
+        """The stuff on the left is almost always a list (REM/Rate) match data may or may not be."""
+        self.assertEqual(matchers.one([5], match_data=5), True)
+        self.assertEqual(matchers.one([5], match_data='5'), True)
+        self.assertEqual(matchers.one([5], match_data='3'), False)
+        self.assertEqual(matchers.one([5], match_data=['3']), False)
+        self.assertEqual(matchers.one([5], match_data=3), False)
+        self.assertEqual(matchers.one([4, 5], match_data=5), True)
+        self.assertEqual(matchers.one([4, 5], match_data='5'), True)
+        self.assertEqual(matchers.one([4, 5], match_data=[4]), True)
+        self.assertEqual(matchers.one([4, 5], match_data=[4, 5]), True)
+        self.assertEqual(matchers.one([4], match_data=[4, 5]), True)
+        self.assertEqual(matchers.one([4, 4, 2], match_data=4), True)
+        self.assertEqual(matchers.one([4, 4, 2], match_data=4), True)
+
+    def test_match_zero(self):
+        """Match zero"""
+        self.assertEqual(matchers.zero([5], match_data=5), False)
+        self.assertEqual(matchers.zero([5], match_data='5'), False)
+        self.assertEqual(matchers.zero([5], match_data='3'), True)
+        self.assertEqual(matchers.zero([4, 5], match_data=5), False)
+        self.assertEqual(matchers.zero([4, 5], match_data='5'), False)
+        self.assertEqual(matchers.zero([4, 5], match_data=[4]), False)
+        self.assertEqual(matchers.zero([4, 5], match_data=[4, 5]), False)
+        self.assertEqual(matchers.zero([4], match_data=[4, 5]), False)
+        self.assertEqual(matchers.zero([4, 4, 2], match_data=4), False)
+        self.assertEqual(matchers.zero([4, 4, 2], match_data=4), False)
 
 class SingleConditionGroupRequirementTypesTests(TestCase):
     def test_group_cases_requirement_type_all_pass(self):
