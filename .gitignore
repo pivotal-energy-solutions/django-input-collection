@@ -8,7 +8,6 @@ node_modules
 # Local
 .env
 .venv
-.venv37
 .pycharm
 .vscode
 *.vscode-workspace
