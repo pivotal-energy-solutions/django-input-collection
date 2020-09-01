@@ -1,10 +1,10 @@
 import collections
-from itertools import chain
 import logging
+from itertools import chain
 
 import six
-from ..apps import input_config_app
 
+from ..apps import input_config_app
 
 __all__ = ['test_condition_case', 'matchers']
 
@@ -202,7 +202,13 @@ class CaseMatchers(object):
         evaled_sample = eval_sample(match_data)
         if isinstance(evaled_sample, int):
             evaled_sample = [evaled_sample]
-        result = any(map(lambda d: d in evaled_sample, data))
+
+        try:
+            result = any(map(lambda d: d in evaled_sample, data))
+        except TypeError:
+            log.debug("one TypeError found data = %r evaled_sample = %r", data, evaled_sample)
+            result = False
+
         if _should_log:
             log.debug("one: %s %s %s", data, "in" if result else "not in", match_data)
         return result
@@ -211,7 +217,13 @@ class CaseMatchers(object):
         evaled_sample = eval_sample(match_data)
         if isinstance(evaled_sample, int):
             evaled_sample = [evaled_sample]
-        result = not any(map(lambda d: d in evaled_sample, data))
+
+        try:
+            result = not any(map(lambda d: d in evaled_sample, data))
+        except TypeError:
+            log.debug("one TypeError found data = %r evaled_sample = %r", data, evaled_sample)
+            result = False
+
         if _should_log:
             log.debug("zero: %s %s %s", data, "not in" if result else "in", match_data)
         return result
