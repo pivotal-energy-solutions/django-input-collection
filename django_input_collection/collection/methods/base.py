@@ -1,6 +1,5 @@
 from functools import reduce
 import inspect
-import six
 
 from django.core.exceptions import ValidationError
 from django.utils.text import format_lazy
@@ -104,9 +103,7 @@ class InputMethod(object):
         return {}
 
     def get_data_display(self, value):
-        if six.PY3:
-            return six.u(value)
-        return unicode(value)
+        return str(value)
 
     @property
     def data(self):
