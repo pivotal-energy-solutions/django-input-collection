@@ -4,6 +4,5 @@ factory-boy==2.11.1
 Faker==0.9.1
 python-dateutil==2.7.3
 pytz==2018.5
-six==1.11.0
 swapper==1.1.0
 text-unidecode==1.2
