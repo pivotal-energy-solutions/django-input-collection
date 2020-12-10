@@ -7,8 +7,6 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
 from django.db.models import Model, F
 
-import six
-
 from ..encoders import CollectionSpecificationJSONEncoder
 from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
@@ -65,8 +63,7 @@ class CollectorType(type):
 instrument_cache = {}  # collection_request_id: {measure_id: instrument}
 
 
-@six.add_metaclass(CollectorType)
-class BaseCollector(object):
+class BaseCollector(object, metaclass=CollectorType):
     __version__ = (0, 0, 0, 'dev')
     __noregister__ = True
 
@@ -258,7 +255,7 @@ class BaseCollector(object):
                     flag_queryset = queryset
 
                     # Unpack syntaxes
-                    if isinstance(flag, six.string_types):
+                    if isinstance(flag, str):
                         # Direct string reference
                         resolver_name = flag
                         flag = True
@@ -348,7 +345,7 @@ class BaseCollector(object):
         for i, value in enumerate(values):
             values[i] = method.get_data_display(value)
 
-        return ', '.join(map(six.text_type, values))
+        return ', '.join(map(str, values))
 
     # Instrument/Input runtime hooks
     def get_conditional_check_value(self, data):
@@ -602,8 +599,8 @@ class BaseCollector(object):
                 self.__class__.__name__,
             ))),
             'collector_id': self.get_identifier(),
-            'collector_version': '.'.join(map(six.text_type, self.__version__)),
-            'version': '.'.join(map(six.text_type, BaseCollector.__version__)),
+            'collector_version': '.'.join(map(str, self.__version__)),
+            'version': '.'.join(map(str, BaseCollector.__version__)),
         })
         return payload
 

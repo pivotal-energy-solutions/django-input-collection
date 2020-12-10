@@ -4,8 +4,6 @@ import logging
 from django.db.models import Manager
 from django.db.models.query import QuerySet
 
-import six
-
 from . import exceptions
 
 
@@ -74,8 +72,7 @@ class ResolverType(type):
         fail_registration_action(cls, "Resolver %(cls)r with __noregister__=True cannot be registered.")
 
 
-@six.add_metaclass(ResolverType)
-class Resolver(object):
+class Resolver(metaclass=ResolverType):
     """
     Matches a ``Condition.data_getter`` string with a pattern, and extracts a dict of kwargs
     suitable for sending to ``collection.matchers.test_condition_case()``.

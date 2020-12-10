@@ -2,8 +2,6 @@ import collections
 import logging
 from itertools import chain
 
-import six
-
 from ..apps import input_config_app
 
 __all__ = ['test_condition_case', 'matchers']
@@ -60,7 +58,7 @@ def list_wrap(data, wrap_strings=True, coerce_iterables=False):
     If ``coerce_iterables`` is True, then non-mapping iterables will be forced to a list type
     instead of being passed through.
     """
-    is_string = isinstance(data, six.string_types)
+    is_string = isinstance(data, str)
     is_iterable = isinstance(data, collections.Iterable)
     is_mapping = isinstance(data, collections.Mapping)
     if is_iterable and not is_mapping and not is_string:
@@ -104,8 +102,7 @@ def coerce_type(match_data, value):
             return list_value_type(match_data)
         return match_data
 
-    if isinstance(_early_match, six.string_types) and \
-            isinstance(list_value_type, six.string_types):
+    if isinstance(_early_match, str) and isinstance(list_value_type, str):
         return _early_match
 
     try:

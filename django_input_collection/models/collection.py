@@ -5,7 +5,6 @@ from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
 
 import swapper
-import six
 
 from . import managers
 from .base import DatesModel
@@ -21,7 +20,6 @@ __all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrum
            'CollectedInput']
 
 
-@six.python_2_unicode_compatible
 class Measure(DatesModel, models.Model):
     """
     A deployed question's underlying identity, regardless of phrasing or possible answer choices.
@@ -33,7 +31,6 @@ class Measure(DatesModel, models.Model):
         return self.id
 
 
-@six.python_2_unicode_compatible
 class CollectionGroup(DatesModel, models.Model):
     """
     A canonical grouping label for deployed questions to relate to, for business-logic purposes.
@@ -49,7 +46,6 @@ class CollectionGroup(DatesModel, models.Model):
         return self.id
 
 
-@six.python_2_unicode_compatible
 class CollectionRequest(DatesModel, models.Model):
     """
     A contextual grouping that calls for some number of questions to be put forward for a data
@@ -82,7 +78,6 @@ class CollectionRequest(DatesModel, models.Model):
         }
 
 
-@six.python_2_unicode_compatible
 class CollectionInstrumentType(DatesModel, models.Model):
     id = models.CharField(max_length=100, primary_key=True)
 
@@ -90,7 +85,6 @@ class CollectionInstrumentType(DatesModel, models.Model):
         return self.id
 
 
-@six.python_2_unicode_compatible
 class CollectionInstrument(DatesModel, models.Model):
     """
     The presentation of a Measure with all relevant contextual information to scope it to a specific
@@ -159,10 +153,7 @@ class CollectionInstrument(DatesModel, models.Model):
             if resolver == 'instrument':
                 # Parse the reference to find the parent
                 try:
-                    if six.PY3:
-                        parent_ids.append(int(reference))
-                    else:
-                        parent_ids.append(long(reference))
+                    parent_ids.append(int(reference))
                 except:
                     parent_measures.append(reference)
         return instruments.filter(Q(id__in=parent_ids) | Q(measure_id__in=parent_measures)).distinct()
@@ -186,7 +177,6 @@ class CollectionInstrument(DatesModel, models.Model):
         return list(self.suggested_responses.values_list('data', flat=True))
 
 
-@six.python_2_unicode_compatible
 class ResponsePolicy(DatesModel, models.Model):
     """
     Flags that define an archetypical way to respond to a category of CollectionInstruments.
@@ -226,7 +216,6 @@ class ResponsePolicy(DatesModel, models.Model):
         }
 
 
-@six.python_2_unicode_compatible
 class AbstractBoundSuggestedResponse(DatesModel, models.Model):
     # NOTE: These fk references MUST include this app's label, since otherwise, anyone inheriting
     # from this abstract base will end up with ForeignKey references that appear local.
@@ -252,7 +241,6 @@ class BoundSuggestedResponse(AbstractBoundSuggestedResponse):
         swappable = swapper.swappable_setting('input', 'BoundSuggestedResponse')
 
 
-@six.python_2_unicode_compatible
 class SuggestedResponse(DatesModel, models.Model):
     """ A pre-identified valid response for a CollectionInstrument. """
     data = models.CharField(max_length=512)
@@ -267,7 +255,6 @@ class SuggestedResponse(DatesModel, models.Model):
         return self.data
 
 
-@six.python_2_unicode_compatible
 class AbstractCollectedInput(DatesModel, models.Model):
     """
     Abstract definition of a single point of data collected for a given Measure, related to the

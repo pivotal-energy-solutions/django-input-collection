@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import logging
 import re
 import operator
-import six
+
 from collections import OrderedDict
 try:
     from functools import reduce
@@ -42,7 +42,6 @@ def substitute(s, substitutions):
 
 
 
-@six.python_2_unicode_compatible
 class Condition(DatesModel, models.Model):
     """
     Condition that relates a conditional CollectionInstrument to a ConditionGroup.  The
@@ -108,7 +107,6 @@ class Condition(DatesModel, models.Model):
         return value
 
 
-@six.python_2_unicode_compatible
 class ConditionGroup(DatesModel, models.Model):
     """ Recusive grouping mechanism for controlling AND/OR/NONE logic between other groups. """
 
@@ -199,7 +197,6 @@ class ConditionGroup(DatesModel, models.Model):
         return True
 
 
-@six.python_2_unicode_compatible
 class Case(DatesModel, models.Model):
     nickname = models.CharField(max_length=100, unique=True, blank=True, null=True)
 
