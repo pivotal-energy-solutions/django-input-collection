@@ -1,5 +1,5 @@
-# django-input-collection
-[WARNING: PRE-ALPHA] Axis Checklists 3.0 and related user data collection
+# Django input collection
+Axis Checklists 3.0 and related user data collection
 
 Below are the high-level dev promises for our use of this package in Axis and elsewhere.
 

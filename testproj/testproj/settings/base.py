@@ -77,7 +77,7 @@ REST_FRAMEWORK = {
 
 
 # Things you should leave alone
-SECRET_KEY = env.get_variable('SECRET_KEY')
+SECRET_KEY = env.get_variable('SECRET_KEY', 'SECRET')
 ROOT_URLCONF = 'testproj.urls'
 WSGI_APPLICATION = 'testproj.wsgi.application'
 LANGUAGE_CODE = 'en-us'

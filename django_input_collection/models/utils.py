@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import re
-from collections import Iterable
+from collections.abc import Iterable
 
 from django.db import models
 from django.db.models.query import Q
