@@ -1,8 +1,8 @@
 from django.conf import settings
+from django.urls import re_path
 
 from rest_framework import routers
 
-from ...compat import url
 from . import api
 
 
@@ -26,5 +26,5 @@ urlpatterns = router.urls
 
 if settings.DEBUG:
     urlpatterns += [
-        url(r'collector', api.CollectorRegistryView.as_view(), name='registry'),
+        re_path(r'collector', api.CollectorRegistryView.as_view(), name='registry'),
     ]
