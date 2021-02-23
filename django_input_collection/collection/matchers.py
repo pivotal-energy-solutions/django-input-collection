@@ -1,4 +1,9 @@
-import collections
+
+try:
+    from collections.abc import Iterable, Mapping
+except ImportError:
+    from collections import Iterable, Mapping
+
 import logging
 from itertools import chain
 
@@ -59,8 +64,8 @@ def list_wrap(data, wrap_strings=True, coerce_iterables=False):
     instead of being passed through.
     """
     is_string = isinstance(data, str)
-    is_iterable = isinstance(data, collections.Iterable)
-    is_mapping = isinstance(data, collections.Mapping)
+    is_iterable = isinstance(data, Iterable)
+    is_mapping = isinstance(data, Mapping)
     if is_iterable and not is_mapping and not is_string:
         if coerce_iterables:
             data = list(data)
