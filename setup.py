@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
     requirements = list(filter(bool, (line.strip() for line in f)))
 
 setup(name='django-input-collection',
-      version='2.2.3',
+      version='2.2.4',
       description='Input system driveable by any interaction process, such as a '
                   'request-response cycle, API, or a Python function.',
       author='Autumn Valenta',
