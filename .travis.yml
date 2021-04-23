@@ -16,6 +16,7 @@ env:
   - DJANGO=3.2
 install:
   - pip install -qqq Django~=$DJANGO.0
+  - pip install -qqq djangorestframework
   - pip install -qqq -r requirements.txt
   - pip install -qqq -r requirements-tests.txt
 script:
