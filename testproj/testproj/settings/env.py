@@ -47,7 +47,7 @@ def _load_file():
     env_path = os.path.abspath(env_path)
 
     if not os.path.exists(env_path):
-        warnings.warn("Invalid env path specified: {!r}".format(env_path))
+        # warnings.warn("Invalid env path specified: {!r}".format(env_path))
         return env_path
     elif ENV_DATA:  # Already loaded
         return env_path

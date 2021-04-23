@@ -75,6 +75,7 @@ REST_FRAMEWORK = {
     ),
 }
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Things you should leave alone
 SECRET_KEY = env.get_variable('SECRET_KEY', 'SECRET')

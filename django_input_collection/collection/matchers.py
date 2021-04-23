@@ -7,13 +7,13 @@ except ImportError:
 import logging
 from itertools import chain
 
-from ..apps import input_config_app
+from ..apps import app
 
 __all__ = ['test_condition_case', 'matchers']
 
 log = logging.getLogger(__name__)
 
-_should_log = getattr(input_config_app, 'VERBOSE_LOGGING', False)
+_should_log = getattr(app, 'VERBOSE_LOGGING', False)
 
 def test_condition_case(values, match_type, match_data=None,
                         suggested_values=None, key_input=None, key_case=None):

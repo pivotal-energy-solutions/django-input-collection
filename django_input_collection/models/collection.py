@@ -8,11 +8,11 @@ import swapper
 
 from . import managers
 from .base import DatesModel
-from ..apps import input_config_app
+from ..apps import app
 
 log = logging.getLogger(__name__)
 
-_should_log = getattr(input_config_app, 'VERBOSE_LOGGING', False)
+_should_log = getattr(app, 'VERBOSE_LOGGING', False)
 
 __all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrumentType',
            'CollectionInstrument', 'ResponsePolicy', 'AbstractBoundSuggestedResponse',

@@ -11,7 +11,11 @@ class InputConfig(AppConfig):
     name = 'django_input_collection'
     verbose_name = 'Input Collection'
 
+
+class InputConfigApp:
+
     VERBOSE_LOGGING = getattr(settings, 'VERBOSE_INPUT_DEBUGGING',  False)
+
 
     @classmethod
     def get_config(cls):
@@ -24,4 +28,5 @@ class InputConfig(AppConfig):
         return cls.name.split('.', 1)[-1]
 
 
-input_config_app = InputConfig.get_config()
+app = SimpleLazyObject(InputConfigApp)
+
