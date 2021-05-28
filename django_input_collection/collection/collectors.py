@@ -15,7 +15,7 @@ from . import methods
 from . import utils
 from . import exceptions
 
-__all__ = ['resolve', 'Collector', 'BaseAPICollector']
+__all__ = ["resolve", "Collector", "BaseAPICollector"]
 
 
 registry = {}
@@ -26,7 +26,7 @@ def resolve(identifier):
 
 
 def get_identifier(cls):
-    path = '.'.join((cls.__module__, cls.__name__))
+    path = ".".join((cls.__module__, cls.__name__))
     identifier = hashlib.sha256(path.encode()).hexdigest()
     return identifier
 
@@ -36,14 +36,14 @@ def register(cls):
 
 
 def fail_registration_action(cls, msg):
-    raise exceptions.CollectorRegistrationException(msg % {'cls': cls})
+    raise exceptions.CollectorRegistrationException(msg % {"cls": cls})
 
 
 class CollectorType(type):
     def __new__(cls, name, bases, attrs):
         cls = super(CollectorType, cls).__new__(cls, name, bases, attrs)
 
-        if attrs.get('__noregister__', False):
+        if attrs.get("__noregister__", False):
             cls.get_identifier = cls.fail_get_identifier
             cls.register = cls.fail_register
         else:
@@ -54,17 +54,22 @@ class CollectorType(type):
         return cls
 
     def fail_get_identifier(cls):
-        fail_registration_action(cls, "Collector %(cls)r with __noregister__=True cannot be inspected for a registration identifier.")
+        fail_registration_action(
+            cls,
+            "Collector %(cls)r with __noregister__=True cannot be inspected for a registration identifier.",
+        )
 
     def fail_register(cls):
-        fail_registration_action(cls, "Collector %(cls)r with __noregister__=True cannot be registered.")
+        fail_registration_action(
+            cls, "Collector %(cls)r with __noregister__=True cannot be registered."
+        )
 
 
 instrument_cache = {}  # collection_request_id: {measure_id: instrument}
 
 
 class BaseCollector(object, metaclass=CollectorType):
-    __version__ = (0, 0, 0, 'dev')
+    __version__ = (0, 0, 0, "dev")
     __noregister__ = True
 
     segment = None
@@ -97,7 +102,7 @@ class BaseCollector(object, metaclass=CollectorType):
         self.groups = groups or []
         if segment and group:
             self.groups.append(group)
-        self.segment = (segment or self.segment or group)
+        self.segment = segment or self.segment or group
 
         # Specifying the 'groups' list 'group' is empty will, for a unofficial period of backward
         # compatibility, promote the first value to 'group', which was something like the behavior
@@ -122,10 +127,14 @@ class BaseCollector(object, metaclass=CollectorType):
     @property
     def serialized_data(self):
         instruments = self.get_instruments()
-        serializer_class = self.get_serializer_class('instrument')
-        serializer = serializer_class(instance=instruments, many=True, context={
-            'collector': self,
-        })
+        serializer_class = self.get_serializer_class("instrument")
+        serializer = serializer_class(
+            instance=instruments,
+            many=True,
+            context={
+                "collector": self,
+            },
+        )
         return serializer.data
 
     # Serialization utils
@@ -153,10 +162,10 @@ class BaseCollector(object, metaclass=CollectorType):
         return self.measure_methods or {}
 
     def get_method_kwargs(self, instrument):
-        """ Returns constructor kwargs for the InputMethod subclass assigned to ``instrument``. """
+        """Returns constructor kwargs for the InputMethod subclass assigned to ``instrument``."""
         type_ref = self.get_type(instrument)
         return {
-            'cleaner': type_ref.clean,
+            "cleaner": type_ref.clean,
         }
 
     def get_method(self, instrument=None, measure=None):
@@ -249,7 +258,7 @@ class BaseCollector(object, metaclass=CollectorType):
                 predicate = lambda i, f: self.is_instrument_allowed(i) == f
                 if flag is None:
                     # Get instruments without conditions
-                    pk_list = queryset.filter(conditions=None).values_list('pk', flat=True)
+                    pk_list = queryset.filter(conditions=None).values_list("pk", flat=True)
                     include_pks.add(set(pk_list))
                 else:
                     flag_queryset = queryset
@@ -282,7 +291,7 @@ class BaseCollector(object, metaclass=CollectorType):
         return queryset
 
     def get_instrument(self, measure):
-        """ Returns the instrument corresponding to ``measure``, or None if one doesn't exist. """
+        """Returns the instrument corresponding to ``measure``, or None if one doesn't exist."""
         if isinstance(measure, Model):
             measure = measure.pk
 
@@ -302,7 +311,7 @@ class BaseCollector(object, metaclass=CollectorType):
             raise ValueError("Must specify one of 'instrument' and 'measure'")
 
         # Return swappable model references with the associated input
-        return instrument.bound_suggested_responses.annotate(data=F('suggested_response__data'))
+        return instrument.bound_suggested_responses.annotate(data=F("suggested_response__data"))
 
     def get_inputs(self, instrument=None, measure=None):
         """
@@ -336,20 +345,20 @@ class BaseCollector(object, metaclass=CollectorType):
         return queryset.filter(instrument__in=instruments)
 
     def get_data_display(self, instrument=None, measure=None):
-        """ Formats the CollectedInput queryset for the given instrument as a string. """
+        """Formats the CollectedInput queryset for the given instrument as a string."""
         method = self.get_method(instrument=instrument, measure=measure)
 
         queryset = self.get_inputs(instrument=instrument, measure=measure)
-        values = list(map(self.extract_data_input, queryset.values_list('data', flat=True)))
+        values = list(map(self.extract_data_input, queryset.values_list("data", flat=True)))
 
         for i, value in enumerate(values):
             values[i] = method.get_data_display(value)
 
-        return ', '.join(map(str, values))
+        return ", ".join(map(str, values))
 
     # Instrument/Input runtime hooks
     def get_conditional_check_value(self, data):
-        """ Coerces match data from a SuggestedResponse or Case for comparison with an input. """
+        """Coerces match data from a SuggestedResponse or Case for comparison with an input."""
         return data
 
     def get_active_conditional_instruments(self, instrument):
@@ -368,8 +377,8 @@ class BaseCollector(object, metaclass=CollectorType):
         method instead of ``condition.test()`` directly has the benefit of allowing the collector
         to implicitly send ``key_input``, ``key_case``, and ``resolver_fallback_data``.
         """
-        if 'resolver_fallback_data' not in kwargs:
-            kwargs['resolver_fallback_data'] = self.make_payload_data(condition.instrument, None)
+        if "resolver_fallback_data" not in kwargs:
+            kwargs["resolver_fallback_data"] = self.make_payload_data(condition.instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
         return condition.test(key_input=key_input, key_case=key_case, **kwargs)
@@ -380,12 +389,13 @@ class BaseCollector(object, metaclass=CollectorType):
         ``resolver_fallback_data`` kwarg is forwarded to ``Condition.test()``, where a failed attempt at
         resolving its ``data_getter`` will result in the use of the given default instead.
         """
-        if 'resolver_fallback_data' not in kwargs:
-            kwargs['resolver_fallback_data'] = self.make_payload_data(instrument, None)
+        if "resolver_fallback_data" not in kwargs:
+            kwargs["resolver_fallback_data"] = self.make_payload_data(instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
-        return instrument.test_conditions(key_input=key_input, key_case=key_case,
-                                          context=self.context, **kwargs)
+        return instrument.test_conditions(
+            key_input=key_input, key_case=key_case, context=self.context, **kwargs
+        )
 
     def is_measure_allowed(self, measure, **kwargs):
         instrument = self.get_instrument(measure)
@@ -402,19 +412,19 @@ class BaseCollector(object, metaclass=CollectorType):
         request_flags = instrument.collection_request.get_flags()
 
         if user is None:
-            user = self.context.get('user')
+            user = self.context.get("user")
         if user and not isinstance(user, AnonymousUser):
-            user_max = request_flags['max_instrument_inputs_per_user']
+            user_max = request_flags["max_instrument_inputs_per_user"]
             if user_max is not None:
                 existing_inputs = manager.filter_for_context(**self.context)
                 input_count = existing_inputs.count()
                 if input_count >= user_max:
                     return False
 
-        total_max = request_flags['max_instrument_inputs']
+        total_max = request_flags["max_instrument_inputs"]
         if total_max is not None:
             no_user_context = self.context.copy()
-            no_user_context.pop('user', None)
+            no_user_context.pop("user", None)
             existing_inputs = manager.filter_for_context(**no_user_context)
             input_count = existing_inputs.count()
             if input_count >= total_max:
@@ -443,30 +453,32 @@ class BaseCollector(object, metaclass=CollectorType):
         be it a list or direct payload reference.
         """
 
-        if not hasattr(self, '_clean_index') or not isinstance(self.staged_data, list):
+        if not hasattr(self, "_clean_index") or not isinstance(self.staged_data, list):
             self._clean_index = 0  # Set to default
 
         if not payloads:
             payloads = self.staged_data
             if payloads is None:
-                raise ValueError("Must provide 'payload' argument or use collector.stage(payload_list).")
+                raise ValueError(
+                    "Must provide 'payload' argument or use collector.stage(payload_list)."
+                )
 
         # Do an early resolve of these kwargs that are destined for clean_payload(), so that this
         # doesn't have to be done once for each payload.
-        instrument = kwargs.get('instrument')
-        measure = kwargs.pop('measure', None)
+        instrument = kwargs.get("instrument")
+        measure = kwargs.pop("measure", None)
         if instrument or measure:
             if instrument and measure:
                 raise ValueError("Can't specify both 'instrument' and 'measure'")
             if measure:
-                kwargs['instrument'] = self.get_instrument(measure=measure)
+                kwargs["instrument"] = self.get_instrument(measure=measure)
 
         payload_list = payloads
         single = isinstance(payloads, dict)  # staged_data could be a single direct ref
         if single:
             payload_list = [payloads]
 
-        for payload in payload_list[self._clean_index:]:
+        for payload in payload_list[self._clean_index :]:
             payload = self.clean_payload(payload)
 
             if single:
@@ -496,37 +508,44 @@ class BaseCollector(object, metaclass=CollectorType):
             # Look for values in the payload instead.
             # Note that both can be specified in this scenario since the payload can be
             # arbitrary, but 'instrument' has priority, then 'measure'.
-            instrument = payload.get('instrument')
+            instrument = payload.get("instrument")
             if instrument is None:
-                if 'measure' in payload:
-                    measure = payload['measure']
+                if "measure" in payload:
+                    measure = payload["measure"]
                     if measure:
                         instrument = self.get_instrument(measure)
                     if instrument is None:
-                        raise ValueError("Invalid measure %r, no instrument can be resolved for: %r" % (measure, payload))
+                        raise ValueError(
+                            "Invalid measure %r, no instrument can be resolved for: %r"
+                            % (measure, payload)
+                        )
                 else:
-                    raise ValueError("Data does not have 'instrument' or 'measure': %r" % (payload,))
+                    raise ValueError(
+                        "Data does not have 'instrument' or 'measure': %r" % (payload,)
+                    )
 
-        if not skip_options.get('skip_availability'):
-            is_unavailable = (not self.is_instrument_allowed(instrument))
+        if not skip_options.get("skip_availability"):
+            is_unavailable = not self.is_instrument_allowed(instrument)
             if is_unavailable:
-                raise ValidationError("Availability conditions failed for instrument %r" % instrument.pk)
+                raise ValidationError(
+                    "Availability conditions failed for instrument %r" % instrument.pk
+                )
 
-        if not skip_options.get('skip_capacity'):
-            at_capacity = (not self.is_input_allowed(instrument))
+        if not skip_options.get("skip_capacity"):
+            at_capacity = not self.is_input_allowed(instrument)
             if at_capacity:
                 raise ValidationError("No new inputs allowed for instrument %r" % instrument.pk)
 
-        payload['instrument'] = instrument
-        payload['data'] = self.clean_data(instrument, payload['data'])
+        payload["instrument"] = instrument
+        payload["data"] = self.clean_data(instrument, payload["data"])
         return payload
 
     def clean_data(self, instrument, data):
-        """ Cleans the block of input data for storage. """
+        """Cleans the block of input data for storage."""
 
         # Ensure ResponsePolicy flags are respected
         policy_flags = instrument.response_policy.get_flags()
-        allows_multiple = policy_flags['multiple']
+        allows_multiple = policy_flags["multiple"]
         if allows_multiple and not isinstance(data, list):
             data = [data]
         if not allows_multiple and isinstance(data, list):
@@ -553,7 +572,7 @@ class BaseCollector(object, metaclass=CollectorType):
 
         # Ensure ResponsePolicy flags are respected
         policy_flags = instrument.response_policy.get_flags()
-        disallow_custom = policy_flags['restrict']
+        disallow_custom = policy_flags["restrict"]
 
         # Ensure {'_suggested_response': pk} is swapped out for real underlying data
         bound_responses = self.get_suggested_responses(instrument)
@@ -573,12 +592,12 @@ class BaseCollector(object, metaclass=CollectorType):
         # Enforce the disallow_custom flag from clean_data()
         allowed_values = None
         if disallow_custom:
-            allowed_values = set(bound_responses.values_list('suggested_response__data', flat=True))
+            allowed_values = set(bound_responses.values_list("suggested_response__data", flat=True))
             if allowed_values and not matchers.all_suggested(data, allowed_values):
-                raise ValidationError("[CollectionInstrument id=%r] Input %r is not from the list of suggested responses" % (
-                    instrument.id,
-                    data
-                ))
+                raise ValidationError(
+                    "[CollectionInstrument id=%r] Input %r is not from the list of suggested responses"
+                    % (instrument.id, data)
+                )
 
         return data
 
@@ -586,22 +605,29 @@ class BaseCollector(object, metaclass=CollectorType):
         raise exception
 
     def make_payload(self, instrument, data, **kwargs):
-        """ Returns a dict of model field values for storage. """
-        payload = dict(kwargs, **{
-            'instrument': instrument,
-            'data': self.make_payload_data(instrument, data, **kwargs),
-
-            # Disallow data integrity funnybusiness
-            'collection_request': instrument.collection_request,
-            'user': self.context.get('user'),
-            'collector_class': '.'.join(filter(bool, (
-                self.__class__.__module__,
-                self.__class__.__name__,
-            ))),
-            'collector_id': self.get_identifier(),
-            'collector_version': '.'.join(map(str, self.__version__)),
-            'version': '.'.join(map(str, BaseCollector.__version__)),
-        })
+        """Returns a dict of model field values for storage."""
+        payload = dict(
+            kwargs,
+            **{
+                "instrument": instrument,
+                "data": self.make_payload_data(instrument, data, **kwargs),
+                # Disallow data integrity funnybusiness
+                "collection_request": instrument.collection_request,
+                "user": self.context.get("user"),
+                "collector_class": ".".join(
+                    filter(
+                        bool,
+                        (
+                            self.__class__.__module__,
+                            self.__class__.__name__,
+                        ),
+                    )
+                ),
+                "collector_id": self.get_identifier(),
+                "collector_version": ".".join(map(str, self.__version__)),
+                "version": ".".join(map(str, BaseCollector.__version__)),
+            },
+        )
         return payload
 
     def make_payload_data(self, instrument, data, **kwargs):
@@ -612,7 +638,7 @@ class BaseCollector(object, metaclass=CollectorType):
         return data
 
     def extract_data_input(self, data):
-        """ Extracts the data contained in a well-formed payload['data'] value. """
+        """Extracts the data contained in a well-formed payload['data'] value."""
         return data
 
     # Granular storage api
@@ -624,6 +650,7 @@ class BaseCollector(object, metaclass=CollectorType):
         """
 
         from .. import models
+
         CollectedInput = models.get_input_model()
 
         payload = self.make_payload(instrument, data, **model_field_values)
@@ -636,7 +663,7 @@ class BaseCollector(object, metaclass=CollectorType):
         return instance
 
     def remove(self, instrument, instance):
-        """ Removes a given CollectedInput from the instrument. """
+        """Removes a given CollectedInput from the instrument."""
         instance.delete()
 
     # Bulk data handling
@@ -662,8 +689,8 @@ class BaseCollector(object, metaclass=CollectorType):
         for payload in payloads:
             payload.update(kwargs)
 
-        single_staged = (self.staged_data is not None and isinstance(self.staged_data, dict))
-        single_given = (len(payloads) == 1)
+        single_staged = self.staged_data is not None and isinstance(self.staged_data, dict)
+        single_given = len(payloads) == 1
         if extend is None and single_given and single_staged:
             extend = True
             self.staged_data = [self.staged_data]  # Prep for extend()
@@ -683,7 +710,7 @@ class BaseCollector(object, metaclass=CollectorType):
             self.clean()
 
     def save(self, **kwargs):
-        """ Calls store() for current staged data or data list. """
+        """Calls store() for current staged data or data list."""
         if self.staged_data is None:
             raise ValueError("First use collector.stage([data_iterable]).")
         if self.cleaned_data is None:
@@ -705,7 +732,7 @@ class BaseCollector(object, metaclass=CollectorType):
 
 
 class Collector(BaseCollector):
-    segment = 'default'
+    segment = "default"
 
 
 class BaseAPICollector(Collector):

@@ -7,7 +7,7 @@ from django.db.models.query import QuerySet
 from . import exceptions
 
 
-__all__ = ['resolve', 'Resolver', 'InstrumentResolver', 'AttributeResolver', 'DebugResolver']
+__all__ = ["resolve", "Resolver", "InstrumentResolver", "AttributeResolver", "DebugResolver"]
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +21,6 @@ def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
     any exception raised during attribute traversal.
     """
 
-
     for resolver in registry:
         result = resolver.apply(spec)
         if result is False:
@@ -34,17 +33,28 @@ def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
         except Exception as e:
             error = e
             data_info = {
-                'data': fallback,
+                "data": fallback,
             }
-            log.debug("Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
-                     resolver.__class__, instrument.pk, kwargs, spec, error)
+            log.debug(
+                "Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
+                resolver.__class__,
+                instrument.pk,
+                kwargs,
+                spec,
+                error,
+            )
 
         return (resolver, data_info, error)
 
     if raise_exception:
-        raise ValueError("Data getter %r does not match known resolvers in '%s.registry': %r" % (
-            spec, __name__, {resolver.full_pattern: resolver.__class__ for resolver in registry},
-        ))
+        raise ValueError(
+            "Data getter %r does not match known resolvers in '%s.registry': %r"
+            % (
+                spec,
+                __name__,
+                {resolver.full_pattern: resolver.__class__ for resolver in registry},
+            )
+        )
     return (None, {}, None)
 
 
@@ -53,14 +63,14 @@ def register(cls):
 
 
 def fail_registration_action(cls, msg):
-    raise exceptions.CollectorRegistrationException(msg % {'cls': cls})
+    raise exceptions.CollectorRegistrationException(msg % {"cls": cls})
 
 
 class ResolverType(type):
     def __new__(cls, name, bases, attrs):
         cls = super(ResolverType, cls).__new__(cls, name, bases, attrs)
 
-        if attrs.get('__noregister__', False):
+        if attrs.get("__noregister__", False):
             cls.register = cls.fail_register
         else:
             cls.__noregister__ = False  # Avoid inheritance confusion
@@ -69,7 +79,9 @@ class ResolverType(type):
         return cls
 
     def fail_register(cls):
-        fail_registration_action(cls, "Resolver %(cls)r with __noregister__=True cannot be registered.")
+        fail_registration_action(
+            cls, "Resolver %(cls)r with __noregister__=True cannot be registered."
+        )
 
 
 class Resolver(metaclass=ResolverType):
@@ -77,6 +89,7 @@ class Resolver(metaclass=ResolverType):
     Matches a ``Condition.data_getter`` string with a pattern, and extracts a dict of kwargs
     suitable for sending to ``collection.matchers.test_condition_case()``.
     """
+
     __noregister__ = True
 
     name = None
@@ -84,17 +97,17 @@ class Resolver(metaclass=ResolverType):
 
     @property
     def full_pattern(self):
-        return r'^{}:{}$'.format(self.name, self.pattern)
+        return r"^{}:{}$".format(self.name, self.pattern)
 
     def apply(self, spec):
-        """ Returns pattern match groups if the spec applies to this pattern, or False. """
+        """Returns pattern match groups if the spec applies to this pattern, or False."""
         match = re.match(self.full_pattern, spec)
         if match:
             return match.groupdict()
         return False
 
     def resolve(self, **context):
-        """ Returns a dict of data found during this resolver's execution. """
+        """Returns a dict of data found during this resolver's execution."""
         raise NotImplemented
 
 
@@ -104,26 +117,29 @@ class InstrumentResolver(Resolver):
     SuggestedResponses, should they be needed for any Case match types that require them.
     """
 
-    name = 'instrument'
-    pattern = r'((?P<parent_pk>\d+)|(?P<measure>.+))'
+    name = "instrument"
+    pattern = r"((?P<parent_pk>\d+)|(?P<measure>.+))"
 
     def resolve(self, instrument, parent_pk=None, measure=None, **context):
         from ..models import CollectionInstrument
+
         if parent_pk:
-            lookup = {'pk': parent_pk}
+            lookup = {"pk": parent_pk}
         elif measure:
-            lookup = {'measure_id': measure}
-        instrument = CollectionInstrument.objects.get(collection_request=instrument.collection_request, **lookup)
+            lookup = {"measure_id": measure}
+        instrument = CollectionInstrument.objects.get(
+            collection_request=instrument.collection_request, **lookup
+        )
         inputs = instrument.collectedinput_set.filter_for_context(**context)
-        values = list(inputs.values_list('data', flat=True))
+        values = list(inputs.values_list("data", flat=True))
 
         # Avoid list coercion at this step so that match types not requiring this query won't end
         # up hitting the database.
-        suggested_values = instrument.suggested_responses.values_list('data', flat=True)
+        suggested_values = instrument.suggested_responses.values_list("data", flat=True)
 
         return {
-            'data': values,
-            'suggested_values': suggested_values,
+            "data": values,
+            "suggested_values": suggested_values,
         }
 
 
@@ -136,13 +152,13 @@ class AttributeResolver(Resolver):
     trigger the remaining lookups, with the results compiled as a list.
     """
 
-    name = 'attr'
-    pattern = r'(?P<dotted_path>.*)'
+    name = "attr"
+    pattern = r"(?P<dotted_path>.*)"
 
     def resolve(self, instrument, dotted_path, **context):
         result = self.resolve_dotted_path(instrument, dotted_path)
         return {
-            'data': result,
+            "data": result,
         }
 
     def resolve_dotted_path(self, obj, attr):
@@ -157,13 +173,19 @@ class AttributeResolver(Resolver):
                     branch_obj = self.resolve_dotted_path(branch_obj, attr)
                 except Exception as error:
                     branch_obj = None
-                    log.debug("Resolver %r trapped an inner exception while iterating attr=%r (%s) object %r: %s",
-                             self.__class__, attr, obj.__class__.__name__, branch_obj, error)
+                    log.debug(
+                        "Resolver %r trapped an inner exception while iterating attr=%r (%s) object %r: %s",
+                        self.__class__,
+                        attr,
+                        obj.__class__.__name__,
+                        branch_obj,
+                        error,
+                    )
                 branch_objs.append(branch_obj)
             obj = branch_objs
         else:
-            if '.' in attr:
-                attr, remainder = attr.split('.', 1)
+            if "." in attr:
+                attr, remainder = attr.split(".", 1)
             obj = getattr(obj, attr)
 
             # Convert types we don't want to handle directly
@@ -184,8 +206,8 @@ class DebugResolver(Resolver):
     least a ``data`` key, and possibly a ``suggested_values`` key set to a list.
     """
 
-    name = 'debug'
-    pattern = r'(?P<expression>.*)'
+    name = "debug"
+    pattern = r"(?P<expression>.*)"
 
     def resolve(self, instrument, expression, **context):
         result = eval(expression, {}, {})

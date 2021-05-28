@@ -6,7 +6,7 @@ from django.utils.text import format_lazy
 
 from ...compat import UserDict
 
-__all__ = ['InputMethod']
+__all__ = ["InputMethod"]
 
 
 def flatten_dicts(*args, **kwargs):
@@ -22,10 +22,10 @@ def filter_safe_dict(data, attrs=None, exclude=None):
     def is_member(cls, k):
         v = getattr(cls, k)
         checks = [
-            not k.startswith('_'),
-            not inspect.ismethod(v) or getattr(v, 'im_self', True),
+            not k.startswith("_"),
+            not inspect.ismethod(v) or getattr(v, "im_self", True),
             not inspect.isfunction(v),
-            not isinstance(v, (classmethod, staticmethod, property))
+            not isinstance(v, (classmethod, staticmethod, property)),
         ]
         return all(checks)
 
@@ -37,8 +37,8 @@ def filter_safe_dict(data, attrs=None, exclude=None):
     ret = {}
     for k, v in data.items():
         checks = [
-            not k.startswith('_'),
-            not inspect.ismethod(v) or getattr(v, 'im_self', True),
+            not k.startswith("_"),
+            not inspect.ismethod(v) or getattr(v, "im_self", True),
             not isinstance(v, (classmethod, staticmethod, property)),
             not attrs or (k in attrs),
             not exclude or (k not in exclude),
@@ -50,7 +50,7 @@ def filter_safe_dict(data, attrs=None, exclude=None):
 
 
 base_errors = {
-    Exception: '{exception}',
+    Exception: "{exception}",
 }
 
 
@@ -83,7 +83,7 @@ class InputMethod(object):
         self.errors = dict(base_errors, **self.errors)
 
     def update(self, *args, **kwargs):
-        _raise = kwargs.pop('_raise', True)
+        _raise = kwargs.pop("_raise", True)
 
         data = flatten_dicts(*args, **kwargs)
 
@@ -95,9 +95,13 @@ class InputMethod(object):
 
         # Raise an error for leftover attributes
         if len(data) and _raise:
-            raise AttributeError("Disallowed keys/values for %r: %r" % (
-                self.__class__.__name__, data,
-            ))
+            raise AttributeError(
+                "Disallowed keys/values for %r: %r"
+                % (
+                    self.__class__.__name__,
+                    data,
+                )
+            )
 
     def get_constraints(self):
         return {}
@@ -107,25 +111,25 @@ class InputMethod(object):
 
     @property
     def data(self):
-        exclude = ('cleaner', 'errors')
+        exclude = ("cleaner", "errors")
         if self.data_type is None:
-            exclude += ('data_type',)
+            exclude += ("data_type",)
         return filter_safe_dict(self.__dict__, exclude=exclude)
 
     # Serialization
     def serialize(self, **kwargs):
-        """ Serializes a simple representation of this input method. """
+        """Serializes a simple representation of this input method."""
         data = self.data.copy()
-        data['meta'] = {
-            'method_class': '.'.join([self.__module__, self.__class__.__name__]),
-            'data_type': self.data_type,
+        data["meta"] = {
+            "method_class": ".".join([self.__module__, self.__class__.__name__]),
+            "data_type": self.data_type,
         }
-        data['constraints'] = self.get_constraints()
+        data["constraints"] = self.get_constraints()
         return data
 
     # Cleaning
     def clean_input(self, data):
-        """ Runs ``clean()`` and traps any exception as a ValidationError. """
+        """Runs ``clean()`` and traps any exception as a ValidationError."""
         try:
             data = self.clean(data)
         except Exception as exception:
@@ -134,14 +138,14 @@ class InputMethod(object):
         return data
 
     def clean(self, data):
-        """ Runs ``cleaner`` callable with ``data``. """
+        """Runs ``cleaner`` callable with ``data``."""
         if self.cleaner:
             return self.cleaner(data)
         return data
 
     # Errors
     def get_error(self, code, **format_kwargs):
-        """ Returns a formatted message string for the given ``code``. """
+        """Returns a formatted message string for the given ``code``."""
         if isinstance(code, Exception):
             code = self.get_best_exception_code(code)
 
@@ -149,19 +153,21 @@ class InputMethod(object):
         return format_lazy(message, **format_kwargs)
 
     def get_best_exception_code(self, exception):
-        """ Translate given exception to best isinstance() match in the ``errors`` keys. """
+        """Translate given exception to best isinstance() match in the ``errors`` keys."""
         exception_rules = list(
             code for code, message in self.errors.items() if isinstance(code, Exception)
         )
 
         for lookup_types in exception_rules:
             is_exception = isinstance(lookup_types, Exception)
-            use_isinstance = isinstance(lookup_types, tuple) and not isinstance(lookup_types[0], Exception)
+            use_isinstance = isinstance(lookup_types, tuple) and not isinstance(
+                lookup_types[0], Exception
+            )
             if not is_exception and not use_isinstance:
                 continue
 
             is_applicable = isinstance(exception, lookup_types)
-            is_more_specific = (best_code is None or isinstance(exception, best_code))
+            is_more_specific = best_code is None or isinstance(exception, best_code)
             if is_applicable and is_more_specific:
                 best_code = lookup_types
 

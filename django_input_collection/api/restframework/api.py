@@ -15,7 +15,7 @@ class CollectorEnabledMixin(object):
 
     # Utils
     def _get_value(self, k):
-        """ Reads target key from request ``query_params`` or else ``data``. """
+        """Reads target key from request ``query_params`` or else ``data``."""
         return self.request.query_params.get(k, self.request.data.get(k))
 
     # Pagination class via collector
@@ -39,35 +39,35 @@ class CollectorEnabledMixin(object):
 
     def get_serializer_context(self):
         context = super(CollectorEnabledMixin, self).get_serializer_context()
-        context['collector'] = self.get_collector()
+        context["collector"] = self.get_collector()
         return context
 
     # Collector instance support
     def get_collection_request(self):
-        request_id = self._get_value('request')
+        request_id = self._get_value("request")
         collection_request = models.CollectionRequest.objects.filter(id=request_id).first()
         return collection_request
 
     def get_collector(self):
-        if not hasattr(self, '_collector'):
+        if not hasattr(self, "_collector"):
             collector_class = self.get_collector_class()
             kwargs = self.get_collector_kwargs()
             self._collector = collector_class(**kwargs)
         return self._collector
 
     def get_collector_class(self):
-        identifier = self._get_value('collector')
+        identifier = self._get_value("collector")
         try:
             collector_class = resolve(identifier)
         except KeyError:
-            raise PermissionDenied('Unknown collector reference')
+            raise PermissionDenied("Unknown collector reference")
         return collector_class
 
     def get_collector_kwargs(self):
         kwargs = {
-            'collection_request': self.get_collection_request(),
-            'segment': self._get_value('segment'),
-            'group': self._get_value('group'),
+            "collection_request": self.get_collection_request(),
+            "segment": self._get_value("segment"),
+            "group": self._get_value("group"),
         }
         kwargs.update(self.get_collector_context())
         return kwargs
@@ -75,7 +75,7 @@ class CollectorEnabledMixin(object):
     def get_collector_context(self):
         context = {}
         if self.request.user.is_authenticated:
-            context['user'] = self.request.user
+            context["user"] = self.request.user
         return context
 
 
@@ -90,7 +90,7 @@ class CollectionGroupViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
 class CollectionRequestViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     queryset = models.CollectionRequest.objects.all()
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def specification(self, request, *args, **kwargs):
         collector = self.get_collector()
         response = Response(collector.specification)
@@ -102,7 +102,7 @@ class CollectionRequestViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         return response
 
     def get_collection_request(self):
-        if 'pk' in self.kwargs:
+        if "pk" in self.kwargs:
             return self.get_object()
         return super(CollectionRequestViewSet, self).get_collection_request()
 
@@ -115,12 +115,12 @@ class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         queryset = queryset.filter(collection_request=collection_request)
 
         filters = {}
-        segment = self._get_value('segment')
+        segment = self._get_value("segment")
         if segment:
-            filters['segment'] = segment
-        group = self._get_value('group')
+            filters["segment"] = segment
+        group = self._get_value("group")
         if group:
-            filters['group'] = group
+            filters["group"] = group
 
         queryset = queryset.filter(**filters)
         return queryset
@@ -136,10 +136,10 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         return models.get_input_model().objects.all()
 
     def get_collection_request(self):
-        if 'pk' in self.kwargs:
+        if "pk" in self.kwargs:
             return self.get_object().collection_request
         else:
-            instrument_id = self._get_value('instrument')
+            instrument_id = self._get_value("instrument")
             try:
                 # FIXME: No query access control
                 instrument = models.CollectionInstrument.objects.get(id=instrument_id)
@@ -151,11 +151,11 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
     def get_serializer_context(self, write_mode=None):
         context = super(CollectedInputViewSet, self).get_serializer_context()
 
-        if write_mode is None and self.request.method in ['PUT', 'POST', 'PATCH']:
+        if write_mode is None and self.request.method in ["PUT", "POST", "PATCH"]:
             write_mode = True
 
         if write_mode:
-            context['write_mode'] = write_mode
+            context["write_mode"] = write_mode
 
         return context
 
@@ -167,7 +167,7 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         return collector.get_destroy_response(instrument)
 
     def perform_destroy(self, instance):
-        """ Forwards deletion work to the collector instance. """
+        """Forwards deletion work to the collector instance."""
         # The create and update methods exist on the serializer for convenience of access to the
         # developer, but destroy() never touches a serializer, so customization must occur on
         # at the collector class instead.
@@ -177,6 +177,6 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
 
 class CollectorRegistryView(views.APIView):
     def get(self, request, *args, **kwargs):
-        return Response({
-            uid: '.'.join([cls.__module__, cls.__name__]) for uid, cls in sorted(registry.items())
-        })
+        return Response(
+            {uid: ".".join([cls.__module__, cls.__name__]) for uid, cls in sorted(registry.items())}
+        )

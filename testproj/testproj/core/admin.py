@@ -3,7 +3,6 @@ from django.contrib import admin
 from .models import Survey, PoliticalRally, RallyPoll
 
 
-
 @admin.register(Survey)
 class SurveyAdmin(admin.ModelAdmin):
     pass

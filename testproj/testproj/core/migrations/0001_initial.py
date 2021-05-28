@@ -9,42 +9,76 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('django_input_collection', '0001_initial'),
+        ("django_input_collection", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PoliticalRally',
+            name="PoliticalRally",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=50)),
-                ('location', models.CharField(max_length=50)),
-                ('time', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=50)),
+                ("location", models.CharField(max_length=50)),
+                ("time", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='RallyPoll',
+            name="RallyPoll",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('start_time', models.DateTimeField(auto_now=True)),
-                ('end_time', models.DateTimeField(blank=True, null=True)),
-                ('collection_request', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='django_input_collection.CollectionRequest')),
-                ('rally', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.PoliticalRally')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("start_time", models.DateTimeField(auto_now=True)),
+                ("end_time", models.DateTimeField(blank=True, null=True)),
+                (
+                    "collection_request",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_input_collection.CollectionRequest",
+                    ),
+                ),
+                (
+                    "rally",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="core.PoliticalRally"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Survey',
+            name="Survey",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=50)),
-                ('start_time', models.DateTimeField(auto_now=True)),
-                ('end_time', models.DateTimeField(blank=True, null=True)),
-                ('collection_request', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='django_input_collection.CollectionRequest')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=50)),
+                ("start_time", models.DateTimeField(auto_now=True)),
+                ("end_time", models.DateTimeField(blank=True, null=True)),
+                (
+                    "collection_request",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_input_collection.CollectionRequest",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='politicalrally',
-            name='collection_requests',
-            field=models.ManyToManyField(through='core.RallyPoll', to='django_input_collection.CollectionRequest'),
+            model_name="politicalrally",
+            name="collection_requests",
+            field=models.ManyToManyField(
+                through="core.RallyPoll", to="django_input_collection.CollectionRequest"
+            ),
         ),
     ]

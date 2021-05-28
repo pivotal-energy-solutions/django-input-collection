@@ -9,21 +9,41 @@ import swapper
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('django_input_collection', '0005_auto_20181116_1918'),
+        ("django_input_collection", "0005_auto_20181116_1918"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BoundSuggestedResponse',
+            name="BoundSuggestedResponse",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date_created', models.DateTimeField(auto_now_add=True)),
-                ('date_modified', models.DateTimeField(auto_now=True)),
-                ('collection_instrument', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bound_suggested_responses', to='django_input_collection.CollectionInstrument')),
-                ('suggested_response', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='django_input_collection.SuggestedResponse')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("date_created", models.DateTimeField(auto_now_add=True)),
+                ("date_modified", models.DateTimeField(auto_now=True)),
+                (
+                    "collection_instrument",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="bound_suggested_responses",
+                        to="django_input_collection.CollectionInstrument",
+                    ),
+                ),
+                (
+                    "suggested_response",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="django_input_collection.SuggestedResponse",
+                    ),
+                ),
             ],
             options={
-                'swappable': swapper.swappable_setting('django_input_collection', 'BoundSuggestedResponse'),
+                "swappable": swapper.swappable_setting(
+                    "django_input_collection", "BoundSuggestedResponse"
+                ),
             },
         ),
     ]

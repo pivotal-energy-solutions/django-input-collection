@@ -4,7 +4,7 @@ from django.template.loader import render_to_string
 
 from .base import InputMethod
 
-__all__ = ['FormFieldMethod', 'FormMethod']
+__all__ = ["FormFieldMethod", "FormMethod"]
 
 
 class FormFieldMethod(InputMethod):
@@ -36,15 +36,15 @@ class FormFieldMethod(InputMethod):
     def update_field(self, field, instrument, *forward_attrs, **attrs):
         self.copy_attrs(field, *forward_attrs, **attrs)
 
-        choices = list(instrument.suggested_responses.values_list('id', 'data'))
+        choices = list(instrument.suggested_responses.values_list("id", "data"))
         if choices:
             field.choices = choices
 
     def update_widget(self, field, widget, instrument, *forward_attrs, **attrs):
-        choices = getattr(field, 'choices', ())
-        use_default_choices = 'choices' not in (forward_attrs + tuple(attrs.keys()))
+        choices = getattr(field, "choices", ())
+        use_default_choices = "choices" not in (forward_attrs + tuple(attrs.keys()))
         if use_default_choices and choices:
-            attrs['choices'] = list(choices)
+            attrs["choices"] = list(choices)
 
         self.copy_attrs(widget, *forward_attrs, **attrs)
 
@@ -55,60 +55,77 @@ class FormFieldMethod(InputMethod):
     def serialize(self, instrument, **kwargs):
         data = super(FormFieldMethod, self).serialize(instrument=instrument, **kwargs)
 
-        data.pop('formfield', None)
+        data.pop("formfield", None)
         field = self.get_formfield()
 
         # Update field/widget to spec
         self.update_field(field, instrument)
-        self.update_widget(field, field.widget, instrument, **{
-            'template_name': data['widget_template_name'],
-            'option_template_name': data['option_template_name'],
-        })
+        self.update_widget(
+            field,
+            field.widget,
+            instrument,
+            **{
+                "template_name": data["widget_template_name"],
+                "option_template_name": data["option_template_name"],
+            },
+        )
 
         # Main serialization
-        field_attrs = ['max_length', 'min_length', 'empty_values', 'help_text', 'input_formats',
-                       'choices']
+        field_attrs = [
+            "max_length",
+            "min_length",
+            "empty_values",
+            "help_text",
+            "input_formats",
+            "choices",
+        ]
         for attr in field_attrs:
             if not hasattr(field, attr):
                 continue
             data[attr] = getattr(field, attr)
 
         # Get final widget DOM attrs
-        data['attrs'] = field.widget.build_attrs(field.widget.attrs, field.widget_attrs(field.widget))
-        if hasattr(field, 'choices'):
-            data['attrs']['multiple'] = getattr(field.widget, 'allow_multiple_selected', False)
+        data["attrs"] = field.widget.build_attrs(
+            field.widget.attrs, field.widget_attrs(field.widget)
+        )
+        if hasattr(field, "choices"):
+            data["attrs"]["multiple"] = getattr(field.widget, "allow_multiple_selected", False)
 
         # Apply early string formatting to values where possible
         dom_attrs_context = {
-            'instrument': instrument,
+            "instrument": instrument,
         }
-        for k, v in data['attrs'].items():
+        for k, v in data["attrs"].items():
             if isinstance(v, str):
-                data['attrs'][k] = v.format(**dom_attrs_context)
+                data["attrs"][k] = v.format(**dom_attrs_context)
 
         # Render template version of formfield
-        field_name = 'instrument-%s' % (instrument.id)
+        field_name = "instrument-%s" % (instrument.id)
         field_value = None
-        context = field.widget.get_context(field_name, field_value, data['attrs'])
-        context['method'] = data
-        data['template'] = self.render(data, field, context)
+        context = field.widget.get_context(field_name, field_value, data["attrs"])
+        context["method"] = data
+        data["template"] = self.render(data, field, context)
 
         # Extra
-        data['meta'].update({
-            'widget_class': '.'.join([field.widget.__module__, field.widget.__class__.__name__]),
-            'field_class': '.'.join([field.__module__, field.__class__.__name__]),
-        })
+        data["meta"].update(
+            {
+                "widget_class": ".".join(
+                    [field.widget.__module__, field.widget.__class__.__name__]
+                ),
+                "field_class": ".".join([field.__module__, field.__class__.__name__]),
+            }
+        )
 
         return data
 
     def clean(self, result):
-        """ Clean result via ``formfield.clean()``. """
+        """Clean result via ``formfield.clean()``."""
         field = self.get_formfield()
         return field.clean(result)
 
 
 class FormMethod(InputMethod):
-    """ Requests input through an HTML-rendered Django form, returns a dict of cleaned_data. """
+    """Requests input through an HTML-rendered Django form, returns a dict of cleaned_data."""
 
     # NOTE: This collects multiple data points for a SINGLE CollectionInstrument, and would
     # therefore potentially expect all data points to be stored in a SINGLE CollectedInput.  A more
@@ -127,36 +144,40 @@ class FormMethod(InputMethod):
         return self.form_class()
 
     def render(self, data, form, context):
-        if data['template_name']:
-            return render_to_string(data['template_name'], context=context)
+        if data["template_name"]:
+            return render_to_string(data["template_name"], context=context)
         return None
 
     def serialize(self, **kwargs):
         data = super(FormMethod, self).serialize(**kwargs)
 
-        data.pop('form_class', None)
+        data.pop("form_class", None)
         form = self.get_form()
 
-        data['fields'] = {}
-        widget_templates = data['widget_template_name'] or {}
-        option_templates = data['option_template_name'] or {}
+        data["fields"] = {}
+        widget_templates = data["widget_template_name"] or {}
+        option_templates = data["option_template_name"] or {}
         for name, field in form.fields.items():
-            sub_method = FormFieldMethod(**{
-                'formfield': field,
-                'widget_template_name': widget_templates.get(name),
-                'option_template_name': option_templates.get(name),
-            })
-            data['fields'][name] = sub_method.serialize(**kwargs)
+            sub_method = FormFieldMethod(
+                **{
+                    "formfield": field,
+                    "widget_template_name": widget_templates.get(name),
+                    "option_template_name": option_templates.get(name),
+                }
+            )
+            data["fields"][name] = sub_method.serialize(**kwargs)
 
-        data['meta'].update({
-            'form_class': '.'.join([form.__module__, form.__class__.__name__]),
-        })
+        data["meta"].update(
+            {
+                "form_class": ".".join([form.__module__, form.__class__.__name__]),
+            }
+        )
 
         # Render template version of the form
         context = {
-            'form': form,
-            'fields': data['fields'],
+            "form": form,
+            "fields": data["fields"],
         }
-        data['template'] = self.render(data, form, context)
+        data["template"] = self.render(data, form, context)
 
         return data

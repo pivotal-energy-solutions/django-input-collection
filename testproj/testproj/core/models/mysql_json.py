@@ -3,7 +3,7 @@ from django_input_collection.models import AbstractCollectedInput
 
 from .managers import JSONUserLatestCollectedInputQuerySet
 
-__all__ = ['CollectedInput_MySQL_JSON']
+__all__ = ["CollectedInput_MySQL_JSON"]
 
 
 class CollectedInput_MySQL_JSON(AbstractCollectedInput):

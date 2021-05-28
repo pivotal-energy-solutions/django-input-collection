@@ -11,20 +11,20 @@ import swapper
 
 
 def get_swapped_model(name):
-    return swapper.load_model('django_input_collection', name)
+    return swapper.load_model("django_input_collection", name)
 
 
 def get_input_model():
-    return get_swapped_model('CollectedInput')
+    return get_swapped_model("CollectedInput")
 
 
 def get_boundsuggestedresponse_model():
-    return get_swapped_model('BoundSuggestedResponse')
+    return get_swapped_model("BoundSuggestedResponse")
 
 
 def lazy_clone(obj, exclude=[], **updates):
-    if 'id' not in exclude:
-        exclude.append('id')
+    if "id" not in exclude:
+        exclude.append("id")
     Model = obj.__class__
     attrs = Model.objects.filter(pk=obj.pk).values().get()
     for k in exclude:
@@ -54,22 +54,24 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
 
     from .models import ResponsePolicy
 
-    if 'is_singleton' not in kwargs:
+    if "is_singleton" not in kwargs:
         if isolate is None:
             isolate = response_policy.is_singleton
-        kwargs['is_singleton'] = isolate
+        kwargs["is_singleton"] = isolate
 
-    if 'nickname' not in kwargs:
-        nickname = 'Cloned pk={pk}, {kwargs!r}'.format(**{
-            'pk': response_policy.pk,
-            'kwargs': kwargs,  # includes processed 'is_singletone' value
-        })
+    if "nickname" not in kwargs:
+        nickname = "Cloned pk={pk}, {kwargs!r}".format(
+            **{
+                "pk": response_policy.pk,
+                "kwargs": kwargs,  # includes processed 'is_singletone' value
+            }
+        )
 
         # Trim to max length
-        max_length = response_policy._meta.get_field('nickname').max_length
+        max_length = response_policy._meta.get_field("nickname").max_length
         overflow_count = len(nickname[max_length:])
         if overflow_count:
-            nickname = nickname[:-(3 + overflow_count)] + '...'
+            nickname = nickname[: -(3 + overflow_count)] + "..."
 
     # Get a clean set of kwargs where the called ``**kwargs`` override the defaults.
     create_kwargs = response_policy.get_flags()
@@ -81,17 +83,30 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
 
 def clone_collection_request(collection_request):
     from . import CollectionInstrument, CollectionRequest
-    common_excludes = ['date_created', 'date_modified']
+
+    common_excludes = ["date_created", "date_modified"]
     cloned = lazy_clone(collection_request, exclude=common_excludes)
     for instrument in collection_request.collectioninstrument_set.all():
-        cloned_instrument = lazy_clone(instrument, exclude=common_excludes, **{
-            'collection_request_id': cloned.id,
-        })
+        cloned_instrument = lazy_clone(
+            instrument,
+            exclude=common_excludes,
+            **{
+                "collection_request_id": cloned.id,
+            },
+        )
         for condition in instrument.conditions.all():
-            lazy_clone(condition, exclude=common_excludes, **{
-                'instrument_id': cloned_instrument.id,
-                'data_getter': re.sub(r'^instrument:\d+$', 'instrument:%d' % cloned_instrument.id, condition.data_getter)
-            })
+            lazy_clone(
+                condition,
+                exclude=common_excludes,
+                **{
+                    "instrument_id": cloned_instrument.id,
+                    "data_getter": re.sub(
+                        r"^instrument:\d+$",
+                        "instrument:%d" % cloned_instrument.id,
+                        condition.data_getter,
+                    ),
+                },
+            )
         for bound_response in instrument.bound_suggested_responses.all():
             lazy_clone(bound_response, collection_instrument_id=cloned_instrument.id)
 
@@ -99,18 +114,18 @@ def clone_collection_request(collection_request):
 
 
 class ConditionNode(Q):
-    AND = ', '
-    OR = ' | '
+    AND = ", "
+    OR = " | "
 
     def __str__(self):
         joiner = self.connector
         nodes = flatten(self)
         if not nodes:
-            return ''
+            return ""
         if len(nodes) > 1:
-            wrapper = '(%s)'
+            wrapper = "(%s)"
         else:
-            wrapper = '%s'
+            wrapper = "%s"
         # if self.negated:
         #     wrapper = 'NOT%s' % wrapper
         return force_str(wrapper % joiner.join(force_text(c) for c in nodes))

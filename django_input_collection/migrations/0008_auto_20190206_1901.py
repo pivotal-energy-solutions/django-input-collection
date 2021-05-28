@@ -6,37 +6,37 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('django_input_collection', '0007_auto_20190122_2120'),
+        ("django_input_collection", "0007_auto_20190122_2120"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collectedinput',
-            name='collector_class',
-            field=models.CharField(default='unknown', max_length=256),
+            model_name="collectedinput",
+            name="collector_class",
+            field=models.CharField(default="unknown", max_length=256),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='collectedinput',
-            name='collector_comment',
+            model_name="collectedinput",
+            name="collector_comment",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='collectedinput',
-            name='collector_id',
-            field=models.CharField(default='unknown', max_length=64),
+            model_name="collectedinput",
+            name="collector_id",
+            field=models.CharField(default="unknown", max_length=64),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='collectedinput',
-            name='collector_version',
-            field=models.CharField(default='unknown', max_length=128),
+            model_name="collectedinput",
+            name="collector_version",
+            field=models.CharField(default="unknown", max_length=128),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='collectedinput',
-            name='version',
-            field=models.CharField(default='unknown', max_length=128),
+            model_name="collectedinput",
+            name="version",
+            field=models.CharField(default="unknown", max_length=128),
             preserve_default=False,
         ),
     ]

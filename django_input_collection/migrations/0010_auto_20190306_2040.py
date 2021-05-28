@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('django_input_collection', '0009_group_to_segment'),
+        ("django_input_collection", "0009_group_to_segment"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='collectioninstrument',
-            options={'ordering': ('segment_id', 'group_id', 'order', 'pk')},
+            name="collectioninstrument",
+            options={"ordering": ("segment_id", "group_id", "order", "pk")},
         ),
     ]

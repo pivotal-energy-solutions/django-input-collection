@@ -1,4 +1,3 @@
-
 try:
     from collections.abc import Iterable, Mapping
 except ImportError:
@@ -9,14 +8,16 @@ from itertools import chain
 
 from ..apps import app
 
-__all__ = ['test_condition_case', 'matchers']
+__all__ = ["test_condition_case", "matchers"]
 
 log = logging.getLogger(__name__)
 
-_should_log = getattr(app, 'VERBOSE_LOGGING', False)
+_should_log = getattr(app, "VERBOSE_LOGGING", False)
 
-def test_condition_case(values, match_type, match_data=None,
-                        suggested_values=None, key_input=None, key_case=None):
+
+def test_condition_case(
+    values, match_type, match_data=None, suggested_values=None, key_input=None, key_case=None
+):
     """
     Routes a ``match_type`` condition to the appropriate test function, given an instrument's active
     inputs (filtered by **context kwargs) or a list of raw values representing the same. If
@@ -53,7 +54,7 @@ def test_condition_case(values, match_type, match_data=None,
 
 
 def resolve_matcher(match_type):
-    return getattr(matchers, match_type.replace('-', '_'))
+    return getattr(matchers, match_type.replace("-", "_"))
 
 
 def list_wrap(data, wrap_strings=True, coerce_iterables=False):
@@ -113,9 +114,16 @@ def coerce_type(match_data, value):
     try:
         return value_type(match_data)
     except:
-        raise ValueError('Cannot convert sample match_data %r (%r) to incoming %r (%r)' % (
-            match_data, match_type, value, value_type,
-        ))
+        raise ValueError(
+            "Cannot convert sample match_data %r (%r) to incoming %r (%r)"
+            % (
+                match_data,
+                match_type,
+                value,
+                value_type,
+            )
+        )
+
 
 class CaseMatchers(object):
     def any(self, data, **kwargs):
@@ -135,7 +143,7 @@ class CaseMatchers(object):
 
     def one_suggested(self, data, suggested_values, **kwargs):
         data = list_wrap(data)
-        has_suggested = (not set(data).isdisjoint(set(suggested_values)))
+        has_suggested = not set(data).isdisjoint(set(suggested_values))
         return has_suggested
 
     def all_custom(self, data, suggested_values, **kwargs):
@@ -188,16 +196,30 @@ class CaseMatchers(object):
 
     def contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        match = any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
+        match = any(
+            map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data)
+        )
         if _should_log:
-            log.debug("contains: %s %s %s", match_data, "contained in" if match else "not contained in", data)
+            log.debug(
+                "contains: %s %s %s",
+                match_data,
+                "contained in" if match else "not contained in",
+                data,
+            )
         return match
 
     def not_contains(self, data, match_data, **kwargs):
         data = list_wrap(data)
-        match = not any(map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data))
+        match = not any(
+            map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data)
+        )
         if _should_log:
-            log.debug("not_contains: %s %s %s", match_data, "not contained in" if match else "contained in", data)
+            log.debug(
+                "not_contains: %s %s %s",
+                match_data,
+                "not contained in" if match else "contained in",
+                data,
+            )
         return match
 
     def one(self, data, match_data, **kwargs):

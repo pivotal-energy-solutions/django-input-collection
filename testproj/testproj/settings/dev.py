@@ -1,13 +1,15 @@
 from .base import *
 
-INSTALLED_APPS.extend([
-    # 'rest_framework',
-])
+INSTALLED_APPS.extend(
+    [
+        # 'rest_framework',
+    ]
+)
 
-INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = 'django_input_collection.BoundSuggestedResponse'
+INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = "django_input_collection.BoundSuggestedResponse"
 
 # Default mode
-INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
+INPUT_COLLECTEDINPUT_MODEL = "django_input_collection.CollectedInput"
 
 # Swapped model, MySQL mode
 # DATABASES['default'] = {
@@ -33,5 +35,6 @@ INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
 
 
 import sys
-if sys.argv[1] == 'test':
+
+if sys.argv[1] == "test":
     from .test import *

@@ -5,34 +5,45 @@ from django.db import migrations, models
 import swapper
 
 
-INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = swapper.get_model_name('django_input_collection', 'BoundSuggestedResponse')
+INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = swapper.get_model_name(
+    "django_input_collection", "BoundSuggestedResponse"
+)
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('django_input_collection', '0006_auto_20190122_2117'),
-        swapper.dependency('django_input_collection', 'BoundSuggestedResponse'),
+        ("django_input_collection", "0006_auto_20190122_2117"),
+        swapper.dependency("django_input_collection", "BoundSuggestedResponse"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collectioninstrument',
-            name='suggested_responses_new',
-            field=models.ManyToManyField(blank=True, related_name='collectioninstrument_new', through=INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, to='django_input_collection.SuggestedResponse'),
+            model_name="collectioninstrument",
+            name="suggested_responses_new",
+            field=models.ManyToManyField(
+                blank=True,
+                related_name="collectioninstrument_new",
+                through=INPUT_BOUNDSUGGESTEDRESPONSE_MODEL,
+                to="django_input_collection.SuggestedResponse",
+            ),
         ),
         migrations.RemoveField(
-            model_name='collectioninstrument',
-            name='suggested_responses',
+            model_name="collectioninstrument",
+            name="suggested_responses",
         ),
         migrations.RenameField(
-            model_name='collectioninstrument',
-            old_name='suggested_responses_new',
-            new_name='suggested_responses',
+            model_name="collectioninstrument",
+            old_name="suggested_responses_new",
+            new_name="suggested_responses",
         ),
         migrations.AlterField(
-            model_name='collectioninstrument',
-            name='suggested_responses',
-            field=models.ManyToManyField(blank=True, through=INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, to='django_input_collection.SuggestedResponse'),
+            model_name="collectioninstrument",
+            name="suggested_responses",
+            field=models.ManyToManyField(
+                blank=True,
+                through=INPUT_BOUNDSUGGESTEDRESPONSE_MODEL,
+                to="django_input_collection.SuggestedResponse",
+            ),
         ),
     ]

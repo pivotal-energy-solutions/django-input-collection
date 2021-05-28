@@ -5,14 +5,15 @@ from django_input_collection import features
 
 
 urlpatterns = [
-    path('', include('testproj.core.urls')),
-
+    path("", include("testproj.core.urls")),
     # Temporary
-    path(r'admin/', admin.site.urls),
+    path(r"admin/", admin.site.urls),
 ]
 
 
 if features.rest_framework:
-    urlpatterns.extend([
-        path('api/', include('django_input_collection.api.restframework.urls')),
-    ])
+    urlpatterns.extend(
+        [
+            path("api/", include("django_input_collection.api.restframework.urls")),
+        ]
+    )

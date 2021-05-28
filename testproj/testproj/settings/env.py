@@ -5,18 +5,19 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 # BASE_DIR is the project root (i.e., where manage.py lives)
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..'))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.."))
 
 # Default .env location (override with environment variable PROJECT_ENV_FILE)
-ENV_FILE = os.path.abspath(os.path.join(BASE_DIR, '.env'))
+ENV_FILE = os.path.abspath(os.path.join(BASE_DIR, ".env"))
 ENV_DATA = {}  # Loaded env data
+
 
 class UNSET(object):
     pass
 
 
 def get_variable(var_name, default=UNSET):
-    """ Read the given variable name from the environment or the designated .env file. """
+    """Read the given variable name from the environment or the designated .env file."""
 
     if var_name in os.environ:
         return os.environ[var_name]
@@ -31,7 +32,8 @@ def get_variable(var_name, default=UNSET):
     raise ImproperlyConfigured(
         "Provide a default, set the env variable {var!r}, or place it in the an env file "
         "(currently: {env_path!r}) as: {var}='VALUE'".format(
-            var=var_name, env_path=env_path,
+            var=var_name,
+            env_path=env_path,
         )
     )
 
@@ -43,7 +45,7 @@ def _load_file():
 
     Returns the path to the env file that was loaded, or else None if the file didn't exist.
     """
-    env_path = os.environ.get('PROJECT_ENV_FILE', ENV_FILE)
+    env_path = os.environ.get("PROJECT_ENV_FILE", ENV_FILE)
     env_path = os.path.abspath(env_path)
 
     if not os.path.exists(env_path):
@@ -61,8 +63,11 @@ def _load_file():
         except Exception as e:
             raise ImproperlyConfigured(
                 'Error evaluating "{env_path}", line {line}'
-                '\n{exception_type}: {exception}'.format(
-                    env_path=env_path, line=i + 1, exception_type=e.__class__.__name__, exception=e,
+                "\n{exception_type}: {exception}".format(
+                    env_path=env_path,
+                    line=i + 1,
+                    exception_type=e.__class__.__name__,
+                    exception=e,
                 )
             )
 

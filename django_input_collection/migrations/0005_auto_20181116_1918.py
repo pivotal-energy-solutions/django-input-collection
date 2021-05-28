@@ -6,13 +6,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('django_input_collection', '0004_remove_condition_parent_instrument'),
+        ("django_input_collection", "0004_remove_condition_parent_instrument"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='case',
-            name='match_type',
-            field=models.CharField(choices=[('any', 'Any input allowed'), ('none', 'No input allowed'), ('all-suggested', 'All suggested'), ('one-suggested', 'At least one suggested'), ('all-custom', 'All custom'), ('one-custom', 'At least one custom'), ('match', 'Input matches this data'), ('mismatch', "Input doesn't match this data"), ('greater_than', 'Input is greater than this data'), ('less_than', 'Input is less than this data'), ('contains', 'Input contains this data'), ('not-contains', 'Input does not contain this data'), ('one', 'Input is in these values'), ('zero', 'Input is not in these values')], default=None, max_length=20, null=True),
+            model_name="case",
+            name="match_type",
+            field=models.CharField(
+                choices=[
+                    ("any", "Any input allowed"),
+                    ("none", "No input allowed"),
+                    ("all-suggested", "All suggested"),
+                    ("one-suggested", "At least one suggested"),
+                    ("all-custom", "All custom"),
+                    ("one-custom", "At least one custom"),
+                    ("match", "Input matches this data"),
+                    ("mismatch", "Input doesn't match this data"),
+                    ("greater_than", "Input is greater than this data"),
+                    ("less_than", "Input is less than this data"),
+                    ("contains", "Input contains this data"),
+                    ("not-contains", "Input does not contain this data"),
+                    ("one", "Input is in these values"),
+                    ("zero", "Input is not in these values"),
+                ],
+                default=None,
+                max_length=20,
+                null=True,
+            ),
         ),
     ]

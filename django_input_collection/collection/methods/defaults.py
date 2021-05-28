@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from .base import InputMethod
 
 
-__all__ = ['CharMethod', 'IntegerMethod', 'FloatMethod']
+__all__ = ["CharMethod", "IntegerMethod", "FloatMethod"]
 
 
 class CharMethod(InputMethod):
@@ -13,12 +13,12 @@ class CharMethod(InputMethod):
 class IntegerMethod(InputMethod):
     cleaner = int
     errors = {
-        Exception: _('Please enter a valid integer.'),
+        Exception: _("Please enter a valid integer."),
     }
 
 
 class FloatMethod(InputMethod):
     cleaner = float
     errors = {
-        Exception: _('Please enter a valid float.'),
+        Exception: _("Please enter a valid float."),
     }

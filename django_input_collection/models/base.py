@@ -1,6 +1,6 @@
 from django.db import models
 
-__all__ = ['DatesModel']
+__all__ = ["DatesModel"]
 
 
 class DatesModel(models.Model):

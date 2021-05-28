@@ -12,12 +12,21 @@ from ..apps import app
 
 log = logging.getLogger(__name__)
 
-_should_log = getattr(app, 'VERBOSE_LOGGING', False)
+_should_log = getattr(app, "VERBOSE_LOGGING", False)
 
-__all__ = ['Measure', 'CollectionRequest', 'CollectionGroup', 'CollectionInstrumentType',
-           'CollectionInstrument', 'ResponsePolicy', 'AbstractBoundSuggestedResponse',
-           'BoundSuggestedResponse', 'SuggestedResponse', 'AbstractCollectedInput',
-           'CollectedInput']
+__all__ = [
+    "Measure",
+    "CollectionRequest",
+    "CollectionGroup",
+    "CollectionInstrumentType",
+    "CollectionInstrument",
+    "ResponsePolicy",
+    "AbstractBoundSuggestedResponse",
+    "BoundSuggestedResponse",
+    "SuggestedResponse",
+    "AbstractCollectedInput",
+    "CollectedInput",
+]
 
 
 class Measure(DatesModel, models.Model):
@@ -25,6 +34,7 @@ class Measure(DatesModel, models.Model):
     A deployed question's underlying identity, regardless of phrasing or possible answer choices.
     Models that collect for a Measure use a ForeignKey pointing to the appropriate Measure.
     """
+
     id = models.CharField(max_length=100, primary_key=True)
 
     def __str__(self):
@@ -35,6 +45,7 @@ class CollectionGroup(DatesModel, models.Model):
     """
     A canonical grouping label for deployed questions to relate to, for business-logic purposes.
     """
+
     id = models.CharField(max_length=100, primary_key=True)
 
     # Also available:
@@ -73,8 +84,8 @@ class CollectionRequest(DatesModel, models.Model):
 
     def get_flags(self):
         return {
-            'max_instrument_inputs_per_user': self.max_instrument_inputs_per_user,
-            'max_instrument_inputs': self.max_instrument_inputs,
+            "max_instrument_inputs_per_user": self.max_instrument_inputs_per_user,
+            "max_instrument_inputs": self.max_instrument_inputs,
         }
 
 
@@ -94,14 +105,25 @@ class CollectionInstrument(DatesModel, models.Model):
 
     objects = managers.CollectionInstrumentQuerySet.as_manager()
 
-    collection_request = models.ForeignKey('CollectionRequest', on_delete=models.CASCADE)
-    measure = models.ForeignKey('Measure', on_delete=models.CASCADE)
-    segment = models.ForeignKey('CollectionGroup', blank=True, null=True,
-                                related_name='segment_instruments', on_delete=models.SET_NULL)
-    group = models.ForeignKey('CollectionGroup', blank=True, null=True,
-                                related_name='group_instruments', on_delete=models.SET_NULL)
-    type = models.ForeignKey('CollectionInstrumentType', blank=True, null=True,
-                             on_delete=models.SET_NULL)
+    collection_request = models.ForeignKey("CollectionRequest", on_delete=models.CASCADE)
+    measure = models.ForeignKey("Measure", on_delete=models.CASCADE)
+    segment = models.ForeignKey(
+        "CollectionGroup",
+        blank=True,
+        null=True,
+        related_name="segment_instruments",
+        on_delete=models.SET_NULL,
+    )
+    group = models.ForeignKey(
+        "CollectionGroup",
+        blank=True,
+        null=True,
+        related_name="group_instruments",
+        on_delete=models.SET_NULL,
+    )
+    type = models.ForeignKey(
+        "CollectionInstrumentType", blank=True, null=True, on_delete=models.SET_NULL
+    )
 
     order = models.IntegerField(default=0)
 
@@ -109,11 +131,10 @@ class CollectionInstrument(DatesModel, models.Model):
     description = models.TextField(blank=True)  # short text, always displayed
     help = models.TextField(blank=True)  # long text, always hidden unless requested
 
-    response_policy = models.ForeignKey('ResponsePolicy', on_delete=models.CASCADE)
+    response_policy = models.ForeignKey("ResponsePolicy", on_delete=models.CASCADE)
     suggested_responses = models.ManyToManyField(
-        'SuggestedResponse',
-        through=settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL,
-        blank=True)
+        "SuggestedResponse", through=settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, blank=True
+    )
 
     # Also available:
     #
@@ -122,13 +143,13 @@ class CollectionInstrument(DatesModel, models.Model):
     # self.collectedinput_set.all()
 
     class Meta:
-        ordering = ('segment_id', 'order', 'pk')
+        ordering = ("segment_id", "order", "pk")
 
     def __str__(self):
-        return self.text or '(No text)'
+        return self.text or "(No text)"
 
     def test_conditions(self, **kwargs):
-        """ Checks data all Conditions gating this instrument. """
+        """Checks data all Conditions gating this instrument."""
         idx = 0
         for idx, condition in enumerate(self.conditions.all(), start=1):
             if not condition.test(**kwargs):
@@ -147,34 +168,37 @@ class CollectionInstrument(DatesModel, models.Model):
         parents = instruments.filter(conditions__instrument=self)
         parent_ids = []
         parent_measures = []
-        parent_getters = list(parents.values_list('conditions__data_getter', flat=True))
+        parent_getters = list(parents.values_list("conditions__data_getter", flat=True))
         for spec in parent_getters:
-            resolver, reference = spec.split(':', 1)
-            if resolver == 'instrument':
+            resolver, reference = spec.split(":", 1)
+            if resolver == "instrument":
                 # Parse the reference to find the parent
                 try:
                     parent_ids.append(int(reference))
                 except:
                     parent_measures.append(reference)
-        return instruments.filter(Q(id__in=parent_ids) | Q(measure_id__in=parent_measures)).distinct()
+        return instruments.filter(
+            Q(id__in=parent_ids) | Q(measure_id__in=parent_measures)
+        ).distinct()
 
     def get_child_instruments(self):
-        """ Returns a list of instrument that this one enables via a Condition. """
+        """Returns a list of instrument that this one enables via a Condition."""
         # TODO: Add Resolver syntax that yields this list, given an instrument
         data_getters = [
-            'instrument:%d' % (self.pk,),
-            'instrument:%s' % (self.measure_id,),
+            "instrument:%d" % (self.pk,),
+            "instrument:%s" % (self.measure_id,),
         ]
         instruments = self.collection_request.collectioninstrument_set.all()
         return instruments.filter(conditions__data_getter__in=data_getters)
 
     def get_child_conditions(self):
         from .conditions import Condition
-        return Condition.objects.filter(data_getter='instrument:%d' % (self.pk,))
+
+        return Condition.objects.filter(data_getter="instrument:%d" % (self.pk,))
 
     def get_choices(self):
-        """ Returns a list of SuggestedResponse ``data`` values. """
-        return list(self.suggested_responses.values_list('data', flat=True))
+        """Returns a list of SuggestedResponse ``data`` values."""
+        return list(self.suggested_responses.values_list("data", flat=True))
 
 
 class ResponsePolicy(DatesModel, models.Model):
@@ -183,6 +207,7 @@ class ResponsePolicy(DatesModel, models.Model):
     CollectionInstruments may point to a common ResponsePolicy, or define separate instances for
     finer control over a specific CollectionInstrument's policy flags.
     """
+
     # Internal references
     nickname = models.CharField(max_length=100, null=True)
     is_singleton = models.BooleanField(default=False)
@@ -203,25 +228,30 @@ class ResponsePolicy(DatesModel, models.Model):
     # self.collectioninstrument_set.all()
 
     class Meta:
-        verbose_name_plural = 'Response policies'
+        verbose_name_plural = "Response policies"
 
     def __str__(self):
-        return self.nickname or ':'.join('{}={}'.format(*sorted(self.get_flags().items())))
+        return self.nickname or ":".join("{}={}".format(*sorted(self.get_flags().items())))
 
     def get_flags(self):
         return {
-            'restrict': self.restrict,
-            'multiple': self.multiple,
-            'required': self.required,
+            "restrict": self.restrict,
+            "multiple": self.multiple,
+            "required": self.required,
         }
 
 
 class AbstractBoundSuggestedResponse(DatesModel, models.Model):
     # NOTE: These fk references MUST include this app's label, since otherwise, anyone inheriting
     # from this abstract base will end up with ForeignKey references that appear local.
-    collection_instrument = models.ForeignKey('django_input_collection.CollectionInstrument', on_delete=models.CASCADE,
-                                              related_name='bound_suggested_responses')
-    suggested_response = models.ForeignKey('django_input_collection.SuggestedResponse', on_delete=models.CASCADE)
+    collection_instrument = models.ForeignKey(
+        "django_input_collection.CollectionInstrument",
+        on_delete=models.CASCADE,
+        related_name="bound_suggested_responses",
+    )
+    suggested_response = models.ForeignKey(
+        "django_input_collection.SuggestedResponse", on_delete=models.CASCADE
+    )
 
     class Meta:
         abstract = True
@@ -230,19 +260,21 @@ class AbstractBoundSuggestedResponse(DatesModel, models.Model):
         return self.suggested_response.data
 
     def clean(self, data):
-        """ Cleaning hook for primitive input generated by this SuggestedResponse. """
+        """Cleaning hook for primitive input generated by this SuggestedResponse."""
         return data
 
 
 class BoundSuggestedResponse(AbstractBoundSuggestedResponse):
-    """ The m2m membership model for CollectionInstrument.suggested_responses. """
+    """The m2m membership model for CollectionInstrument.suggested_responses."""
+
     class Meta:
         # swappable = 'INPUT_BOUNDSUGGESTEDRESPONSE_MODEL'
-        swappable = swapper.swappable_setting('input', 'BoundSuggestedResponse')
+        swappable = swapper.swappable_setting("input", "BoundSuggestedResponse")
 
 
 class SuggestedResponse(DatesModel, models.Model):
-    """ A pre-identified valid response for a CollectionInstrument. """
+    """A pre-identified valid response for a CollectionInstrument."""
+
     data = models.CharField(max_length=512)
 
     # Also available:
@@ -251,7 +283,7 @@ class SuggestedResponse(DatesModel, models.Model):
 
     def __str__(self):
         if isinstance(self.data, bytes):
-            return self.data.encode('utf-8')
+            return self.data.encode("utf-8")
         return self.data
 
 
@@ -268,14 +300,20 @@ class AbstractCollectedInput(DatesModel, models.Model):
 
     # NOTE: These fk references MUST include this app's label, since otherwise, anyone inheriting
     # from this abstract base will end up with ForeignKey references that appear local.
-    collection_request = models.ForeignKey('django_input_collection.CollectionRequest',
-                                           related_name='collectedinput_set',
-                                           on_delete=models.CASCADE)
-    instrument = models.ForeignKey('django_input_collection.CollectionInstrument',
-                                   related_name='collectedinput_set',
-                                   on_delete=models.CASCADE)
+    collection_request = models.ForeignKey(
+        "django_input_collection.CollectionRequest",
+        related_name="collectedinput_set",
+        on_delete=models.CASCADE,
+    )
+    instrument = models.ForeignKey(
+        "django_input_collection.CollectionInstrument",
+        related_name="collectedinput_set",
+        on_delete=models.CASCADE,
+    )
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL
+    )
 
     # Recordkeeping details
     version = models.CharField(max_length=128)
@@ -297,11 +335,9 @@ class AbstractCollectedInput(DatesModel, models.Model):
         """
 
         if fields is None:
-            fields = ['user']
+            fields = ["user"]
 
-        return {
-            field: getattr(self, field) for field in fields if self._meta.get_field(field)
-        }
+        return {field: getattr(self, field) for field in fields if self._meta.get_field(field)}
 
     def get_data_display(self, collector=None, method=None):
         """
@@ -319,7 +355,7 @@ class AbstractCollectedInput(DatesModel, models.Model):
         if collector and not method:
             method = collector.get_method(self.instrument)
 
-        return method.get_data_display(self.data['input'])
+        return method.get_data_display(self.data["input"])
 
 
 class CollectedInput(AbstractCollectedInput):
@@ -332,4 +368,4 @@ class CollectedInput(AbstractCollectedInput):
 
     class Meta:
         # swappable = 'INPUT_COLLECTEDINPUT_MODEL'
-        swappable = swapper.swappable_setting('input', 'CollectedInput')
+        swappable = swapper.swappable_setting("input", "CollectedInput")

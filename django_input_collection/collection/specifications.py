@@ -4,14 +4,14 @@ from django.forms.models import model_to_dict
 
 
 class Specification(object):
-    __version__ = (0, 0, 0, 'dev')
+    __version__ = (0, 0, 0, "dev")
 
     def __init__(self, collector):
         self.collector = collector
 
     @property
     def data(self):
-        """ Returns a JSON-safe spec for another tool to correctly supply inputs. """
+        """Returns a JSON-safe spec for another tool to correctly supply inputs."""
         meta_info = self.get_meta()
         identifier = self.collector.get_identifier()
         collection_request_info = model_to_dict(self.collector.collection_request)
@@ -19,30 +19,32 @@ class Specification(object):
         instruments_info = self.get_instruments_info(inputs_info)
 
         info = {
-            'meta': meta_info,
-            'collector': identifier,
-            'collection_request': collection_request_info,
-            'segment': self.collector.segment,
-            'group': self.collector.group,
-            'groups': self.collector.groups,
-            'instruments_info': instruments_info,
-            'collected_inputs': inputs_info,
+            "meta": meta_info,
+            "collector": identifier,
+            "collection_request": collection_request_info,
+            "segment": self.collector.segment,
+            "group": self.collector.group,
+            "groups": self.collector.groups,
+            "instruments_info": instruments_info,
+            "collected_inputs": inputs_info,
         }
         return info
 
     def get_meta(self):
         return {
-            'version': self.collector.__version__,
-            'serializer_version': self.__version__,
+            "version": self.collector.__version__,
+            "serializer_version": self.__version__,
         }
 
     def get_instruments_info(self, inputs_info=None):
-        ordering = list(self.collector.collection_request.collectioninstrument_set \
-                                      .filter(conditions=None) \
-                                      .values_list('id', flat=True))
+        ordering = list(
+            self.collector.collection_request.collectioninstrument_set.filter(
+                conditions=None
+            ).values_list("id", flat=True)
+        )
         instruments_info = {
-            'instruments': {},
-            'ordering': ordering,
+            "instruments": {},
+            "ordering": ordering,
         }
 
         if inputs_info is None:
@@ -51,62 +53,60 @@ class Specification(object):
         queryset = self.collector.collection_request.collectioninstrument_set.all()
 
         for instrument in queryset:
-            info = model_to_dict(instrument, exclude=['suggested_responses'])
-            info['response_info'] = self.get_instrument_response_info(instrument)
-            info['collected_inputs'] = inputs_info.get(instrument.pk)
-            info['conditions'] = [
+            info = model_to_dict(instrument, exclude=["suggested_responses"])
+            info["response_info"] = self.get_instrument_response_info(instrument)
+            info["collected_inputs"] = inputs_info.get(instrument.pk)
+            info["conditions"] = [
                 self.get_condition_info(condition) for condition in instrument.conditions.all()
             ]
-            info['child_conditions'] = [
-                self.get_condition_info(condition) for condition in instrument.get_child_conditions()
+            info["child_conditions"] = [
+                self.get_condition_info(condition)
+                for condition in instrument.get_child_conditions()
             ]
 
-            instruments_info['instruments'][instrument.id] = info
+            instruments_info["instruments"][instrument.id] = info
 
         return instruments_info
 
     def get_condition_info(self, condition):
         condition_info = model_to_dict(condition)
 
-        condition_info['condition_group'] = self.get_condition_group_info(
-            condition.condition_group
-        )
+        condition_info["condition_group"] = self.get_condition_group_info(condition.condition_group)
 
         return condition_info
 
     def get_condition_group_info(self, group):
-        child_queryset = group.child_groups.prefetch_related('cases')
+        child_queryset = group.child_groups.prefetch_related("cases")
 
         group_info = model_to_dict(group)
-        group_info['cases'] = list(map(model_to_dict, group.cases.all()))
-        group_info['child_groups'] = []
+        group_info["cases"] = list(map(model_to_dict, group.cases.all()))
+        group_info["child_groups"] = []
         for child_group in child_queryset:
-            group_info['child_groups'].append(
-                self.get_condition_group_info(child_group)
-            )
+            group_info["child_groups"].append(self.get_condition_group_info(child_group))
 
         return group_info
 
     def get_collected_inputs_info(self):
         inputs_info = defaultdict(list)
 
-        queryset = self.collector.collection_request.collectedinput_set \
-                                                    .filter_for_context(**self.collector.context)
+        queryset = self.collector.collection_request.collectedinput_set.filter_for_context(
+            **self.collector.context
+        )
         for input in queryset:
             inputs_info[input.instrument_id].append(model_to_dict(input))
 
         return inputs_info
 
     def get_instrument_response_info(self, instrument):
-        """ Returns input specifications for data this instruments wants to collect. """
+        """Returns input specifications for data this instruments wants to collect."""
         policy_info = model_to_dict(instrument.response_policy)
         suggested_responses_info = self.get_suggested_responses_info(instrument)
         method_info = self.get_method_info(instrument)
 
         input_info = {
-            'response_policy': policy_info,
-            'suggested_responses': suggested_responses_info,
-            'method': method_info,
+            "response_policy": policy_info,
+            "suggested_responses": suggested_responses_info,
+            "method": method_info,
         }
         return input_info
 
@@ -127,19 +127,18 @@ class Specification(object):
 
 
 class BaseAPISpecification(Specification):
-    content_type = 'application/json'
+    content_type = "application/json"
 
     def get_meta(self):
         meta_info = super(BaseAPISpecification, self).get_meta()
-        meta_info['api'] = self.get_api_info()
+        meta_info["api"] = self.get_api_info()
         return meta_info
 
     def get_api_info(self):
         return {
-            'content_type': self.content_type,
-            'endpoints': {},
-
+            "content_type": self.content_type,
+            "endpoints": {},
             # Repeated from top-level spec for convenience
-            'collector': self.collector.get_identifier(),
-            'collection_request': self.collector.collection_request.id,
+            "collector": self.collector.get_identifier(),
+            "collection_request": self.collector.collection_request.id,
         }

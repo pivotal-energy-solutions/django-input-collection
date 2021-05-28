@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-__all__ = ['CollectedFileInput']
+__all__ = ["CollectedFileInput"]
 
 
 class CollectedFileInput(models.Model):
@@ -18,4 +18,4 @@ class CollectedFileInput(models.Model):
     # customized version to support our strategy.
     # input = models.ForeignKey(settings.INPUT_COLLECTEDINPUT_MODEL, on_delete=models.CASCADE)
 
-    file = models.FileField(upload_to='file-inputs/')
+    file = models.FileField(upload_to="file-inputs/")

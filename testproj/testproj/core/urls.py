@@ -6,8 +6,15 @@ from . import views
 urlpatterns = []
 
 if features.rest_framework:
-    urlpatterns.extend([
-        path('polls/', include([
-            path('<int:pk>/', views.PollView.as_view()),
-        ])),
-    ])
+    urlpatterns.extend(
+        [
+            path(
+                "polls/",
+                include(
+                    [
+                        path("<int:pk>/", views.PollView.as_view()),
+                    ]
+                ),
+            ),
+        ]
+    )

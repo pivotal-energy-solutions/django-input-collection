@@ -1,0 +1,28 @@
+repos:
+  - repo: git://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-added-large-files
+        args: [ '--maxkb=500' ]
+      - id: check-byte-order-marker
+        exclude: .*\.csv|.*\.xsd|.*\.xlsx|.*\.xml
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: detect-private-key
+      - id: fix-encoding-pragma
+      - id: end-of-file-fixer
+        exclude: .idea/.*|.*\.blg|.*\.json|.*\.dat
+      - id: trailing-whitespace
+        exclude: .idea/.*|.*\.blg|.*\.json|.*\.dat
+      - id: mixed-line-ending
+        exclude: .idea/.*
+      - id: check-json
+  -   repo: https://github.com/ambv/black
+      rev: stable
+      hooks:
+      - id: black
+  -   repo: https://gitlab.com/pycqa/flake8
+      rev: 3.9.2
+      hooks:
+      - id: flake8
