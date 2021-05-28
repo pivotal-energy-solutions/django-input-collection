@@ -8,7 +8,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="django-input-collection",
-    version="2.2.4",
+    version="2.2.5",
     description="Input system driveable by any interaction process, such as a "
     "request-response cycle, API, or a Python function.",
     author="Autumn Valenta",
