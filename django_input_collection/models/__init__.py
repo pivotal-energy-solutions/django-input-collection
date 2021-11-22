@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .base import *
 from .collection import *
 from .conditions import *

@@ -1,0 +1,14 @@
+[run]
+branch = True
+omit =
+    testproj/*
+    */migrations/*
+    */tests/*
+source = django_input_collection
+
+[report]
+fail_under = 65
+omit =
+    testproj/*
+    */migrations/*
+    */tests/*

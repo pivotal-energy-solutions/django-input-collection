@@ -1,5 +1,12 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """setup.py: Django Input Collection"""
+
+__author__ = "Pivotal Energy Solutions"
+__version_info__ = (2, 2, 5)
+__version__ = "2.2.5"
+__date__ = "2014/07/22 4:47:00 PM"
+__credits__ = ["Steven Klass", "Autumn Valenta"]
+__license__ = "See the file LICENSE.txt for licensing information."
 
 from setuptools import setup, find_packages
 
@@ -19,7 +26,6 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
         "Framework :: Django",
-        "Framework :: Django :: 2.2",
         "Framework :: Django :: 3.0",
         "Framework :: Django :: 3.1",
         "Framework :: Django :: 3.2",

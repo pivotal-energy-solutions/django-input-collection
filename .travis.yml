@@ -25,4 +25,3 @@ matrix:
   exclude:
   - python: "3.10-dev"
     env: DJANGO=2.1
-

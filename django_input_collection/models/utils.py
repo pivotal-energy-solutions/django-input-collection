@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+# -*- coding: utf-8 -*-
 
 import re
 from collections.abc import Iterable
@@ -148,8 +148,8 @@ def flatten(items):
     if len(items) == 0:
         return items
 
-    size = len(items)
+    # size = len(items)
     bit = items[0]
-    if isinstance(bit, Iterable) and not isinstance(bit, basestring):
+    if isinstance(bit, Iterable) and not isinstance(bit, str):
         return flatten(bit) + flatten(items[1:])
     return sorted([bit] + flatten(items[1:]))

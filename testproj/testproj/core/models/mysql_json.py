@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django_mysql.models import JSONField
 from django_input_collection.models import AbstractCollectedInput
 

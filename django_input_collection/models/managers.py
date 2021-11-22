@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.db.models.query import QuerySet
 from django.db.models import Q, Max, Count, OuterRef, Subquery
 

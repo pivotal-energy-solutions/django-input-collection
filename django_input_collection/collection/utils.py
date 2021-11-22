@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 def expand_suggested_responses(instrument, lookups, *responses):
     """
     Maps any {'_suggested_response': pk} values to the SuggestedResponse by that id, as long as it

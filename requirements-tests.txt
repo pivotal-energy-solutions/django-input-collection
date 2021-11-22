@@ -1,1 +1,2 @@
-factory-boy>=2.11
+factory-boy
+coverage

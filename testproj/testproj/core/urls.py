@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django_input_collection import features
 from django.urls import path, include
 

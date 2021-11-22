@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from functools import reduce
 import inspect
 
@@ -158,6 +159,7 @@ class InputMethod(object):
             code for code, message in self.errors.items() if isinstance(code, Exception)
         )
 
+        best_code = None
         for lookup_types in exception_rules:
             is_exception = isinstance(lookup_types, Exception)
             use_isinstance = isinstance(lookup_types, tuple) and not isinstance(

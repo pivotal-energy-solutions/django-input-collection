@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import importlib
 import hashlib
 from inspect import isclass
@@ -255,7 +256,7 @@ class BaseCollector(object, metaclass=CollectorType):
             for flag in active:
                 flagged_pks = set()
                 resolver_name = None
-                predicate = lambda i, f: self.is_instrument_allowed(i) == f
+                predicate = lambda i, f: self.is_instrument_allowed(i) == f  # noqa: E731
                 if flag is None:
                     # Get instruments without conditions
                     pk_list = queryset.filter(conditions=None).values_list("pk", flat=True)

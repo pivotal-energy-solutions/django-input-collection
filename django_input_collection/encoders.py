@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Model
 from django.forms.models import model_to_dict

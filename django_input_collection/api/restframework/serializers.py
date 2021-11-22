@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.contrib.auth.models import AnonymousUser
 

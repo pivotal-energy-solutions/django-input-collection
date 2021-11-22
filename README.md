@@ -23,7 +23,7 @@ Implementation concepts:
 * top-level optionals
 * dependent optionals ("always" required)
 * dependents can hook a specific answer from the parent question
-* questions pull from a source, initialize 
+* questions pull from a source, initialize
 * questions enabled based on that source
 * "confirmation" questions based on that source, expected to match, but needs explicit user input
 * system questions

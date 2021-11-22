@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 try:
     from collections.abc import Iterable, Mapping
 except ImportError:

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from unittest import SkipTest
 
 from django.contrib.auth import get_user_model

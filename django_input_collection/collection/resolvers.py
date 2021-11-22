@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 import logging
 
@@ -108,7 +109,7 @@ class Resolver(metaclass=ResolverType):
 
     def resolve(self, **context):
         """Returns a dict of data found during this resolver's execution."""
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class InstrumentResolver(Resolver):
