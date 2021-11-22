@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-__name__ = "django-input-collection"
+
+__name__ = "django_input_collection"
 __author__ = "Pivotal Energy Solutions"
 __version_info__ = (2, 2, 5)
 __version__ = "2.2.5"
