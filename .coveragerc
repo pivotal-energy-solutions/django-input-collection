@@ -7,7 +7,7 @@ omit =
 source = django_input_collection
 
 [report]
-fail_under = 65
+fail_under = 48
 omit =
     testproj/*
     */migrations/*
