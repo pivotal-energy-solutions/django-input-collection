@@ -238,4 +238,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
         run: |
-          bumper.py --directory . --exclude=.idea,.github,testproj --version_files appsearch/__init__.py --repo=pivotal-energy-solutions/django-appsearch -v
+          bumper.py --directory . --exclude=.idea,.github,testproj --version_files django_input_collection/__init__.py --repo=pivotal-energy-solutions/django-input-collection -v
