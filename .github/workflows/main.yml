@@ -111,7 +111,7 @@ jobs:
       matrix:
         db: [ sqlite, mysql ]
         django-version: [ "~=3.2", "~=4.0" ]
-        python-version: [ "3.9", "3.10" ]
+        python-version: ["3.10" ]
         experimental: [ false ]
 
     services:

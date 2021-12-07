@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 from django.db import models
 from django.db.models.query import Q
-from django.utils.encoding import force_str, force_text
+from django.utils.encoding import force_str
 
 import swapper
 
@@ -128,7 +128,7 @@ class ConditionNode(Q):
             wrapper = "%s"
         # if self.negated:
         #     wrapper = 'NOT%s' % wrapper
-        return force_str(wrapper % joiner.join(force_text(c) for c in nodes))
+        return force_str(wrapper % joiner.join(force_str(c) for c in nodes))
 
     def __iter__(self):
         return iter(self.children)
