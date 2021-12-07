@@ -39,7 +39,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Utilities",
     ],
-    python_requires=">=3.8.*",
+    python_requires=">=3.9.*",
     packages=find_packages(exclude=["tests", "tests.*"]),
     package_data={"django_input_collection": ["static/input/*.js"]},
     include_package_data=True,
