@@ -169,6 +169,8 @@ class AttributeResolver(Resolver):
             obj = obj[attr]
         elif isinstance(obj, (Manager, QuerySet, list, tuple, set)):
             branch_objs = []
+            if isinstance(obj, QuerySet) and attr == "count":
+                return obj.count()
             for branch_obj in obj:
                 try:
                     branch_obj = self.resolve_dotted_path(branch_obj, attr)
