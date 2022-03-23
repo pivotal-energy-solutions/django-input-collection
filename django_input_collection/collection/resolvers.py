@@ -169,20 +169,20 @@ class AttributeResolver(Resolver):
             obj = obj[attr]
         elif isinstance(obj, (Manager, QuerySet, list, tuple, set)):
             branch_objs = []
-            if isinstance(obj, QuerySet) and attr == "count":
-                return obj.count()
+            if isinstance(obj, (QuerySet, Manager)):
+                if hasattr(obj, attr):
+                    if callable(getattr(obj, attr)):
+                        return getattr(obj, attr)()
+                    return getattr(obj, attr)
             for branch_obj in obj:
                 try:
                     branch_obj = self.resolve_dotted_path(branch_obj, attr)
                 except Exception as error:
                     branch_obj = None
                     log.debug(
-                        "Resolver %r trapped an inner exception while iterating attr=%r (%s) object %r: %s",
-                        self.__class__,
-                        attr,
-                        obj.__class__.__name__,
-                        branch_obj,
-                        error,
+                        f"Resolver {self.__class__!r} trapped an inner exception while "
+                        f"iterating attr={attr!r} ({self.__class__.__name__}) on object "
+                        f"{branch_obj!r}; {error.__class__.__name__} - {error}"
                     )
                 branch_objs.append(branch_obj)
             obj = branch_objs
