@@ -13,7 +13,8 @@ __all__ = ["test_condition_case", "matchers"]
 
 log = logging.getLogger(__name__)
 
-_should_log = getattr(app, "VERBOSE_LOGGING", False)
+# In your local settings VERBOSE_INPUT_DEBUGGING=True
+_should_log = getattr(app, "VERBOSE_LOGGING", True)
 
 
 def test_condition_case(
@@ -94,13 +95,15 @@ def coerce_type(match_data, value):
     if isinstance(value, (list, tuple, set)):
         _value_types = list(set([type(x) for x in value]))
         if len(_value_types) == 1:
-            # print("Coercing list to %s", _value_types[0])
+            log.debug(f"Coercing list to {_value_types[0]}")
             list_value_type = _value_types[0]
 
-    # print("Match data:", match_data, "match Type:", match_type,
-    #       "Value:", value, "Value Type:", value_type,
-    #       "List Value Type:", list_value_type, '_early_match:', _early_match,
-    #       'early_match_type:', _early_match_type)
+    if _should_log:
+        log.debug(
+            f"Match data: {match_data!r} match type: {match_type!r} value: {value!r} "
+            f"value_type: {value_type} list value type: {list_value_type}, _early_match: "
+            f"{_early_match} _early_match_type: {_early_match_type}"
+        )
 
     if value is None or match_type == value_type or value_type in (list, tuple, set):
         if isinstance(match_data, (list, set, tuple)) and list_value_type is not None:
@@ -114,15 +117,10 @@ def coerce_type(match_data, value):
 
     try:
         return value_type(match_data)
-    except:
+    except Exception as err:
         raise ValueError(
-            "Cannot convert sample match_data %r (%r) to incoming %r (%r)"
-            % (
-                match_data,
-                match_type,
-                value,
-                value_type,
-            )
+            f"Cannot convert sample match_data {match_data!r} ({match_type}) to "
+            f"incoming {value} ({value_type}) - {err.__class__.__name__} - {err}"
         )
 
 
@@ -163,14 +161,14 @@ class CaseMatchers(object):
         match_data = list_wrap(coerce_type(match_data, data))
         match = set(list_wrap(data)) == set(match_data)
         if _should_log:
-            log.debug("match: %s %s %s", set(data), "==" if match else "!=", set(match_data))
+            log.info(f"match: {set(data)} {'=' if match else '!'}= {set(match_data)}")
         return match
 
     def mismatch(self, data, match_data, **kwargs):
         match_data = list_wrap(coerce_type(match_data, data))
         match = set(list_wrap(data)) != set(match_data)
         if _should_log:
-            log.debug("mismatch: %s %s %s", set(data), "!=" if match else "==", set(match_data))
+            log.info(f"mismatch: {set(data)} {'=' if match else '!'}= {set(match_data)}")
         return match
 
     def greater_than(self, data, match_data, **kwargs):
@@ -178,10 +176,10 @@ class CaseMatchers(object):
         for d in list_wrap(data):
             if d is not None and any(d > candidate_match for candidate_match in match_data):
                 if _should_log:
-                    log.debug("greater_than: %s > %s", data, match_data)
+                    log.info(f"greater_than: {data} > {match_data}")
                 return True
         if _should_log:
-            log.debug("greater_than: %s !> %s", data, match_data)
+            log.info(f"greater_than: {data} !> {match_data}")
         return False
 
     def less_than(self, data, match_data, **kwargs):
@@ -189,10 +187,10 @@ class CaseMatchers(object):
         for d in list_wrap(data):
             if d is not None and any(d < candidate_match for candidate_match in match_data):
                 if _should_log:
-                    log.debug("less_than: %s < %s", data, match_data)
+                    log.info(f"less_than: {data} < {match_data}")
                 return True
         if _should_log:
-            log.debug("less_than: %s !< %s", data, match_data)
+            log.info(f"less_than: {data} !< {match_data}")
         return False
 
     def contains(self, data, match_data, **kwargs):
@@ -201,12 +199,7 @@ class CaseMatchers(object):
             map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data)
         )
         if _should_log:
-            log.debug(
-                "contains: %s %s %s",
-                match_data,
-                "contained in" if match else "not contained in",
-                data,
-            )
+            log.info(f"contains: {match_data} {'' if match else 'not ' }contained in {data}")
         return match
 
     def not_contains(self, data, match_data, **kwargs):
@@ -215,12 +208,7 @@ class CaseMatchers(object):
             map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data)
         )
         if _should_log:
-            log.debug(
-                "not_contains: %s %s %s",
-                match_data,
-                "not contained in" if match else "contained in",
-                data,
-            )
+            log.info(f"not_contains: {match_data} {'' if match else 'not ' }contained in {data}")
         return match
 
     def one(self, data, match_data, **kwargs):
@@ -231,11 +219,11 @@ class CaseMatchers(object):
         try:
             result = any(map(lambda d: d in evaled_sample, data))
         except TypeError:
-            log.debug("one TypeError found data = %r evaled_sample = %r", data, evaled_sample)
+            log.info(f"one TypeError found data = {data!r} evaled_sample = {evaled_sample!r}")
             result = False
 
         if _should_log:
-            log.debug("one: %s %s %s", data, "in" if result else "not in", match_data)
+            log.info(f"one: {data} {'' if result else 'not '}in {match_data}")
         return result
 
     def zero(self, data, match_data, **kwargs):
@@ -246,11 +234,11 @@ class CaseMatchers(object):
         try:
             result = not any(map(lambda d: d in evaled_sample, data))
         except TypeError:
-            log.debug("one TypeError found data = %r evaled_sample = %r", data, evaled_sample)
+            log.info(f"zero TypeError found data = {data!r} evaled_sample = {evaled_sample!r}")
             result = False
 
         if _should_log:
-            log.debug("zero: %s %s %s", data, "not in" if result else "in", match_data)
+            log.info(f"zero: {data} {'' if result else 'not '}in {match_data}")
         return result
 
 
