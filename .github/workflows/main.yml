@@ -22,6 +22,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.10"
+          cache: 'pip'
+          cache-dependency-path: |
+            setup.py
+            requirements*.txt
 
       - name: Install dependencies
         run: |
@@ -41,6 +45,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.10"
+          cache: 'pip'
+          cache-dependency-path: |
+            setup.py
+            requirements*.txt
 
       - name: Install dependencies
         run: |
@@ -61,6 +69,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.10"
+          cache: 'pip'
+          cache-dependency-path: |
+            setup.py
+            requirements*.txt
 
       - name: Install dependencies
         run: |
@@ -102,7 +114,7 @@ jobs:
           name: Bandit Security Report
           path: report.json
 
-  django_matrix:
+  tests:
     name: Python ${{ matrix.python-version }} / ${{ matrix.db }} / Django ${{ matrix.django-version}}
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental }}
@@ -138,6 +150,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            setup.py
+            requirements*.txt
 
       - name: Install dependencies
         run: |
@@ -152,9 +168,17 @@ jobs:
       - name: Run Django Tests
         env:
           PYTHONWARNINGS: once::DeprecationWarning
+          DB_TYPE: ${{ matrix.db }}
         run: |
           export PYTHONPATH=`pwd`
-          testproj/manage.py test --noinput --settings=testproj.settings.test
+          coverage run testproj/manage.py test --noinput --settings=testproj.settings_test
+
+      - name: "Upload Coverage Results for PY:${{ matrix.python-version }} DB:${{ matrix.db}} DJ:${{ matrix.django-version }}"
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-${{ matrix.python-version }}-${{ matrix.db}}-${{ matrix.django-version }}
+          path: .coverage
+          retention-days: 1
 
       - name: Django Check
         run: |
@@ -162,56 +186,45 @@ jobs:
           python testproj/manage.py check
 
   coverage:
-    name: Coverage
+    name: Upload Coverage to Codecov
+    needs: [tests]
     runs-on: ubuntu-latest
-    needs: django_matrix
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: |
-          python setup.py install
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements_dev.txt
-          pip install -r requirements-tests.txt
+        run: pip install -q coverage
 
-      - name: Run Django Coverage Test
-        env:
-          PYTHONWARNINGS: once::DeprecationWarning
-        run: |
-          coverage erase
-          export PYTHONPATH=`pwd`
-          coverage run testproj/manage.py test --noinput --settings=testproj.settings.test
-          coverage xml -o ./coverage.xml
+      - uses: actions/checkout@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: .
 
-      - name: Show report
-        if: ${{ success() || failure() }}
-        run:
-          coverage report -m
+      - name: Combine Report Coverage
+        run: |
+            coverage combine coverage-*/.coverage
+            coverage xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
+          directory: .
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
           fail_ci_if_error: true
-
-      - name: Upload Report
-        if: ${{ success() || failure() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: Coverage Report
-          path: coverage.xml
 
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: ['cancel', 'outdated', 'black', 'pre-commit', 'security', 'django_matrix', 'coverage']
-    if: github.ref == 'refs/heads/master'
+    needs: ['cancel', 'outdated', 'black', 'pre-commit', 'security', 'tests', 'coverage']
+    outputs:
+      bumped: ${{ steps.release.outputs.bumped }}
+      bump_version: ${{ steps.release.outputs.bump_version }}
+      bump_sha:  ${{ steps.release.outputs.bump_sha }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -219,14 +232,13 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.10"
-
       - name: Install dependencies
         run: |
-          python setup.py install
-          python -m pip install --upgrade pip
-          pip install git+https://${{ secrets.PRIVATE_REPO_TOKEN }}@github.com/pivotal-energy-solutions/tensor-infrastructure@master#egg=infrastructure
+          pip install git+https://${{ secrets.ORGANIZATIONAL_REPO_TOKEN }}@github.com/pivotal-energy-solutions/tensor-infrastructure@master#egg=infrastructure
       - name: Release
+        id: release
         env:
-          GITHUB_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          PYTHONWARNINGS: once::DeprecationWarning
+          GITHUB_TOKEN: ${{ secrets.ORGANIZATIONAL_REPO_TOKEN }}
         run: |
           bumper.py --directory . --exclude=.idea,.github,testproj --version_files django_input_collection/__init__.py --repo=pivotal-energy-solutions/django-input-collection -v

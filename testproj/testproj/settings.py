@@ -1,12 +1,24 @@
 # -*- coding: utf-8 -*-
 """ Django settings for testproj project. """
+import logging
+import sys
 
-import os
+import environ
 
-from . import env
+env = environ.Env(
+    DEBUG=(bool, False),
+    DEBUG_LEVEL=(int, logging.WARNING),
+    SECRET_KEY=(str, "SECRET_KEY"),
+    MYSQL_DATABASE=(str, "db"),
+    MYSQL_USER=(str, "root"),
+    MYSQL_PASSWORD=(str, "password"),
+    MYSQL_HOST=(str, "127.0.0.1"),
+    MYSQL_PORT=(str, "3306"),
+)
 
 # Things available to override in settings modules
-DEBUG = True
+DEBUG = env("DEBUG")
+
 ALLOWED_HOSTS = []
 INPUT_COLLECTEDINPUT_MODEL = "django_input_collection.CollectedInput"
 INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = "django_input_collection.BoundSuggestedResponse"
@@ -26,12 +38,18 @@ INSTALLED_APPS = [
     # Project
     "testproj.core",
 ]
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(env.BASE_DIR, "db.sqlite3"),
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env("MYSQL_DATABASE"),
+        "USER": env("MYSQL_USER"),
+        "PASSWORD": env("MYSQL_PASSWORD"),
+        "HOST": env("MYSQL_HOST"),
+        "PORT": env("DOCKER_MYSQL_PORT", default=env("MYSQL_PORT", default="3306")),
     }
 }
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -68,10 +86,49 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
 }
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] - %(message)s",
+            "datefmt": "%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "null": {
+            "level": "DEBUG",
+            "class": "logging.NullHandler",
+        },
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "standard",
+            "stream": sys.stdout,
+        },
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": True},
+        "django.request": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.security": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.server": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.db.backends": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.template": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "multiprocessing": {"handlers": ["console"], "level": "WARNING"},
+        "py.warnings": {"handlers": ["console"], "level": "WARNING"},
+        "testproj": {
+            "handlers": ["console"],
+            "level": env("DEBUG_LEVEL", "ERROR"),
+            "propagate": False,
+        },
+        "": {"handlers": ["console"], "level": env("DEBUG_LEVEL", "ERROR"), "propagate": True},
+    },
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Things you should leave alone
-SECRET_KEY = env.get_variable("SECRET_KEY", "SECRET")
+SECRET_KEY = env("SECRET_KEY")
 ROOT_URLCONF = "testproj.urls"
 WSGI_APPLICATION = "testproj.wsgi.application"
 LANGUAGE_CODE = "en-us"
