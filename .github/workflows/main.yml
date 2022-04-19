@@ -1,4 +1,3 @@
-
 name: Django Input Collection Tests
 
 on: push
@@ -123,7 +122,7 @@ jobs:
       matrix:
         db: [ sqlite, mysql ]
         django-version: [ "~=3.2", "~=4.0" ]
-        python-version: ["3.10" ]
+        python-version: [ "3.10" ]
         experimental: [ false ]
 
     services:
@@ -170,7 +169,8 @@ jobs:
           PYTHONWARNINGS: once::DeprecationWarning
           DB_TYPE: ${{ matrix.db }}
         run: |
-           coverage run demo_app/manage.py test --noinput --settings=demo_app.settings_test django_input_collection
+          export PYTHONPATH=`pwd`
+          coverage run demo_app/manage.py test --noinput --settings=demo_app.settings_test django_input_collection
 
       - name: "Upload Coverage Results for PY:${{ matrix.python-version }} DB:${{ matrix.db}} DJ:${{ matrix.django-version }}"
         uses: actions/upload-artifact@v2
@@ -185,7 +185,7 @@ jobs:
 
   coverage:
     name: Upload Coverage to Codecov
-    needs: [tests]
+    needs: [ tests ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -205,8 +205,8 @@ jobs:
 
       - name: Combine Report Coverage
         run: |
-            coverage combine coverage-*/.coverage
-            coverage xml
+          coverage combine coverage-*/.coverage
+          coverage xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
@@ -218,11 +218,11 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: ['cancel', 'outdated', 'black', 'pre-commit', 'security', 'tests', 'coverage']
+    needs: [ 'cancel', 'outdated', 'black', 'pre-commit', 'security', 'tests', 'coverage' ]
     outputs:
       bumped: ${{ steps.release.outputs.bumped }}
       bump_version: ${{ steps.release.outputs.bump_version }}
-      bump_sha:  ${{ steps.release.outputs.bump_sha }}
+      bump_sha: ${{ steps.release.outputs.bump_sha }}
     steps:
       - uses: actions/checkout@v2
         with:
