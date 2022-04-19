@@ -183,5 +183,6 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
 }
 
+# Point to our defaults
 INPUT_COLLECTEDINPUT_MODEL = "django_input_collection.CollectedInput"
 INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = "django_input_collection.BoundSuggestedResponse"
