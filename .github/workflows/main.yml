@@ -170,7 +170,7 @@ jobs:
           PYTHONWARNINGS: once::DeprecationWarning
           DB_TYPE: ${{ matrix.db }}
         run: |
-          coverage run demo_app/manage.py test --noinput --settings=demo_app.settings_test django_input_collection
+          coverage run demo_app/manage.py test --noinput --settings=demo_app.demo_app.settings_test django_input_collection
 
       - name: "Upload Coverage Results for PY:${{ matrix.python-version }} DB:${{ matrix.db}} DJ:${{ matrix.django-version }}"
         uses: actions/upload-artifact@v2
