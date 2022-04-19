@@ -1,7 +1,7 @@
 [run]
 branch = True
 omit =
-    testproj/*
+    demo_app/*
     */migrations/*
     */tests/*
 source = django_input_collection
@@ -9,6 +9,6 @@ source = django_input_collection
 [report]
 fail_under = 48
 omit =
-    testproj/*
+    demo_app/*
     */migrations/*
     */tests/*

@@ -5,5 +5,5 @@ from . import collection
 
 
 class PollView(CollectorView):
-    template_name = "poll.html"
+    template_name = "../templates/poll.html"
     collector_class = collection.PollTemplateViewCollector

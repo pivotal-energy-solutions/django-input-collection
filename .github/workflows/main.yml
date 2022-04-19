@@ -170,7 +170,7 @@ jobs:
           PYTHONWARNINGS: once::DeprecationWarning
           DB_TYPE: ${{ matrix.db }}
         run: |
-          coverage run testproj/manage.py test --noinput --settings=testproj.settings_test django_input_collection
+          coverage run demo_app/manage.py test --noinput --settings=demo_app.settings_test django_input_collection
 
       - name: "Upload Coverage Results for PY:${{ matrix.python-version }} DB:${{ matrix.db}} DJ:${{ matrix.django-version }}"
         uses: actions/upload-artifact@v2
@@ -181,7 +181,7 @@ jobs:
 
       - name: Django Check
         run: |
-          python testproj/manage.py check
+          python demo_app/manage.py check
 
   coverage:
     name: Upload Coverage to Codecov
@@ -239,4 +239,4 @@ jobs:
           PYTHONWARNINGS: once::DeprecationWarning
           GITHUB_TOKEN: ${{ secrets.ORGANIZATIONAL_REPO_TOKEN }}
         run: |
-          bumper.py --directory . --exclude=.idea,.github,testproj --version_files django_input_collection/__init__.py --repo=pivotal-energy-solutions/django-input-collection -v
+          bumper.py --directory . --exclude=.idea,.github,demo_app --version_files django_input_collection/__init__.py --repo=pivotal-energy-solutions/django-input-collection -v

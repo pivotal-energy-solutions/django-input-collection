@@ -2,5 +2,4 @@ flake8
 coverage
 black
 pre-commit
-django-environ
 mysqlclient
