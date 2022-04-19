@@ -170,8 +170,8 @@ jobs:
           PYTHONWARNINGS: once::DeprecationWarning
           DB_TYPE: ${{ matrix.db }}
         run: |
-          export PYTHONPATH=`pwd`
-          coverage run testproj/manage.py test --noinput --settings=testproj.settings_test
+#          export PYTHONPATH=`pwd`
+          coverage run testproj/manage.py test --noinput --settings=testproj.settings_test django_input_collection
 
       - name: "Upload Coverage Results for PY:${{ matrix.python-version }} DB:${{ matrix.db}} DJ:${{ matrix.django-version }}"
         uses: actions/upload-artifact@v2
@@ -182,7 +182,7 @@ jobs:
 
       - name: Django Check
         run: |
-          export PYTHONPATH=`pwd`
+#          export PYTHONPATH=`pwd`
           python testproj/manage.py check
 
   coverage:
