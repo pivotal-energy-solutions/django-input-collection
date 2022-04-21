@@ -67,6 +67,8 @@ class CollectionInstrumentFactory(factory.django.DjangoModelFactory):
     description = factory.Sequence(lambda n: "description %d" % n)
     help = factory.Sequence(lambda n: "help %d" % n)
 
+    test_requirement_type = "all-pass"
+
     @factory.post_generation
     def suggested_responses(self, create, extracted, **kwargs):
         if not create:

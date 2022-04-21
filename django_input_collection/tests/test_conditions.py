@@ -685,3 +685,138 @@ class ConditionTests(TestCase):
         self.assertEqual(test_conditions([1, "x"], [2, "xbarxfoox"]), False)
         self.assertEqual(test_conditions([1, "x"], [2, "xbarxfoox"]), False)
         self.assertEqual(test_conditions([1, "x"], [2, "x"]), False)
+
+    def test_multiple_conditions_for_single_instrument_one_pass(self):
+        """
+        Verifies that multiple parent instruments are able to condtribute to the unlocking of a
+        single dependent one.
+        """
+
+        instrument = factories.CollectionInstrumentFactory.create(
+            id=1, collection_request__id=1, test_requirement_type="one-pass"
+        )
+        child_instrument1 = factories.CollectionInstrumentFactory(id=2, collection_request__id=1)
+        factories.ConditionFactory.create(
+            instrument=instrument,
+            data_getter=f"instrument:{child_instrument1.id}",
+            condition_group=factories.ConditionGroupFactory.create(
+                requirement_type="all-pass",
+                cases=[factories.CaseFactory.create(match_type="match", match_data="yes")],
+            ),
+        )
+        child_instrument2 = factories.CollectionInstrumentFactory(id=3, collection_request__id=1)
+        factories.ConditionFactory.create(
+            instrument=instrument,
+            data_getter=f"instrument:{child_instrument2.id}",
+            condition_group=factories.ConditionGroupFactory.create(
+                requirement_type="all-pass",
+                cases=[factories.CaseFactory.create(match_type="match", match_data="yes")],
+            ),
+        )
+
+        def test_conditions(*input_pairs):
+            for id, data in input_pairs:
+                models.CollectedInput.objects.filter(id=id).update(data=data)
+            return instrument.test_conditions()
+
+        factories.CollectedInputFactory.create(
+            id=1, instrument__id=child_instrument1.id, data="dummy"
+        )
+        factories.CollectedInputFactory.create(
+            id=2, instrument__id=child_instrument2.id, data="dummy"
+        )
+        self.assertEqual(test_conditions([1, "foo"], [2, "bar"]), False)
+        self.assertEqual(test_conditions([1, "yes"], [2, "yes"]), True)
+        self.assertEqual(test_conditions([1, "yes"], [2, "no"]), True)
+        self.assertEqual(test_conditions([1, "no"], [2, "yes"]), True)
+        self.assertEqual(test_conditions([1, "no"], [2, "no"]), False)
+
+    def test_multiple_conditions_for_single_instrument_all_pass(self):
+        """
+        Verifies that multiple parent instruments are able to condtribute to the unlocking of a
+        single dependent one.
+        """
+
+        instrument = factories.CollectionInstrumentFactory.create(
+            id=1, collection_request__id=1, test_requirement_type="all-pass"
+        )
+        child_instrument1 = factories.CollectionInstrumentFactory(id=2, collection_request__id=1)
+        factories.ConditionFactory.create(
+            instrument=instrument,
+            data_getter=f"instrument:{child_instrument1.id}",
+            condition_group=factories.ConditionGroupFactory.create(
+                requirement_type="all-pass",
+                cases=[factories.CaseFactory.create(match_type="match", match_data="yes")],
+            ),
+        )
+        child_instrument2 = factories.CollectionInstrumentFactory(id=3, collection_request__id=1)
+        factories.ConditionFactory.create(
+            instrument=instrument,
+            data_getter=f"instrument:{child_instrument2.id}",
+            condition_group=factories.ConditionGroupFactory.create(
+                requirement_type="all-pass",
+                cases=[factories.CaseFactory.create(match_type="match", match_data="yes")],
+            ),
+        )
+
+        def test_conditions(*input_pairs):
+            for id, data in input_pairs:
+                models.CollectedInput.objects.filter(id=id).update(data=data)
+            return instrument.test_conditions()
+
+        factories.CollectedInputFactory.create(
+            id=1, instrument__id=child_instrument1.id, data="dummy"
+        )
+        factories.CollectedInputFactory.create(
+            id=2, instrument__id=child_instrument2.id, data="dummy"
+        )
+        self.assertEqual(test_conditions([1, "foo"], [2, "bar"]), False)
+        self.assertEqual(test_conditions([1, "yes"], [2, "yes"]), True)
+        self.assertEqual(test_conditions([1, "yes"], [2, "no"]), False)
+        self.assertEqual(test_conditions([1, "no"], [2, "yes"]), False)
+        self.assertEqual(test_conditions([1, "no"], [2, "no"]), False)
+
+    def test_multiple_conditions_for_single_instrument_all_fail(self):
+        """
+        Verifies that multiple parent instruments are able to condtribute to the unlocking of a
+        single dependent one.
+        """
+
+        instrument = factories.CollectionInstrumentFactory.create(
+            id=1, collection_request__id=1, test_requirement_type="all-fail"
+        )
+        child_instrument1 = factories.CollectionInstrumentFactory(id=2, collection_request__id=1)
+        factories.ConditionFactory.create(
+            instrument=instrument,
+            data_getter=f"instrument:{child_instrument1.id}",
+            condition_group=factories.ConditionGroupFactory.create(
+                requirement_type="all-pass",
+                cases=[factories.CaseFactory.create(match_type="match", match_data="yes")],
+            ),
+        )
+        child_instrument2 = factories.CollectionInstrumentFactory(id=3, collection_request__id=1)
+        factories.ConditionFactory.create(
+            instrument=instrument,
+            data_getter=f"instrument:{child_instrument2.id}",
+            condition_group=factories.ConditionGroupFactory.create(
+                requirement_type="all-pass",
+                cases=[factories.CaseFactory.create(match_type="match", match_data="yes")],
+            ),
+        )
+
+        def test_conditions(*input_pairs):
+            for id, data in input_pairs:
+                models.CollectedInput.objects.filter(id=id).update(data=data)
+            return instrument.test_conditions()
+
+        factories.CollectedInputFactory.create(
+            id=1, instrument__id=child_instrument1.id, data="dummy"
+        )
+        factories.CollectedInputFactory.create(
+            id=2, instrument__id=child_instrument2.id, data="dummy"
+        )
+        self.assertEqual(test_conditions([1, "foo"], [2, "bar"]), True)
+        self.assertEqual(test_conditions([1, "yes"], [2, "yes"]), False)
+        self.assertEqual(test_conditions([1, "yes"], [2, "no"]), False)
+        self.assertEqual(test_conditions([1, "no"], [2, "yes"]), False)
+        self.assertEqual(test_conditions([1, "no"], [2, "no"]), True)

@@ -136,6 +136,16 @@ class CollectionInstrument(DatesModel, models.Model):
         "SuggestedResponse", through=settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, blank=True
     )
 
+    test_requirement_type = models.CharField(
+        max_length=20,
+        default="all-pass",
+        choices=(
+            ("all-pass", "All cases must pass"),
+            ("one-pass", "At least one case must pass"),
+            ("all-fail", "All cases must fail"),
+        ),
+    )
+
     # Also available:
     #
     # self.conditions.all()  # Conditions toward enabling this instrument
@@ -150,15 +160,31 @@ class CollectionInstrument(DatesModel, models.Model):
 
     def test_conditions(self, **kwargs):
         """Checks data all Conditions gating this instrument."""
-        idx = 0
+        results = []
         for idx, condition in enumerate(self.conditions.all(), start=1):
-            if not condition.test(**kwargs):
-                if idx >= 1 and _should_log:
-                    log_method(f"{self}: Condition {idx}/{self.conditions.count()} FAILED")
-                return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
-        if idx >= 1 and _should_log:
-            log_method(f"{self}: Conditions {idx}/{self.conditions.count()} PASSED")
-        return True
+            result = condition.test(**kwargs)
+            if self.test_requirement_type == "all-pass" and result is False:
+                log_method(
+                    f"Instrument Condition {idx}/{self.conditions.count()} with "
+                    f"{self.get_test_requirement_type_display()!r} failed condition "
+                    f"{condition} - returning False"
+                )
+                return False
+            elif self.test_requirement_type == "one-pass" and result is True:
+                log_method(
+                    f"Instrument Condition {idx}/{self.conditions.count()} with "
+                    f"{self.get_test_requirement_type_display()!r} passed condition "
+                    f"{condition} - returning True"
+                )
+                return True
+            elif self.test_requirement_type == "all-fail":
+                result = not result
+            results.append(result)
+            log_method(
+                f"All Instrument Conditions have run with "
+                f"{self.get_test_requirement_type_display()!r} returning {all(results)}"
+            )
+        return all(results)
 
     def get_parent_instruments(self):
         """
