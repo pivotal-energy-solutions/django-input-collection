@@ -16,4 +16,5 @@ node_modules
 db.sqlite3
 .DS_Store
 .idea
+.coverage
 /django_input_collection.egg-info/
