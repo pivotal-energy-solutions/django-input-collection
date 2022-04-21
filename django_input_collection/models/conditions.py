@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 
 _should_log, log_method = app.get_verbose_logging
 
+
 def set_substitutions(d):
     def decorator(f):
         f.__dict__.update(substitutions=d)
