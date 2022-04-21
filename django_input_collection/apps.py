@@ -33,10 +33,10 @@ class InputConfigApp:
 
     @property
     def get_verbose_logging(self) -> tuple:
-        _should_log = self.VERBOSE_LOGGING
+        should_log = self.VERBOSE_LOGGING
         log_method = log.debug
-        if not isinstance(_should_log, bool) and callable(_should_log):
-            log_method = _should_log
+        if not isinstance(should_log, bool) and callable(should_log):
+            log_method = should_log
             should_log = True
         return (should_log, log_method)
 
