@@ -26,8 +26,7 @@ __all__ = ["Condition", "ConditionGroup", "Case"]
 
 log = logging.getLogger(__name__)
 
-_should_log = getattr(app, "VERBOSE_LOGGING", False)
-
+_should_log, log_method = app.get_verbose_logging
 
 def set_substitutions(d):
     def decorator(f):
@@ -107,11 +106,9 @@ class Condition(DatesModel, models.Model):
         value = self.condition_group.test(**kwargs)
 
         if _should_log:
-            log.debug(
-                "Instrument Condition Group - %s (%s) Test Result: %s",
-                self.condition_group,
-                self.condition_group.pk,
-                value,
+            log_method(
+                f"Instrument Condition Group - {self.condition_group} ("
+                f"{self.condition_group.pk=}) Test Result: {value}",
             )
         return value
 
@@ -177,11 +174,9 @@ class ConditionGroup(DatesModel, models.Model):
         testables = list(self.child_groups.all()) + list(self.cases.all())
 
         if testables and _should_log:
-            log.debug(
-                "%d Tests will be conducted on ConditionGroup (%s) using %r",
-                len(testables),
-                self.pk,
-                data,
+            log_method(
+                f"{len(testables)} Tests will be conducted on ConditionGroup "
+                f"({self.pk=}) using {data!r}",
             )
         for item in testables:
             if item.test(data, **kwargs):
@@ -191,43 +186,38 @@ class ConditionGroup(DatesModel, models.Model):
 
             if has_failed and self.requirement_type == "all-pass":
                 if _should_log:
-                    log.debug(
-                        "{} ({}) {} Conditional all-pass Group: {} - FAIL".format(
-                            self.nickname, self.pk, len(testables), item.describe()
-                        )
+                    log_method(
+                        f"{self.nickname} ({self.pk=}) {len(testables)} "
+                        f"Conditional all-pass Group: {item.describe()} - FAIL"
                     )
                 return False
             elif has_passed and self.requirement_type == "all-fail":
                 if _should_log:
-                    log.debug(
-                        "{} ({}) {} Conditional all-fail Group: {} - FAIL".format(
-                            self.nickname, self.pk, len(testables), item.describe()
-                        )
+                    log_method(
+                        f"{self.nickname} ({self.pk=}) {len(testables)} "
+                        f"Conditional all-fail Group: {item.describe()} - FAIL"
                     )
                 return False
             elif has_passed and self.requirement_type == "one-pass":
                 if _should_log:
-                    log.debug(
-                        "{} ({}) {} Conditional one-pass Group: {} - TRUE".format(
-                            self.nickname, self.pk, len(testables), item.describe()
-                        )
+                    log_method(
+                        f"{self.nickname} ({self.pk=}) {len(testables)} "
+                        f"Conditional one-pass Group: {item.describe()} - FAIL"
                     )
                 return True
 
         if not has_passed and self.requirement_type == "one-pass":
             if _should_log:
-                log.debug(
-                    "{} ({}) {} Conditional one-pass Group: ALL FAILED".format(
-                        self.nickname, self.pk, len(testables)
-                    )
+                log_method(
+                    f"{self.nickname} ({self.pk=}) {len(testables)} "
+                    f"Conditional one-pass Group: {item.describe()} - ALL FAILED"
                 )
             return False
 
         if _should_log:
-            log.debug(
-                "{} ({}) {} Conditional Group: ALL PASSED".format(
-                    self.nickname, self.pk, len(testables)
-                )
+            log_method(
+                f"{self.nickname} ({self.pk=}) {len(testables)} "
+                f"Conditional Group: {item.describe()} - ALL PASSED"
             )
         return True
 

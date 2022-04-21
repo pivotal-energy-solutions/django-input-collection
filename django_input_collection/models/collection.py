@@ -2,7 +2,6 @@
 import logging
 from django.db import models
 from django.db.models import Q
-from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
 
 import swapper
@@ -13,7 +12,7 @@ from ..apps import app
 
 log = logging.getLogger(__name__)
 
-_should_log = getattr(app, "VERBOSE_LOGGING", False)
+_should_log, log_method = app.get_verbose_logging
 
 __all__ = [
     "Measure",
@@ -155,10 +154,10 @@ class CollectionInstrument(DatesModel, models.Model):
         for idx, condition in enumerate(self.conditions.all(), start=1):
             if not condition.test(**kwargs):
                 if idx > 1 and _should_log:
-                    log.debug("Condition %s/%s FAILED", idx, self.conditions.count())
+                    log_method(f"Condition {idx}/{self.conditions.count()} FAILED")
                 return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
         if idx > 1 and _should_log:
-            log.debug("Conditions %s/%s PASSED", idx, self.conditions.count())
+            log_method(f"Conditions {idx}/{self.conditions.count()} PASSED")
         return True
 
     def get_parent_instruments(self):
@@ -232,7 +231,7 @@ class ResponsePolicy(DatesModel, models.Model):
         verbose_name_plural = "Response policies"
 
     def __str__(self):
-        return self.nickname or ":".join("{}={}".format(*sorted(self.get_flags().items())))
+        return self.nickname or ":".join([f"{k}={v}" for k, v in self.get_flags().items()])
 
     def get_flags(self):
         return {
