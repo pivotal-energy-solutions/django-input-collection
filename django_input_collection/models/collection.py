@@ -153,11 +153,11 @@ class CollectionInstrument(DatesModel, models.Model):
         idx = 0
         for idx, condition in enumerate(self.conditions.all(), start=1):
             if not condition.test(**kwargs):
-                if idx > 1 and _should_log:
-                    log_method(f"Condition {idx}/{self.conditions.count()} FAILED")
+                if _should_log:
+                    log_method(f"{self}: Condition {idx}/{self.conditions.count()} FAILED")
                 return False  # No fancy AND/OR/NONE logic, if one fails, the whole test fails
-        if idx > 1 and _should_log:
-            log_method(f"Conditions {idx}/{self.conditions.count()} PASSED")
+        if _should_log:
+            log_method(f"{self}: Conditions {idx}/{self.conditions.count()} PASSED")
         return True
 
     def get_parent_instruments(self):
