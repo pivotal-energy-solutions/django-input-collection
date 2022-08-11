@@ -127,7 +127,12 @@ class BaseCollector(object, metaclass=CollectorType):
 
     @property
     def serialized_data(self):
-        instruments = self.get_instruments()
+        # Save 255 queries
+        instruments = (
+            self.get_instruments()
+            .prefetch_related("conditions__condition_group", "collectedinput_set")
+            .select_related("response_policy")
+        )
         serializer_class = self.get_serializer_class("instrument")
         serializer = serializer_class(
             instance=instruments,

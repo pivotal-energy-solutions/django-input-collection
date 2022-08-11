@@ -123,8 +123,9 @@ class CollectionInstrumentViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
         if group:
             filters["group"] = group
 
-        queryset = queryset.filter(**filters)
-        return queryset
+        if filters:
+            queryset = queryset.filter(**filters)
+        return queryset.select_related("response_policy")
 
     # def get_collection_request(self):
     #     if 'pk' in self.kwargs:

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from unittest import SkipTest
 
 from django.contrib.auth import get_user_model
@@ -162,3 +163,103 @@ class InputSubmissionTests(RestFrameworkTestCase):
             self.submit({"instrument": self.instrument.id, "data": "baz"}),
             status.HTTP_400_BAD_REQUEST,
         )
+
+
+instrument_list = reverse_lazy("collection-api:instrument-list")
+
+
+class InstrumentTests(RestFrameworkTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(InstrumentTests, cls).setUpClass()
+
+        cls.collection_request = factories.CollectionRequestFactory.create(
+            **{
+                "max_instrument_inputs_per_user": 1,
+                "max_instrument_inputs": 2,
+            }
+        )
+        cls.instrument = factories.CollectionInstrumentFactory.create(
+            **{
+                "collection_request": cls.collection_request,
+                "response_policy__restrict": True,
+                "response_policy__multiple": False,
+            }
+        )
+        cls.instrument = factories.CollectionInstrumentFactory.create(
+            **{
+                "collection_request": cls.collection_request,
+                "response_policy__restrict": True,
+                "response_policy__multiple": True,
+            }
+        )
+
+        cls.collector = RestFrameworkCollector(cls.collection_request)
+
+    def test_instrument_pk(self):
+        user = User.objects.create(username="user1")
+        self.client.force_login(user)
+
+        response = self.client.get(
+            reverse_lazy("collection-api:instrument-detail", kwargs={"pk": self.instrument.pk}),
+            {
+                "collector": self.collector.get_identifier(),
+                "request": self.collection_request.pk,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        # print(json.dumps(response.json(), indent=4))
+
+    def test_list_instrument_query_counts(self):
+        """Verify that for list serializer we have predictable ta"""
+        user = User.objects.create(username="user1")
+        self.client.force_login(user)
+
+        # Query 1 - Session
+        # Query 2 - User
+        # Query 3/4 - Collection Request
+        overhead_queries = 4
+
+        with self.assertNumQueries(overhead_queries + 1):
+            response = self.client.get(
+                instrument_list,
+                {
+                    "collector": self.collector.get_identifier(),
+                    "request": self.collection_request.pk,
+                },
+                format="json",
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(type(response.json()), list)
+        self.assertEqual(len(response.json()), 2)
+
+        # print(json.dumps(response.json(), indent=4))
+
+    def test_data_equality(self):
+        """Verify that the data we get from a list serializer matches the detail serializer"""
+
+        user = User.objects.create(username="user1")
+        self.client.force_login(user)
+
+        response = self.client.get(
+            instrument_list,
+            {"collector": self.collector.get_identifier(), "request": self.collection_request.pk},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        for item in response.json():
+            with self.subTest(f"{item['measure']} equality test"):
+                response = self.client.get(
+                    reverse_lazy("collection-api:instrument-detail", kwargs={"pk": item["id"]}),
+                    {
+                        "collector": self.collector.get_identifier(),
+                        "request": self.collection_request.pk,
+                    },
+                    format="json",
+                )
+                self.assertEqual(set(response.json().keys()), set(item.keys()))
+                for key, value in response.json().items():
+                    with self.subTest(f"{item['measure']} {key} => {value} == {item[key]}"):
+                        self.assertEqual(value, item.get(key))
