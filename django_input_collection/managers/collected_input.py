@@ -1,21 +1,4 @@
-# -*- coding: utf-8 -*-
-from django.db.models.query import QuerySet
-from django.db.models import Q, Max, Count, OuterRef, Subquery
-
-__all__ = ["CollectedInputQuerySet", "UserLatestCollectedInputQuerySet"]
-
-
-class CollectionInstrumentQuerySet(QuerySet):
-    """Filter operations for CollectionInstrument."""
-
-    def filter_for_condition_resolver(self, name, sep=":"):
-        if name == "*":
-            return self.filter(conditions__isnull=False)
-        return self.filter(conditions__data_getter__startswith=name + sep)
-
-    def order_by_num_conditions(self):
-        """Convenience method for ordering parent instruments before child instruments."""
-        return self.annotate(Count("conditions")).order_by("conditions__count")
+from django.db.models import QuerySet, OuterRef, Subquery
 
 
 class CollectedInputQuerySet(QuerySet):

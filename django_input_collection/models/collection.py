@@ -6,7 +6,7 @@ from django.conf import settings
 
 import swapper
 
-from . import managers
+from .. import managers
 from .base import DatesModel
 from ..apps import app
 
