@@ -6,49 +6,6 @@ from .contextual_collected_input import ContextualCollectedInputsSerializer
 from .utils import ReadWriteToggleMixin
 
 
-class CollectionInstrumentListSerializer(serializers.ListSerializer):
-    class Meta:
-        model = CollectionInstrument
-        fields = [
-            "id",
-            "collection_request",
-            "measure",
-            "segment",
-            "group",
-            "type",
-            "order",
-            "text",
-            "description",
-            "help",
-        ]
-
-    def to_representation(self, data):
-        return [
-            {
-                "id": item.pk,
-                "collection_request": item.collection_request_id,
-                "measure": item.measure_id,
-                "segment": item.segment_id,
-                "group": item.group_id,
-                "type": item.type_id,
-                "order": item.order,
-                "text": item.text,
-                "description": item.description,
-                "help": item.help,
-                "is_condition_met": True,
-                "response_policy": {
-                    "restrict": item.response_policy.restrict,
-                    "multiple": item.response_policy.multiple,
-                    "required": item.response_policy.required,
-                },
-                "parent_instruments": [],
-                "suggested_responses": [],
-                "collectedinput_set": [],
-            }
-            for item in data
-        ]
-
-
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
     response_policy = serializers.SerializerMethodField()
     suggested_responses = BoundSuggestedResponseSerializer(
@@ -79,7 +36,6 @@ class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSeri
             "suggested_responses",
             "collectedinput_set",
         ]
-        list_serializer_class = CollectionInstrumentListSerializer
 
     def get_response_policy(self, instance):
         return instance.response_policy.get_flags()

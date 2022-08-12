@@ -129,6 +129,7 @@ class ConditionGroup(DatesModel, models.Model):
     )
 
     # Intermediate groups declare child_groups only
+    # NOTE WE DO NOT SUPPORT THIS!!!!  This will create an N+1 query issue
     child_groups = models.ManyToManyField(
         "self", related_name="parent_groups", blank=True, symmetrical=False
     )

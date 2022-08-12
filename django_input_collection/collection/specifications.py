@@ -38,6 +38,7 @@ class Specification(object):
         }
 
     def get_instruments_info(self, inputs_info=None):
+
         ordering = list(
             self.collector.collection_request.collectioninstrument_set.filter(
                 conditions=None
