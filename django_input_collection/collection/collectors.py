@@ -123,7 +123,7 @@ class BaseCollector(object, metaclass=CollectorType):
 
     @property
     def specification_json(self):
-        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
+        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder, indent=4)
 
     @property
     def serialized_data(self):
