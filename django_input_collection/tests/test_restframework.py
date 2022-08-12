@@ -256,7 +256,7 @@ class InstrumentTests(RestFrameworkTestCase):
             )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(type(response.json()), list)
-        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(len(response.json()), 3)
 
         # print(json.dumps(response.json(), indent=4))
 
