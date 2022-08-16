@@ -22,6 +22,14 @@ class CollectionGroupFactory(factory.django.DjangoModelFactory):
     id = "default"
 
 
+class CollectionInstrumentTypeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = "django_input_collection.CollectionInstrumentType"
+        django_get_or_create = ("id",)
+
+    id = "open"
+
+
 class CollectionRequestFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = "django_input_collection.CollectionRequest"
