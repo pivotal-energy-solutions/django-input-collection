@@ -12,12 +12,14 @@ class InstrumentTests(TestCase):
         super(InstrumentTests, cls).setUpClass()
 
         cls.collection_request = factories.CollectionRequestFactory.create(
+            id=666,
             max_instrument_inputs=2,
             max_instrument_inputs_per_user=1,
         )
 
         cls.parent_instrument = factories.CollectionInstrumentFactory.create(
             id=10,
+            measure__id="measure-10",
             collection_request=cls.collection_request,
             group=factories.CollectionGroupFactory(id="Foo"),
             segment=factories.CollectionGroupFactory(id="Segment"),
@@ -39,6 +41,7 @@ class InstrumentTests(TestCase):
             instrument=factories.CollectionInstrumentFactory.create(
                 id=11,
                 collection_request=cls.collection_request,
+                measure__id="measure-11",
             ),
             condition_group=factories.ConditionGroupFactory.create(
                 requirement_type="all-pass",
@@ -66,6 +69,7 @@ class InstrumentTests(TestCase):
             instrument=factories.CollectionInstrumentFactory.create(
                 id=899,
                 collection_request=cls.collection_request,
+                measure__id="measure-899",
             ),
             condition_group=factories.ConditionGroupFactory.create(
                 id=799,
@@ -151,10 +155,10 @@ class InstrumentTests(TestCase):
         self.assertEqual(len(cases), 6)
         # print(f"{len(cases)} {cases=}")
 
-        with self.assertNumQueries(45):
-            self.collector = RestFrameworkCollector(self.collection_request)
-            specification = self.collector.get_specification()
-            default = specification.legacy_get_instruments_info()
+        # with self.assertNumQueries(45):
+        #     self.collector = RestFrameworkCollector(self.collection_request)
+        #     specification = self.collector.get_specification()
+        #     default = specification.legacy_get_instruments_info()
 
         with self.assertNumQueries(7):
             self.collector = RestFrameworkCollector(self.collection_request)
@@ -187,29 +191,29 @@ class InstrumentTests(TestCase):
         # with open("new.json", "w") as fp:
         #     fp.write(f"{json.dumps(data, indent=4)}\n")
         #
-        # def build_assertions(value, key="data"):
-        #
-        #     if isinstance(value, dict):
-        #         for k, v in value.items():
-        #             build_assertions(v, f"{key}[{k!r}]")
-        #     elif isinstance(value, list):
-        #         for idx, v in enumerate(value):
-        #             build_assertions(v, f"{key}[{idx}]")
-        #     else:
-        #         print(f"self.assertEqual({key}, {value!r})")
+        def build_assertions(value, key="data"):
+
+            if isinstance(value, dict):
+                for k, v in value.items():
+                    build_assertions(v, f"{key}[{k!r}]")
+            elif isinstance(value, list):
+                for idx, v in enumerate(value):
+                    build_assertions(v, f"{key}[{idx}]")
+            else:
+                print(f"self.assertEqual({key}, {value!r})")
 
         # build_assertions(data)
 
         self.assertEqual(data["instruments"][11]["id"], 11)
-        self.assertEqual(data["instruments"][11]["collection_request"], 1)
-        self.assertEqual(data["instruments"][11]["measure"], "measure-1")
+        self.assertEqual(data["instruments"][11]["collection_request"], 666)
+        self.assertEqual(data["instruments"][11]["measure"], "measure-11")
         self.assertEqual(data["instruments"][11]["segment"], None)
         self.assertEqual(data["instruments"][11]["group"], "default")
         self.assertEqual(data["instruments"][11]["type"], None)
-        self.assertEqual(data["instruments"][11]["order"], 1)
-        self.assertEqual(data["instruments"][11]["text"], "text 1")
-        self.assertEqual(data["instruments"][11]["description"], "description 1")
-        self.assertEqual(data["instruments"][11]["help"], "help 1")
+        self.assertEqual(data["instruments"][11]["order"], 55)
+        self.assertEqual(data["instruments"][11]["text"], "text 55")
+        self.assertEqual(data["instruments"][11]["description"], "description 55")
+        self.assertEqual(data["instruments"][11]["help"], "help 55")
         self.assertEqual(data["instruments"][11]["response_policy"], 1)
         self.assertEqual(data["instruments"][11]["test_requirement_type"], "all-pass")
         self.assertEqual(data["instruments"][11]["response_info"]["response_policy"]["id"], 1)
@@ -235,8 +239,8 @@ class InstrumentTests(TestCase):
         self.assertEqual(
             data["instruments"][11]["response_info"]["method"]["meta"]["data_type"], None
         )
-        self.assertEqual(data["instruments"][11]["collected_inputs"][0]["id"], 2)
-        self.assertEqual(data["instruments"][11]["collected_inputs"][0]["collection_request"], 1)
+        self.assertEqual(data["instruments"][11]["collected_inputs"][0]["id"], 14)
+        self.assertEqual(data["instruments"][11]["collected_inputs"][0]["collection_request"], 666)
         self.assertEqual(data["instruments"][11]["collected_inputs"][0]["instrument"], 11)
         self.assertEqual(data["instruments"][11]["collected_inputs"][0]["user"], None)
         self.assertEqual(data["instruments"][11]["collected_inputs"][0]["version"], "")
@@ -245,8 +249,8 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][11]["collected_inputs"][0]["collector_version"], "")
         self.assertEqual(data["instruments"][11]["collected_inputs"][0]["collector_comment"], None)
         self.assertEqual(data["instruments"][11]["collected_inputs"][0]["data"], "{'input': 'bar'}")
-        self.assertEqual(data["instruments"][11]["collected_inputs"][1]["id"], 3)
-        self.assertEqual(data["instruments"][11]["collected_inputs"][1]["collection_request"], 1)
+        self.assertEqual(data["instruments"][11]["collected_inputs"][1]["id"], 15)
+        self.assertEqual(data["instruments"][11]["collected_inputs"][1]["collection_request"], 666)
         self.assertEqual(data["instruments"][11]["collected_inputs"][1]["instrument"], 11)
         self.assertEqual(data["instruments"][11]["collected_inputs"][1]["user"], None)
         self.assertEqual(data["instruments"][11]["collected_inputs"][1]["version"], "")
@@ -259,7 +263,7 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][11]["conditions"][0]["instrument"], 11)
         self.assertEqual(data["instruments"][11]["conditions"][0]["condition_group"]["id"], 1)
         self.assertEqual(
-            data["instruments"][11]["conditions"][0]["condition_group"]["nickname"], "Group 0"
+            data["instruments"][11]["conditions"][0]["condition_group"]["nickname"], "Group 24"
         )
         self.assertEqual(
             data["instruments"][11]["conditions"][0]["condition_group"]["requirement_type"],
@@ -270,7 +274,7 @@ class InstrumentTests(TestCase):
         )
         self.assertEqual(
             data["instruments"][11]["conditions"][0]["condition_group"]["cases"][0]["nickname"],
-            "Case 0",
+            "Case 24",
         )
         self.assertEqual(
             data["instruments"][11]["conditions"][0]["condition_group"]["cases"][0]["match_type"],
@@ -285,7 +289,7 @@ class InstrumentTests(TestCase):
         )
         self.assertEqual(
             data["instruments"][11]["conditions"][0]["condition_group"]["cases"][1]["nickname"],
-            "Case 1",
+            "Case 25",
         )
         self.assertEqual(
             data["instruments"][11]["conditions"][0]["condition_group"]["cases"][1]["match_type"],
@@ -296,7 +300,7 @@ class InstrumentTests(TestCase):
             "",
         )
         self.assertEqual(
-            data["instruments"][11]["conditions"][0]["data_getter"], "instrument:measure-0"
+            data["instruments"][11]["conditions"][0]["data_getter"], "instrument:measure-10"
         )
         self.assertEqual(data["instruments"][11]["child_conditions"][0]["id"], 999)
         self.assertEqual(data["instruments"][11]["child_conditions"][0]["instrument"], 899)
@@ -304,7 +308,8 @@ class InstrumentTests(TestCase):
             data["instruments"][11]["child_conditions"][0]["condition_group"]["id"], 799
         )
         self.assertEqual(
-            data["instruments"][11]["child_conditions"][0]["condition_group"]["nickname"], "Group 2"
+            data["instruments"][11]["child_conditions"][0]["condition_group"]["nickname"],
+            "Group 26",
         )
         self.assertEqual(
             data["instruments"][11]["child_conditions"][0]["condition_group"]["requirement_type"],
@@ -338,7 +343,7 @@ class InstrumentTests(TestCase):
             data["instruments"][11]["child_conditions"][0]["condition_group"]["child_groups"][0][
                 "cases"
             ][0]["nickname"],
-            "Case 4",
+            "Case 28",
         )
         self.assertEqual(
             data["instruments"][11]["child_conditions"][0]["condition_group"]["child_groups"][0][
@@ -362,7 +367,7 @@ class InstrumentTests(TestCase):
             data["instruments"][11]["child_conditions"][0]["condition_group"]["child_groups"][0][
                 "cases"
             ][1]["nickname"],
-            "Case 3",
+            "Case 27",
         )
         self.assertEqual(
             data["instruments"][11]["child_conditions"][0]["condition_group"]["child_groups"][0][
@@ -383,7 +388,7 @@ class InstrumentTests(TestCase):
             data["instruments"][11]["child_conditions"][0]["condition_group"]["cases"][0][
                 "nickname"
             ],
-            "Case 2",
+            "Case 26",
         )
         self.assertEqual(
             data["instruments"][11]["child_conditions"][0]["condition_group"]["cases"][0][
@@ -406,7 +411,8 @@ class InstrumentTests(TestCase):
             data["instruments"][11]["child_conditions"][1]["condition_group"]["id"], 1799
         )
         self.assertEqual(
-            data["instruments"][11]["child_conditions"][1]["condition_group"]["nickname"], "Group 3"
+            data["instruments"][11]["child_conditions"][1]["condition_group"]["nickname"],
+            "Group 27",
         )
         self.assertEqual(
             data["instruments"][11]["child_conditions"][1]["condition_group"]["requirement_type"],
@@ -420,7 +426,7 @@ class InstrumentTests(TestCase):
             data["instruments"][11]["child_conditions"][1]["condition_group"]["cases"][0][
                 "nickname"
             ],
-            "Case 5",
+            "Case 29",
         )
         self.assertEqual(
             data["instruments"][11]["child_conditions"][1]["condition_group"]["cases"][0][
@@ -438,15 +444,15 @@ class InstrumentTests(TestCase):
             data["instruments"][11]["child_conditions"][1]["data_getter"], "instrument:11"
         )
         self.assertEqual(data["instruments"][899]["id"], 899)
-        self.assertEqual(data["instruments"][899]["collection_request"], 1)
-        self.assertEqual(data["instruments"][899]["measure"], "measure-2")
+        self.assertEqual(data["instruments"][899]["collection_request"], 666)
+        self.assertEqual(data["instruments"][899]["measure"], "measure-899")
         self.assertEqual(data["instruments"][899]["segment"], None)
         self.assertEqual(data["instruments"][899]["group"], "default")
         self.assertEqual(data["instruments"][899]["type"], None)
-        self.assertEqual(data["instruments"][899]["order"], 2)
-        self.assertEqual(data["instruments"][899]["text"], "text 2")
-        self.assertEqual(data["instruments"][899]["description"], "description 2")
-        self.assertEqual(data["instruments"][899]["help"], "help 2")
+        self.assertEqual(data["instruments"][899]["order"], 56)
+        self.assertEqual(data["instruments"][899]["text"], "text 56")
+        self.assertEqual(data["instruments"][899]["description"], "description 56")
+        self.assertEqual(data["instruments"][899]["help"], "help 56")
         self.assertEqual(data["instruments"][899]["response_policy"], 1)
         self.assertEqual(data["instruments"][899]["test_requirement_type"], "all-pass")
         self.assertEqual(data["instruments"][899]["response_info"]["response_policy"]["id"], 1)
@@ -477,7 +483,7 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][899]["conditions"][0]["instrument"], 899)
         self.assertEqual(data["instruments"][899]["conditions"][0]["condition_group"]["id"], 799)
         self.assertEqual(
-            data["instruments"][899]["conditions"][0]["condition_group"]["nickname"], "Group 2"
+            data["instruments"][899]["conditions"][0]["condition_group"]["nickname"], "Group 26"
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][0]["condition_group"]["requirement_type"],
@@ -509,7 +515,7 @@ class InstrumentTests(TestCase):
             data["instruments"][899]["conditions"][0]["condition_group"]["child_groups"][0][
                 "cases"
             ][0]["nickname"],
-            "Case 4",
+            "Case 28",
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][0]["condition_group"]["child_groups"][0][
@@ -533,7 +539,7 @@ class InstrumentTests(TestCase):
             data["instruments"][899]["conditions"][0]["condition_group"]["child_groups"][0][
                 "cases"
             ][1]["nickname"],
-            "Case 3",
+            "Case 27",
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][0]["condition_group"]["child_groups"][0][
@@ -552,7 +558,7 @@ class InstrumentTests(TestCase):
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][0]["condition_group"]["cases"][0]["nickname"],
-            "Case 2",
+            "Case 26",
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][0]["condition_group"]["cases"][0]["match_type"],
@@ -567,7 +573,7 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][899]["conditions"][1]["instrument"], 899)
         self.assertEqual(data["instruments"][899]["conditions"][1]["condition_group"]["id"], 1799)
         self.assertEqual(
-            data["instruments"][899]["conditions"][1]["condition_group"]["nickname"], "Group 3"
+            data["instruments"][899]["conditions"][1]["condition_group"]["nickname"], "Group 27"
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][1]["condition_group"]["requirement_type"],
@@ -578,7 +584,7 @@ class InstrumentTests(TestCase):
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][1]["condition_group"]["cases"][0]["nickname"],
-            "Case 5",
+            "Case 29",
         )
         self.assertEqual(
             data["instruments"][899]["conditions"][1]["condition_group"]["cases"][0]["match_type"],
@@ -590,15 +596,15 @@ class InstrumentTests(TestCase):
         )
         self.assertEqual(data["instruments"][899]["conditions"][1]["data_getter"], "instrument:11")
         self.assertEqual(data["instruments"][10]["id"], 10)
-        self.assertEqual(data["instruments"][10]["collection_request"], 1)
-        self.assertEqual(data["instruments"][10]["measure"], "measure-0")
+        self.assertEqual(data["instruments"][10]["collection_request"], 666)
+        self.assertEqual(data["instruments"][10]["measure"], "measure-10")
         self.assertEqual(data["instruments"][10]["segment"], "Segment")
         self.assertEqual(data["instruments"][10]["group"], "Foo")
         self.assertEqual(data["instruments"][10]["type"], "data_type")
-        self.assertEqual(data["instruments"][10]["order"], 0)
-        self.assertEqual(data["instruments"][10]["text"], "text 0")
-        self.assertEqual(data["instruments"][10]["description"], "description 0")
-        self.assertEqual(data["instruments"][10]["help"], "help 0")
+        self.assertEqual(data["instruments"][10]["order"], 54)
+        self.assertEqual(data["instruments"][10]["text"], "text 54")
+        self.assertEqual(data["instruments"][10]["description"], "description 54")
+        self.assertEqual(data["instruments"][10]["help"], "help 54")
         self.assertEqual(data["instruments"][10]["response_policy"], 1)
         self.assertEqual(data["instruments"][10]["test_requirement_type"], "all-pass")
         self.assertEqual(data["instruments"][10]["response_info"]["response_policy"]["id"], 1)
@@ -636,8 +642,8 @@ class InstrumentTests(TestCase):
         self.assertEqual(
             data["instruments"][10]["response_info"]["method"]["meta"]["data_type"], None
         )
-        self.assertEqual(data["instruments"][10]["collected_inputs"][0]["id"], 1)
-        self.assertEqual(data["instruments"][10]["collected_inputs"][0]["collection_request"], 1)
+        self.assertEqual(data["instruments"][10]["collected_inputs"][0]["id"], 13)
+        self.assertEqual(data["instruments"][10]["collected_inputs"][0]["collection_request"], 666)
         self.assertEqual(data["instruments"][10]["collected_inputs"][0]["instrument"], 10)
         self.assertEqual(data["instruments"][10]["collected_inputs"][0]["user"], None)
         self.assertEqual(data["instruments"][10]["collected_inputs"][0]["version"], "")
@@ -650,7 +656,8 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][10]["child_conditions"][0]["instrument"], 11)
         self.assertEqual(data["instruments"][10]["child_conditions"][0]["condition_group"]["id"], 1)
         self.assertEqual(
-            data["instruments"][10]["child_conditions"][0]["condition_group"]["nickname"], "Group 0"
+            data["instruments"][10]["child_conditions"][0]["condition_group"]["nickname"],
+            "Group 24",
         )
         self.assertEqual(
             data["instruments"][10]["child_conditions"][0]["condition_group"]["requirement_type"],
@@ -663,7 +670,7 @@ class InstrumentTests(TestCase):
             data["instruments"][10]["child_conditions"][0]["condition_group"]["cases"][0][
                 "nickname"
             ],
-            "Case 0",
+            "Case 24",
         )
         self.assertEqual(
             data["instruments"][10]["child_conditions"][0]["condition_group"]["cases"][0][
@@ -684,7 +691,7 @@ class InstrumentTests(TestCase):
             data["instruments"][10]["child_conditions"][0]["condition_group"]["cases"][1][
                 "nickname"
             ],
-            "Case 1",
+            "Case 25",
         )
         self.assertEqual(
             data["instruments"][10]["child_conditions"][0]["condition_group"]["cases"][1][
@@ -699,6 +706,6 @@ class InstrumentTests(TestCase):
             "",
         )
         self.assertEqual(
-            data["instruments"][10]["child_conditions"][0]["data_getter"], "instrument:measure-0"
+            data["instruments"][10]["child_conditions"][0]["data_getter"], "instrument:measure-10"
         )
         self.assertEqual(data["ordering"][0], 10)
