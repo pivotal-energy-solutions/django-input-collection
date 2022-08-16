@@ -144,7 +144,7 @@ class Specification(object):
             data["segment"] = f"{item.segment.id}" if item.segment else None
             data["group"] = f"{item.group.id}" if item.group else None
             data["type"] = f"{item.type.id}" if item.type else None
-            data["method_info"] = self.get_method_info(item)
+            data["_instrument_object"] = item
             results.append(data)
         return results
 
@@ -222,7 +222,7 @@ class Specification(object):
         ]
 
         conditions = [x for x in self.conditions if x["instrument"] == instrument_dict["id"]]
-
+        instrument = instrument_dict.pop("_instrument_object", None)
         data = {
             "id": instrument_dict["id"],
             "collection_request": self.collector.collection_request.id,
@@ -239,7 +239,7 @@ class Specification(object):
             "response_info": {
                 "response_policy": instrument_dict["response_policy_info"],
                 "suggested_responses": suggested_responses,
-                "method": instrument_dict["method_info"],
+                "method": self.get_method_info(instrument, suggested_responses),
             },
             "collected_inputs": self.get_collected_inputs_info.get(instrument_dict["id"]),
             "conditions": [self.get_condition_data(x) for x in conditions],
@@ -342,14 +342,18 @@ class Specification(object):
         suggested_responses_info = list(map(model_to_dict, queryset))
         return suggested_responses_info
 
-    def get_method_info(self, instrument):
+    def get_method_info(self, instrument, suggested_responses=None):
         """
         Resolve a method for the given instrument based on self.measure_methods, or
         self.type_methods, whichever is resolvable first.
         """
 
         method = self.collector.get_method(instrument)
-        method_info = method.serialize(instrument=instrument)
+        method_info = method.serialize(
+            instrument=instrument, suggested_responses=suggested_responses
+        )
+        print(f"{instrument=} {instrument.measure=}, {method=}")
+        # print(method_info)
         return method_info
 
 

@@ -34,10 +34,13 @@ class FormFieldMethod(InputMethod):
             if value is not None:  # Avoid clearing good defaults with None values
                 setattr(target, attr, value)
 
-    def update_field(self, field, instrument, *forward_attrs, **attrs):
+    def update_field(self, field, instrument, suggested_responses=None, *forward_attrs, **attrs):
         self.copy_attrs(field, *forward_attrs, **attrs)
 
-        choices = list(instrument.suggested_responses.values_list("id", "data"))
+        if suggested_responses is not None:  # Allow empty list
+            choices = [(x["id"], x["data"]) for x in suggested_responses]
+        else:
+            choices = list(instrument.suggested_responses.values_list("id", "data"))
         if choices:
             field.choices = choices
 
@@ -60,7 +63,9 @@ class FormFieldMethod(InputMethod):
         field = self.get_formfield()
 
         # Update field/widget to spec
-        self.update_field(field, instrument)
+        self.update_field(
+            field, instrument, suggested_responses=kwargs.pop("suggested_responses", None)
+        )
         self.update_widget(
             field,
             field.widget,
