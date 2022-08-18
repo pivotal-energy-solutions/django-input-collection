@@ -6,7 +6,7 @@ from django.conf import settings
 
 import swapper
 
-from . import managers
+from .. import managers
 from .base import DatesModel
 from ..apps import app
 
@@ -190,6 +190,7 @@ class CollectionInstrument(DatesModel, models.Model):
         """
         Returns a list of instruments that enable this one via a Condition.
         """
+        # DO NOT USE - Replace with CollectionRequestQueryMixin.get_parent_instruments
         instruments = self.collection_request.collectioninstrument_set.all()
         parents = instruments.filter(conditions__instrument=self)
         parent_ids = []

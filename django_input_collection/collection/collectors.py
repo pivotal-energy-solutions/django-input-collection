@@ -11,7 +11,7 @@ from django.db.models import Model, F
 from ..encoders import CollectionSpecificationJSONEncoder
 from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
-from . import specifications
+from . import specifications, CollectionRequestQueryMinimizerMixin
 from . import methods
 from . import utils
 from . import exceptions
@@ -123,17 +123,23 @@ class BaseCollector(object, metaclass=CollectorType):
 
     @property
     def specification_json(self):
-        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder)
+        return json.dumps(self.specification, cls=CollectionSpecificationJSONEncoder, indent=4)
 
     @property
     def serialized_data(self):
-        instruments = self.get_instruments()
+        # Save 255 queries
+        instruments = (
+            self.get_instruments()
+            .prefetch_related("conditions__condition_group", "collectedinput_set")
+            .select_related("response_policy")
+        )
         serializer_class = self.get_serializer_class("instrument")
         serializer = serializer_class(
             instance=instruments,
             many=True,
             context={
                 "collector": self,
+                "collector_mixin": CollectionRequestQueryMinimizerMixin(collector=self),
             },
         )
         return serializer.data
