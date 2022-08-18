@@ -20,6 +20,25 @@ class CollectionRequestQueryMinimizerMixin(object):
         ]
 
     @cached_property
+    def parent_instrument_ids(self) -> dict:
+        """This collects all parent instrument ids"""
+        measure_map = {inst["measure"]: inst["id"] for inst in self.instruments}
+
+        results = {}
+        for instrument in self.instruments:
+            conditions = [x for x in self.conditions if x["instrument"] == instrument["id"]]
+            parent_ids = set()
+            for condition in conditions:
+                resolver, reference = condition["data_getter"].split(":", 1)
+                if resolver == "instrument":
+                    try:
+                        parent_ids.add(int(reference))
+                    except:
+                        parent_ids.add(measure_map[reference])
+            results[instrument["id"]] = list(parent_ids)
+        return results
+
+    @cached_property
     def condition_group_ids(self) -> list:
         """Cached list of Condition Group IDs"""
         return [x["condition_group"] for x in self.conditions]
@@ -96,6 +115,9 @@ class CollectionRequestQueryMinimizerMixin(object):
         """Cached list of instrument IDS"""
         return [x["id"] for x in self.instruments]
 
+    def get_suggested_response_data(self, instrument_id):
+        return [x for x in self.suggested_responses if x["collection_instrument"] == instrument_id]
+
     @cached_property
     def instruments(self) -> list:
         """Cached list of instruments"""
@@ -125,6 +147,7 @@ class CollectionRequestQueryMinimizerMixin(object):
         queryset = self.collector.collection_request.collectedinput_set.filter_for_context(
             **self.collector.context
         )
+
         for input in queryset:
             inputs_info[input.instrument_id].append(model_to_dict(input))
 
@@ -243,8 +266,7 @@ class Specification(CollectionRequestQueryMinimizerMixin):
 
         suggested_responses = [
             {"id": x["suggested_response_id"], "data": x["suggested_response"]}
-            for x in self.suggested_responses
-            if x["collection_instrument"] == instrument_dict["id"]
+            for x in self.get_suggested_response_data(instrument_dict["id"])
         ]
 
         conditions = [x for x in self.conditions if x["instrument"] == instrument_dict["id"]]

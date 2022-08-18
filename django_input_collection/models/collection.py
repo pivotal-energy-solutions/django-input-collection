@@ -190,6 +190,7 @@ class CollectionInstrument(DatesModel, models.Model):
         """
         Returns a list of instruments that enable this one via a Condition.
         """
+        # DO NOT USE - Replace with CollectionRequestQueryMixin.get_parent_instruments
         instruments = self.collection_request.collectioninstrument_set.all()
         parents = instruments.filter(conditions__instrument=self)
         parent_ids = []

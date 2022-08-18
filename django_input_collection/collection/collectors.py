@@ -11,7 +11,7 @@ from django.db.models import Model, F
 from ..encoders import CollectionSpecificationJSONEncoder
 from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
-from . import specifications
+from . import specifications, CollectionRequestQueryMinimizerMixin
 from . import methods
 from . import utils
 from . import exceptions
@@ -139,6 +139,7 @@ class BaseCollector(object, metaclass=CollectorType):
             many=True,
             context={
                 "collector": self,
+                "collector_mixin": CollectionRequestQueryMinimizerMixin(collector=self),
             },
         )
         return serializer.data
