@@ -242,7 +242,7 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][11]["text"], "text 55")
         self.assertEqual(data["instruments"][11]["description"], "description 55")
         self.assertEqual(data["instruments"][11]["help"], "help 55")
-        self.assertEqual(data["instruments"][11]["response_policy"], 1)
+        self.assertIsNotNone(data["instruments"][11]["response_policy"])
         self.assertEqual(data["instruments"][11]["test_requirement_type"], "all-pass")
         self.assertEqual(
             set(data["instruments"][11]["response_info"].keys()),
@@ -654,7 +654,7 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][899]["text"], "text 56")
         self.assertEqual(data["instruments"][899]["description"], "description 56")
         self.assertEqual(data["instruments"][899]["help"], "help 56")
-        self.assertEqual(data["instruments"][899]["response_policy"], 1)
+        self.assertIsNotNone(data["instruments"][899]["response_policy"])
         self.assertEqual(data["instruments"][899]["test_requirement_type"], "all-pass")
         self.assertEqual(
             set(data["instruments"][899]["response_info"].keys()),
@@ -922,7 +922,7 @@ class InstrumentTests(TestCase):
         self.assertEqual(data["instruments"][10]["text"], "text 54")
         self.assertEqual(data["instruments"][10]["description"], "description 54")
         self.assertEqual(data["instruments"][10]["help"], "help 54")
-        self.assertEqual(data["instruments"][10]["response_policy"], 1)
+        self.assertIsNotNone(data["instruments"][10]["response_policy"])
         self.assertEqual(data["instruments"][10]["test_requirement_type"], "all-pass")
         self.assertEqual(
             set(data["instruments"][10]["response_info"].keys()),
