@@ -2,8 +2,8 @@
 """setup.py: Django Input Collection"""
 
 __author__ = "Pivotal Energy Solutions"
-__version_info__ = (5, 0, 1)
-__version__ = "5.0.1"
+__version_info__ = (5, 0, 2)
+__version__ = "5.0.2"
 __date__ = "2014/07/22 4:47:00 PM"
 __credits__ = ["Steven Klass", "Autumn Valenta"]
 __license__ = "See the file LICENSE.txt for licensing information."
@@ -15,7 +15,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="django-input-collection",
-    version="5.0.1",
+    version="5.0.2",
     description="Input system driveable by any interaction process, such as a "
     "request-response cycle, API, or a Python function.",
     author="Autumn Valenta",
