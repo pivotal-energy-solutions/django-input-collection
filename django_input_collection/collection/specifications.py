@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
+from functools import cached_property
 
-from distlib.util import cached_property
 from django.forms.models import model_to_dict
 
 
