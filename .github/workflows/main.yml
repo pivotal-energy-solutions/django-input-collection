@@ -243,7 +243,7 @@ jobs:
           PYTHONWARNINGS: once::DeprecationWarning
           GITHUB_TOKEN: ${{ secrets.ORGANIZATIONAL_REPO_TOKEN }}
         run: |
-          bumper.py --directory . --exclude=.idea,.github,demo_app \
+          bumper.py --directory . --exclude=.github \
             --version_files django_input_collection/__init__.py \
             --repo=pivotal-energy-solutions/django-input-collection > out.json
           echo "bumped=$(jq '.bumped' out.json)" >> $GITHUB_OUTPUT
