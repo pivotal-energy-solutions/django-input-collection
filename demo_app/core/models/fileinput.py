@@ -6,7 +6,6 @@ __all__ = ["CollectedFileInput"]
 
 
 class CollectedFileInput(models.Model):
-
     # If only one file should be allowed to be provided for an Input, you can still allow multiple
     # files by associating each one to its own parent CollectedInput, where every 'data' attribute
     # up there is something like a file handle.

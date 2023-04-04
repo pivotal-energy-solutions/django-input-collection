@@ -17,7 +17,6 @@ class InputConfig(AppConfig):
 
 
 class InputConfigApp:
-
     # Note this can be a callable to get data (print)
     VERBOSE_LOGGING = getattr(settings, "VERBOSE_INPUT_DEBUGGING", False)
 

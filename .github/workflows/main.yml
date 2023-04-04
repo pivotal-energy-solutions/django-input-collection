@@ -166,7 +166,7 @@ jobs:
           pip install -r requirements.txt --retries 3
           pip install -r requirements_dev.txt --retries 3
           pip install -r requirements-tests.txt --retries 3
-          pip uninstall -y Django || true
+          pip uninstall -y Django
           pip install Django${{ matrix.django-version }}
 
       - name: Run ${{ matrix.db }} Django ${{ matrix.django-version }} Tests

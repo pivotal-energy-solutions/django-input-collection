@@ -110,7 +110,6 @@ class InstrumentTests(TestCase):
         cls.collector = RestFrameworkCollector(cls.collection_request)
 
     def test_specification_final_query_count(self):
-
         self.collector = RestFrameworkCollector(self.collection_request)
         specification = self.collector.get_specification()
 
@@ -118,7 +117,6 @@ class InstrumentTests(TestCase):
             specification.data
 
     def test_specification_query_counts(self):
-
         self.collector = RestFrameworkCollector(self.collection_request)
         specification = self.collector.get_specification()
 
@@ -192,7 +190,6 @@ class InstrumentTests(TestCase):
         #     fp.write(f"{json.dumps(data, indent=4)}\n")
         #
         def build_assertions(value, key="data"):
-
             if isinstance(value, dict):
                 print(f"self.assertEqual(set({key}.keys()), {set(value.keys())})")
                 for k, v in value.items():

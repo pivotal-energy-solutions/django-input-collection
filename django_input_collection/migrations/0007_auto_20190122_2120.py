@@ -12,7 +12,6 @@ INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = swapper.get_model_name(
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("django_input_collection", "0006_auto_20190122_2117"),
         swapper.dependency("django_input_collection", "BoundSuggestedResponse"),

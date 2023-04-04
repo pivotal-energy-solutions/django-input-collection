@@ -16,7 +16,6 @@ def backwards__segment_to_group(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("django_input_collection", "0008_auto_20190206_1901"),
     ]

@@ -8,7 +8,6 @@ import swapper
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("django_input_collection", "0005_auto_20181116_1918"),
     ]

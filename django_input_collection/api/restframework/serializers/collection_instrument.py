@@ -64,7 +64,6 @@ class CollectionInstrumentListSerializer(serializers.ListSerializer):
         }
 
     def to_representation(self, data):
-
         assert isinstance(data, (QuerySet, list)), f"We need a Queryset. We got {type(data)}"
 
         if not self.context.get("collector"):

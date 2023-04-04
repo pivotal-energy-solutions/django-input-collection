@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("django_input_collection", "0004_remove_condition_parent_instrument"),
     ]

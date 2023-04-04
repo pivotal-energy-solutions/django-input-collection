@@ -11,7 +11,6 @@ def parent_instrument_to_data_getter(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("django_input_collection", "0002_condition_data_getter"),
     ]
