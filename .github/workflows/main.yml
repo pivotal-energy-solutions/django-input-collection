@@ -163,10 +163,10 @@ jobs:
         run: |
           python setup.py install
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements_dev.txt
-          pip install -r requirements-tests.txt
-          pip uninstall -y Django
+          pip install -r requirements.txt --retries 3
+          pip install -r requirements_dev.txt --retries 3
+          pip install -r requirements-tests.txt --retries 3
+          pip uninstall -y Django || true
           pip install Django${{ matrix.django-version }}
 
       - name: Run ${{ matrix.db }} Django ${{ matrix.django-version }} Tests
