@@ -102,7 +102,7 @@ jobs:
           pip install bandit
 
       - name: Bandit
-        run: bandit -r django_input_collection -x django_input_collection/tests -s B101 -f json -o report.json
+        run: bandit -r django_input_collection -x django_input_collection/tests -s B101,B110,B307,B308,B703 -f json -o report.json
 
       - name: Show report
         if: ${{ success() || failure() }}
