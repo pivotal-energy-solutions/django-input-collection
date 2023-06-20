@@ -23,7 +23,7 @@ env = environ.Env(
     MARIADB_DATABASE=(str, "db"),
     MARIADB_USER=(str, "root"),
     MARIADB_PASSWORD=(str, "password"),
-    MARIADBL_HOST=(str, "127.0.0.1"),
+    MARIADB_HOST=(str, "127.0.0.1"),
     MARIADB_PORT=(str, "3306"),
 )
 
