@@ -89,7 +89,7 @@ exclude = '''
 
 [tool.bandit]
 targets = ['django_input_collection']
-exclude_dirs = ["django_input_collection/tests"]
+exclude_dirs = ["django_input_collection/tests", "demo_app"]
 skips = ["B101", "B110", "B307", "B308", "B703"]
 
 [tool.coverage.run]
