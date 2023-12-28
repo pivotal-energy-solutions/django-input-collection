@@ -288,5 +288,4 @@ class CaseAdmin(admin.ModelAdmin):
     list_display_links = ["id", "nickname"]
     list_filter = ["date_created", "date_modified"]
     date_hierarchy = "date_created"
-    filter_horizontal = ["conditiongroup"]
     readonly_fields = ["describe"]
