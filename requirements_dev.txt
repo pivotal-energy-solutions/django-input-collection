@@ -1,5 +1,0 @@
-flake8
-coverage
-black
-pre-commit
-mysqlclient

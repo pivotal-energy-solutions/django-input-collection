@@ -1,6 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-input-collection"
+dynamic = ["version"]
+description = "Input system driveable by any interaction process, such as a request-response cycle, API, or a Python function."
+readme = "README.md"
+license = "Apache License (2.0)"
+requires-python = ">=3.9"
+authors = [
+    { name = "Pivotal Energy Solutions", email = "steve@pivotal.energy" },
+]
+keywords = [
+    "django",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License (Proprietary)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "django>=4.2",
+    "djangorestframework",
+    "swapper",
+]
+
+[project.optional-dependencies]
+test = [
+    "factory-boy",
+    "django-environ",
+    "mysqlclient",
+    "flake8",
+    "coverage",
+    "pre-commit",
+    "black",
+    "bandit"
+]
+
+[project.urls]
+Homepage = "https://github.com/pivotal-energy-solutions/django-input-collection"
+Issues = "https://github.com/pivotal-energy-solutions/django-input-collection/issues"
+Download = "https://github.com/pivotal-energy-solutions/django-input-collection"
+Thanks = "https://saythanks.io/to/rh0dium"
+Source = "https://github.com/pivotal-energy-solutions/django-input-collection/"
+
+[tool.hatch.version]
+path = "demo_app/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/django_input_collection",
+    "/django_input_collection/templates/**/*",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ['django_input_collection']
+include = [
+    "/django_input_collection/templates/**/*",
+]
+
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ['py311']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -18,3 +92,15 @@ extend-exclude = '''
 # in the root of the project.
 /static/.py  # exclude a file named foo.py in the root of the project (in addition to the defaults)
 '''
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "*/demo_app/**",
+    "*/migrations/*",
+    "*/tests/**",
+]
+
+[tool.coverage.report]
+fail_under = 48
+ignore_errors = true
