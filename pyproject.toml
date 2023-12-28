@@ -58,7 +58,7 @@ Thanks = "https://saythanks.io/to/rh0dium"
 Source = "https://github.com/pivotal-energy-solutions/django-input-collection/"
 
 [tool.hatch.version]
-path = "demo_app/__init__.py"
+path = "django_input_collection/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
