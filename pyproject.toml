@@ -86,14 +86,15 @@ exclude = '''
   | dist
 )/
 '''
-extend-exclude = '''
-# A regex preceded with ^/ will apply only to files and directories
-# in the root of the project.
-/static/.py  # exclude a file named foo.py in the root of the project (in addition to the defaults)
-'''
+
+[tool.bandit]
+targets = ['django_input_collection']
+exclude_dirs = ["django_input_collection/tests"]
+skips = ["B101", "B110", "B307", "B308", "B703"]
 
 [tool.coverage.run]
 branch = true
+command_line = "demo_app/manage.py test --noinput --settings=demo_app.settings_test django_input_collection"
 omit = [
     "*/demo_app/**",
     "*/migrations/*",
@@ -107,3 +108,9 @@ skip_covered = true
 skip_empty = true
 ignore_errors = true
 sort = "cover"
+
+[tool.bumper]
+exclude = [".idea", ".github", "demo_app"]
+version_files = ["django_input_collection/__init__.py"]
+repo = "pivotal-energy-solutions/django-input-collection"
+report = "out.json"
