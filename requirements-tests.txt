@@ -1,4 +1,0 @@
-factory-boy
-coverage
-django_mysql
-djangorestframework
