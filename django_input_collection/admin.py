@@ -192,12 +192,14 @@ class ConditionAdmin(admin.ModelAdmin):
                 "<dt>{}</dt><dd>{}{}</dd>",
                 ".".join((resolver.__module__, resolver.__class__.__name__)),
                 format_html("<code>{}</code>", repr(data)) if not error else "",
-                format_html(
-                    '<code style="color: orange;">Lookup failed!  (Will use collector class default.)<br>{}</code>',
-                    error,
-                )
-                if error
-                else "",
+                (
+                    format_html(
+                        '<code style="color: orange;">Lookup failed!  (Will use collector class default.)<br>{}</code>',
+                        error,
+                    )
+                    if error
+                    else ""
+                ),
             )
         return format_html(
             '<div style="color: red;">{}</div>',
