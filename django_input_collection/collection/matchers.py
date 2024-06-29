@@ -79,7 +79,7 @@ def list_wrap(data, wrap_strings=True, coerce_iterables=False):
 def eval_sample(match_data):
     try:
         return eval(match_data, {}, {})
-    except:
+    except Exception:
         return match_data
 
 

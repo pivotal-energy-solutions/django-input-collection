@@ -126,11 +126,11 @@ class InstrumentTests(TestCase):
         # print(f"{len(instruments)} {instruments=}")
 
         with self.assertNumQueries(1):
-            collected_inputs = specification.get_collected_inputs_info
+            specification.get_collected_inputs_info
         # print(f"{len(collected_inputs)} {collected_inputs=}")
 
         with self.assertNumQueries(1):
-            suggested_responses = specification.suggested_responses
+            specification.suggested_responses
         # print(f"{len(suggested_responses)} {suggested_responses=}")
 
         with self.assertNumQueries(1):

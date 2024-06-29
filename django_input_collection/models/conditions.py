@@ -8,10 +8,7 @@ import operator
 
 from collections import OrderedDict
 
-try:
-    from functools import reduce
-except:
-    pass
+from functools import reduce
 
 from django.db import models
 

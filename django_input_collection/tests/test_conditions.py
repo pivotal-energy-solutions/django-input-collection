@@ -601,7 +601,7 @@ class ConditionTests(TestCase):
             }
         )
 
-        input = factories.CollectedInputFactory.create(
+        factories.CollectedInputFactory.create(
             **{
                 "instrument__id": 1,
                 "data": "foo",

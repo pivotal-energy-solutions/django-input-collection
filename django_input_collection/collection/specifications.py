@@ -33,7 +33,7 @@ class CollectionRequestQueryMinimizerMixin(object):
                 if resolver == "instrument":
                     try:
                         parent_ids.add(int(reference))
-                    except:
+                    except Exception:
                         parent_ids.add(measure_map[reference])
             results[instrument["id"]] = list(parent_ids)
         return results

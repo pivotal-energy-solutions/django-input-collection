@@ -148,7 +148,7 @@ class CollectedInputViewSet(CollectorEnabledMixin, viewsets.ModelViewSet):
                 # FIXME: No query access control
                 instrument = models.CollectionInstrument.objects.get(id=instrument_id)
                 return instrument.collection_request
-            except:
+            except Exception:
                 pass
         return super(CollectedInputViewSet, self).get_collection_request()
 

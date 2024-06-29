@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from .specifications import *
-from .collectors import *
-from .methods import *
-from .resolvers import *
+from .specifications import *  # noqa: F403
+from .collectors import *  # noqa: F403
+from .methods import *  # noqa: F403
+from .resolvers import *  # noqa: F403
 from . import utils

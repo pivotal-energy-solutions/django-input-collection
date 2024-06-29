@@ -2,11 +2,11 @@
 import django
 
 django.setup()
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: E402
 
 User = get_user_model()
 
-from django_input_collection.tests import factories
+from django_input_collection.tests import factories  # noqa: E402
 
 
 user, _ = User.objects.get_or_create(

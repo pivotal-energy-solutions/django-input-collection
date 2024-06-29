@@ -202,7 +202,7 @@ class CollectionInstrument(DatesModel, models.Model):
                 # Parse the reference to find the parent
                 try:
                     parent_ids.append(int(reference))
-                except:
+                except Exception:
                     parent_measures.append(reference)
         return instruments.filter(
             Q(id__in=parent_ids) | Q(measure_id__in=parent_measures)

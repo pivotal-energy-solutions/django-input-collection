@@ -282,7 +282,7 @@ class CollectorStaticTests(TestCase):
             self.collector.get_method_kwargs = lambda *a, **kw: kwargs
             return self.collector.get_method(i)
 
-        method = self.with_measuremethods(i, "a", {"a": foo})
+        self.with_measuremethods(i, "a", {"a": foo})
         self.assertEqual(with_methodkwargs({"foo2": "foo2"}).data, {"foo1": "foo1", "foo2": "foo2"})
 
     def test_get_method_raises_error_for_private_get_method_kwargs(self):
@@ -301,7 +301,7 @@ class CollectorStaticTests(TestCase):
             self.collector.get_method_kwargs = lambda *a, **kw: kwargs
             return self.collector.get_method(i)
 
-        method = self.with_measuremethods(i, "a", {"a": foo})
+        self.with_measuremethods(i, "a", {"a": foo})
         with self.assertRaises(AttributeError):
             with_methodkwargs({"_bar": "bar"})
 
