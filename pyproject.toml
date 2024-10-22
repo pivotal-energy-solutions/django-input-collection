@@ -30,7 +30,6 @@ classifiers = [
 dependencies = [
     "django>=5.0",
     "djangorestframework",
-    "swapper",
 ]
 
 [project.optional-dependencies]

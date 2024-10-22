@@ -4,7 +4,6 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-import swapper
 
 
 class Migration(migrations.Migration):
@@ -29,7 +28,7 @@ class Migration(migrations.Migration):
                 ("data", models.CharField(max_length=512)),
             ],
             options={
-                "swappable": swapper.swappable_setting("django_input_collection", "CollectedInput"),
+                "swappable": "INPUT_COLLECTEDINPUT_MODEL",
             },
         ),
         migrations.CreateModel(

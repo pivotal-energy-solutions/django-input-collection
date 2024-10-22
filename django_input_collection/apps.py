@@ -2,13 +2,10 @@
 import logging
 from django.apps import AppConfig, apps
 
-import swapper
 from django.conf import settings
 from django.utils.functional import SimpleLazyObject
 
 log = logging.getLogger(__name__)
-
-swapper.set_app_prefix("django_input_collection", "input")
 
 
 class InputConfig(AppConfig):

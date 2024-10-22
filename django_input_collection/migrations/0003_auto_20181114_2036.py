@@ -4,10 +4,10 @@
 from django.db import migrations
 
 
-def parent_instrument_to_data_getter(apps, schema_editor):
-    Condition = apps.get_model("django_input_collection", "Condition")
-    for id, parent_id in Condition.objects.values_list("id", "parent_instrument"):
-        Condition.objects.filter(id=id).update(data_getter="instrument:%d" % (parent_id,))
+# def parent_instrument_to_data_getter(apps, schema_editor):
+#     Condition = apps.get_model("django_input_collection", "Condition")
+#     for id, parent_id in Condition.objects.values_list("id", "parent_instrument"):
+#         Condition.objects.filter(id=id).update(data_getter="instrument:%d" % (parent_id,))
 
 
 class Migration(migrations.Migration):
@@ -16,5 +16,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(parent_instrument_to_data_getter, migrations.RunPython.noop),
+        # migrations.RunPython(parent_instrument_to_data_getter, migrations.RunPython.noop),
     ]

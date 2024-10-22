@@ -5,14 +5,14 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
-def forwards__group_to_segment(apps, schema_editor):
-    CollectionInstrument = apps.get_model("django_input_collection", "CollectionInstrument")
-    CollectionInstrument.objects.update(segment=models.F("group"), group=None)
-
-
-def backwards__segment_to_group(apps, schema_editor):
-    CollectionInstrument = apps.get_model("django_input_collection", "CollectionInstrument")
-    CollectionInstrument.objects.update(group=models.F("segment"), segment=None)
+# def forwards__group_to_segment(apps, schema_editor):
+#     CollectionInstrument = apps.get_model("django_input_collection", "CollectionInstrument")
+#     CollectionInstrument.objects.update(segment=models.F("group"), group=None)
+#
+#
+# def backwards__segment_to_group(apps, schema_editor):
+#     CollectionInstrument = apps.get_model("django_input_collection", "CollectionInstrument")
+#     CollectionInstrument.objects.update(group=models.F("segment"), segment=None)
 
 
 class Migration(migrations.Migration):
@@ -44,5 +44,5 @@ class Migration(migrations.Migration):
             ),
         ),
         # Data migration
-        migrations.RunPython(forwards__group_to_segment, backwards__segment_to_group),
+        # migrations.RunPython(forwards__group_to_segment, backwards__segment_to_group),
     ]

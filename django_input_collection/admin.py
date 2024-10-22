@@ -257,7 +257,7 @@ class ConditionGroupAdmin(admin.ModelAdmin):
     list_display_links = ["id", "nickname"]
     list_filter = ["date_created", "date_modified"]
     date_hierarchy = "date_created"
-    filter_horizontal = ["child_groups", "cases"]
+    # filter_horizontal = ["child_groups", "cases"]
     readonly_fields = ["describe"]
     fields = ["describe"] + list(fields_for_model(models.ConditionGroup).keys())
 

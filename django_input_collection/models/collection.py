@@ -4,8 +4,6 @@ from django.db import models
 from django.db.models import Q
 from django.conf import settings
 
-import swapper
-
 from .. import managers
 from .base import DatesModel
 from ..apps import app
@@ -295,8 +293,7 @@ class BoundSuggestedResponse(AbstractBoundSuggestedResponse):
     """The m2m membership model for CollectionInstrument.suggested_responses."""
 
     class Meta:
-        # swappable = 'INPUT_BOUNDSUGGESTEDRESPONSE_MODEL'
-        swappable = swapper.swappable_setting("input", "BoundSuggestedResponse")
+        swappable = 'INPUT_BOUNDSUGGESTEDRESPONSE_MODEL'
 
 
 class SuggestedResponse(DatesModel, models.Model):
@@ -394,5 +391,4 @@ class CollectedInput(AbstractCollectedInput):
     data = models.CharField(max_length=512)
 
     class Meta:
-        # swappable = 'INPUT_COLLECTEDINPUT_MODEL'
-        swappable = swapper.swappable_setting("input", "CollectedInput")
+        swappable = 'INPUT_COLLECTEDINPUT_MODEL'

@@ -1,7 +1,9 @@
+from django_input_collection.models import BoundSuggestedResponse
 from rest_framework import serializers
 from .... import models
 
-BoundSuggestedResponse = models.get_boundsuggestedresponse_model()
+
+# BoundSuggestedResponse = models.get_boundsuggestedresponse_model()
 
 
 class BoundSuggestedResponseSerializer(serializers.ModelSerializer):

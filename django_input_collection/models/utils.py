@@ -1,25 +1,42 @@
 # -*- coding: utf-8 -*-
 
 import re
+from django.apps import apps as django_apps
 from collections.abc import Iterable
 
-from django.db import models
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models.query import Q
 from django.utils.encoding import force_str
 
-import swapper
-
-
-def get_swapped_model(name):
-    return swapper.load_model("django_input_collection", name)
 
 
 def get_input_model():
-    return get_swapped_model("CollectedInput")
+    try:
+        return django_apps.get_model(settings.INPUT_COLLECTEDINPUT_MODEL, require_ready=False)
+    except ValueError:
+        raise ImproperlyConfigured(
+            "INPUT_COLLECTEDINPUT_MODEL must be of the form 'app_label.model_name'"
+        )
+    except LookupError:
+        raise ImproperlyConfigured(
+            "INPUT_COLLECTEDINPUT_MODEL refers to model '%s' that has not been installed"
+            % settings.INPUT_COLLECTEDINPUT_MODEL
+        )
 
 
 def get_boundsuggestedresponse_model():
-    return get_swapped_model("BoundSuggestedResponse")
+    try:
+        return django_apps.get_model(settings.INPUT_COLLECTEDINPUT_MODEL, require_ready=False)
+    except ValueError:
+        raise ImproperlyConfigured(
+            "INPUT_BOUNDSUGGESTEDRESPONSE_MODEL must be of the form 'app_label.model_name'"
+        )
+    except LookupError:
+        raise ImproperlyConfigured(
+            "INPUT_BOUNDSUGGESTEDRESPONSE_MODEL refers to model '%s' that has not been installed"
+            % settings.INPUT_COLLECTEDINPUT_MODEL
+        )
 
 
 def lazy_clone(obj, exclude=[], **updates):
@@ -52,7 +69,7 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
     create() method to allow for easy overrides.
     """
 
-    from .models import ResponsePolicy
+    from ..models.collection import ResponsePolicy
 
     if "is_singleton" not in kwargs:
         if isolate is None:
