@@ -6,39 +6,43 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('checklist', '0021_alter_historicalanswer_options_and_more'),
-        ('django_input_collection', '0001_initial_squashed_0012_auto_20220421_2220'),
+        ("checklist", "0021_alter_historicalanswer_options_and_more"),
+        ("django_input_collection", "0001_initial_squashed_0012_auto_20220421_2220"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='collectedinput',
-            name='collector_class',
+            model_name="collectedinput",
+            name="collector_class",
             field=models.CharField(max_length=256),
         ),
         migrations.AlterField(
-            model_name='collectedinput',
-            name='collector_id',
+            model_name="collectedinput",
+            name="collector_id",
             field=models.CharField(max_length=64),
         ),
         migrations.AlterField(
-            model_name='collectedinput',
-            name='collector_version',
+            model_name="collectedinput",
+            name="collector_version",
             field=models.CharField(max_length=128),
         ),
         migrations.AlterField(
-            model_name='collectedinput',
-            name='version',
+            model_name="collectedinput",
+            name="version",
             field=models.CharField(max_length=128),
         ),
         migrations.AlterField(
-            model_name='collectioninstrument',
-            name='suggested_responses',
-            field=models.ManyToManyField(blank=True, through='checklist.AxisBoundSuggestedResponse', to='django_input_collection.suggestedresponse'),
+            model_name="collectioninstrument",
+            name="suggested_responses",
+            field=models.ManyToManyField(
+                blank=True,
+                through="checklist.AxisBoundSuggestedResponse",
+                to="django_input_collection.suggestedresponse",
+            ),
         ),
         migrations.AlterField(
-            model_name='condition',
-            name='data_getter',
+            model_name="condition",
+            name="data_getter",
             field=models.CharField(max_length=512),
         ),
     ]

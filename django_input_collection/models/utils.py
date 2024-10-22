@@ -10,7 +10,6 @@ from django.db.models.query import Q
 from django.utils.encoding import force_str
 
 
-
 def get_input_model():
     try:
         return django_apps.get_model(settings.INPUT_COLLECTEDINPUT_MODEL, require_ready=False)

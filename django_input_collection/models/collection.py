@@ -293,7 +293,7 @@ class BoundSuggestedResponse(AbstractBoundSuggestedResponse):
     """The m2m membership model for CollectionInstrument.suggested_responses."""
 
     class Meta:
-        swappable = 'INPUT_BOUNDSUGGESTEDRESPONSE_MODEL'
+        swappable = "INPUT_BOUNDSUGGESTEDRESPONSE_MODEL"
 
 
 class SuggestedResponse(DatesModel, models.Model):
@@ -391,4 +391,4 @@ class CollectedInput(AbstractCollectedInput):
     data = models.CharField(max_length=512)
 
     class Meta:
-        swappable = 'INPUT_COLLECTEDINPUT_MODEL'
+        swappable = "INPUT_COLLECTEDINPUT_MODEL"
