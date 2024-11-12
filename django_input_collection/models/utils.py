@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import re
 from django.apps import apps as django_apps
 from collections.abc import Iterable

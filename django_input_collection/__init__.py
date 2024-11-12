@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 __name__ = "django_input_collection"
 __author__ = "Pivotal Energy Solutions"
 __version_info__ = (8, 0, 0)

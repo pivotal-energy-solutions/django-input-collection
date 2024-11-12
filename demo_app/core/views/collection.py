@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django_input_collection.api.restframework import collection
 
 from . import methods

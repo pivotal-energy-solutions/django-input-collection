@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django_input_collection.models import BoundSuggestedResponse
 from rest_framework import serializers
 from .... import models

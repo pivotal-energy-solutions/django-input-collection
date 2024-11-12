@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 try:
     from collections import UserDict
 except ImportError:

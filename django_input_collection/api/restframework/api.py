@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django.core.exceptions import PermissionDenied
 
 from rest_framework import viewsets, views

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .base import *  # noqa: F403
 from .collection import *  # noqa: F403
 from .conditions import *  # noqa: F403

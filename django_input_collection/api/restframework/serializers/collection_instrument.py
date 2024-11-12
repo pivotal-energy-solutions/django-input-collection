@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django.db.models import QuerySet
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError

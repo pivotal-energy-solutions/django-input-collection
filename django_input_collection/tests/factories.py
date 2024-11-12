@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # factoryboy
 
 from django.conf import settings

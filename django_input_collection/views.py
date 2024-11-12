@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django.views.generic import DetailView
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator

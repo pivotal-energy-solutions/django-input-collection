@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from inspect import isclass
 
 from django.template.loader import render_to_string

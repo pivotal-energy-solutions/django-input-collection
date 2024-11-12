@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .bound_suggested_response import BoundSuggestedResponseSerializer
 from .collected_input import CollectedInputSerializer
 from .collection_group import CollectionGroupSerializer

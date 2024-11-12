@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from django.contrib.postgres.fields import JSONField
 
 from django_input_collection.models import AbstractCollectedInput
