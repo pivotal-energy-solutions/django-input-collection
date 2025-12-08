@@ -255,7 +255,7 @@ class Specification(CollectionRequestQueryMinimizerMixin):
             x
             for x in self.conditions
             if x["data_getter"]
-            in [f'instrument:{instrument_dict["id"]}', f'instrument:{instrument_dict["measure"]}']
+            in [f"instrument:{instrument_dict['id']}", f"instrument:{instrument_dict['measure']}"]
         ]
 
         return [self.get_condition_data(x) for x in conditions]
