@@ -197,7 +197,7 @@ class CaseMatchers(object):
             map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data)
         )
         if _should_log:
-            log_method(f"contains: {match_data} {'' if match else 'not ' }contained in {data}")
+            log_method(f"contains: {match_data} {'' if match else 'not '}contained in {data}")
         return match
 
     def not_contains(self, data, match_data, **kwargs):
@@ -206,7 +206,7 @@ class CaseMatchers(object):
             map(lambda d: coerce_type(match_data, d) in list_wrap(d, wrap_strings=False), data)
         )
         if _should_log:
-            log_method(f"not_contains: {match_data} {'' if match else 'not ' }contained in {data}")
+            log_method(f"not_contains: {match_data} {'' if match else 'not '}contained in {data}")
         return match
 
     def one(self, data, match_data, **kwargs):
