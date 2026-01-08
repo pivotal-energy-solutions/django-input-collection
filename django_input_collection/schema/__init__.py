@@ -19,6 +19,10 @@ from .serializers import (
     ConditionValidatorRegistry,
     register_condition_validator,
 )
+from .mixins import (
+    ChecklistSchemaMixin,
+    ChecklistConsumerMixin,
+)
 
 __all__ = [
     # Builder and Exporter
@@ -36,4 +40,7 @@ __all__ = [
     # Condition Validator Registry (for serializers)
     "ConditionValidatorRegistry",
     "register_condition_validator",
+    # ViewSet Mixins
+    "ChecklistSchemaMixin",
+    "ChecklistConsumerMixin",
 ]
