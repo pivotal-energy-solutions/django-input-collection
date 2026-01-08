@@ -106,8 +106,8 @@ class ChecklistSchemaMixin:
             )
 
         try:
-            exporter = CollectionRequestExporter(collection_request)
-            schema_data = exporter.export()
+            exporter = CollectionRequestExporter()
+            schema_data = exporter.export(collection_request)
 
             # Serialize using the schema serializer for consistent format
             serializer_class = self.get_schema_serializer_class()
@@ -150,8 +150,8 @@ class ChecklistSchemaMixin:
                 self._set_collection_request(obj, new_collection_request)
 
             # Export the updated schema
-            exporter = CollectionRequestExporter(new_collection_request)
-            exported_schema = exporter.export()
+            exporter = CollectionRequestExporter()
+            exported_schema = exporter.export(new_collection_request)
 
             return Response(exported_schema, status=status.HTTP_200_OK)
 
