@@ -109,12 +109,10 @@ class ChecklistSchemaMixin:
             exporter = CollectionRequestExporter()
             schema_data = exporter.export(collection_request)
 
-            # Serialize using the schema serializer for consistent format
-            serializer_class = self.get_schema_serializer_class()
-            serializer = serializer_class(data=schema_data)
-            serializer.is_valid(raise_exception=True)
-
-            return Response(serializer.validated_data)
+            # Return exported data directly - no validation needed for export
+            # The data comes from an existing collection request and may contain
+            # condition paths that aren't in the registry (which is fine for display)
+            return Response(schema_data)
 
         except Exception as e:
             log.exception(f"Error exporting schema: {e}")
