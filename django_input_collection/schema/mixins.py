@@ -132,15 +132,11 @@ class ChecklistSchemaMixin:
         schema_data = serializer.validated_data
 
         try:
-            # Get additional context
-            context = self.get_schema_context(obj)
-
             # Build or rebuild the collection request
             builder = CollectionRequestBuilder()
             new_collection_request = builder.build(
                 schema=schema_data,
-                existing_request=collection_request,
-                **context,
+                existing_cr=collection_request,
             )
 
             # Update the parent object's reference if needed

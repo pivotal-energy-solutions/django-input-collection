@@ -185,11 +185,19 @@ class CollectionRequestBuilder:
 
     def _get_or_create_response_policy(self, required: bool, has_responses: bool) -> ResponsePolicy:
         """Get or create a ResponsePolicy."""
-        policy, _ = ResponsePolicy.objects.get_or_create(
+        # Use filter().first() because there may be duplicate policies in the database
+        # (no unique constraint on required/restrict/multiple)
+        policy = ResponsePolicy.objects.filter(
             required=required,
             restrict=has_responses,  # Restrict to suggested responses if we have them
             multiple=False,
-        )
+        ).first()
+        if not policy:
+            policy = ResponsePolicy.objects.create(
+                required=required,
+                restrict=has_responses,
+                multiple=False,
+            )
         return policy
 
     def _build_instrument(

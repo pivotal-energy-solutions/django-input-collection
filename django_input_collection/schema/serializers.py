@@ -495,12 +495,6 @@ class SectionSerializer(serializers.Serializer):
         required=False,
         help_text="URL-safe identifier (auto-generated from name if not provided)",
     )
-    description = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        default="",
-        help_text="Optional section description",
-    )
     questions = QuestionSerializer(many=True, help_text="Questions in this section")
     order = serializers.IntegerField(
         required=False,
@@ -558,9 +552,10 @@ class CollectionSchemaSerializer(serializers.Serializer):
         sections = data.get("sections", [])
         response_sets = data.get("response_sets", {})
 
-        # Collect all measure_ids to check for duplicates and validate conditions
+        # Collect all measure_ids and their responses for validation
         all_measure_ids = set()
         duplicate_ids = set()
+        question_responses = {}  # measure_id -> list of valid response values
 
         for section in sections:
             for question in section.get("questions", []):
@@ -569,10 +564,20 @@ class CollectionSchemaSerializer(serializers.Serializer):
                     duplicate_ids.add(measure_id)
                 all_measure_ids.add(measure_id)
 
+                # Collect valid responses for this question
+                responses = question.get("responses", [])
+                response_set_name = question.get("response_set")
+                if response_set_name and response_set_name in response_sets:
+                    responses = response_sets[response_set_name]
+                question_responses[measure_id] = responses
+
         if duplicate_ids:
             raise serializers.ValidationError(
                 {"sections": f"Duplicate measure_ids found: {duplicate_ids}"}
             )
+
+        # Match types that require values to match source question's responses
+        value_match_types = {"match", "mismatch", "one"}
 
         # Validate instrument condition sources reference valid measure_ids
         # Validate response_set references
@@ -592,33 +597,78 @@ class CollectionSchemaSerializer(serializers.Serializer):
 
                 # Validate instrument conditions
                 for condition in question.get("conditions", []):
-                    if condition.get("type") == "instrument":
-                        source = condition.get("source")
-                        if source not in all_measure_ids:
-                            raise serializers.ValidationError(
-                                {
-                                    "sections": (
-                                        f"Question '{question.get('measure_id')}' has condition "
-                                        f"referencing unknown measure_id: '{source}'"
-                                    )
-                                }
-                            )
-                    # Handle group format conditions
-                    elif condition.get("rules"):
-                        for rule in condition.get("rules", []):
-                            if rule.get("type") == "instrument":
-                                source = rule.get("source")
-                                if source not in all_measure_ids:
-                                    raise serializers.ValidationError(
-                                        {
-                                            "sections": (
-                                                f"Question '{question.get('measure_id')}' has condition "
-                                                f"referencing unknown measure_id: '{source}'"
-                                            )
-                                        }
-                                    )
+                    self._validate_condition(
+                        condition,
+                        question.get("measure_id"),
+                        all_measure_ids,
+                        question_responses,
+                        value_match_types,
+                    )
 
         return data
+
+    def _validate_condition(
+        self, condition, question_id, all_measure_ids, question_responses, value_match_types
+    ):
+        """Validate a single condition or condition group."""
+        # Handle group format conditions
+        if condition.get("rules"):
+            for rule in condition.get("rules", []):
+                self._validate_condition_rule(
+                    rule, question_id, all_measure_ids, question_responses, value_match_types
+                )
+        else:
+            # Simple format
+            self._validate_condition_rule(
+                condition, question_id, all_measure_ids, question_responses, value_match_types
+            )
+
+    def _validate_condition_rule(
+        self, rule, question_id, all_measure_ids, question_responses, value_match_types
+    ):
+        """Validate a single condition rule."""
+        if rule.get("type") != "instrument":
+            return
+
+        source = rule.get("source")
+        if source not in all_measure_ids:
+            raise serializers.ValidationError(
+                {
+                    "sections": (
+                        f"Question '{question_id}' has condition "
+                        f"referencing unknown measure_id: '{source}'"
+                    )
+                }
+            )
+
+        # Validate values match the source question's responses (case-insensitive)
+        match_type = rule.get("match_type", "match")
+        values = rule.get("values", [])
+        source_responses = question_responses.get(source, [])
+
+        # Only validate values for match types that reference response values
+        if match_type in value_match_types and values and source_responses:
+            # Normalize responses for case-insensitive comparison
+            normalized_responses = {r.lower().strip(): r for r in source_responses}
+
+            invalid_values = []
+            for value in values:
+                # Convert to string for comparison (responses are strings)
+                str_value = str(value) if not isinstance(value, str) else value
+                normalized_value = str_value.lower().strip()
+                if normalized_value not in normalized_responses:
+                    invalid_values.append(str_value)
+
+            if invalid_values:
+                raise serializers.ValidationError(
+                    {
+                        "sections": (
+                            f"Question '{question_id}' has condition with invalid values "
+                            f"for source '{source}': {invalid_values}. "
+                            f"Valid responses are: {source_responses}"
+                        )
+                    }
+                )
 
 
 # Alias for backward compatibility
