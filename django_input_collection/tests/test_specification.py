@@ -9,6 +9,9 @@ class InstrumentTests(TestCase):
     def setUpClass(cls):
         super(InstrumentTests, cls).setUpClass()
 
+        # Reset factory sequences to ensure consistent order values across test runs
+        factories.CollectionInstrumentFactory.reset_sequence(54)
+
         cls.collection_request = factories.CollectionRequestFactory.create(
             id=666,
             max_instrument_inputs=2,
