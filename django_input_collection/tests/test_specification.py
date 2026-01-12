@@ -9,8 +9,10 @@ class InstrumentTests(TestCase):
     def setUpClass(cls):
         super(InstrumentTests, cls).setUpClass()
 
-        # Reset factory sequences to ensure consistent order values across test runs
+        # Reset factory sequences to ensure consistent values across test runs
         factories.CollectionInstrumentFactory.reset_sequence(54)
+        factories.ConditionGroupFactory.reset_sequence(24)  # Expects "Group 24"
+        factories.CaseFactory.reset_sequence(24)  # Expects "Case 24" and "Case 25"
 
         cls.collection_request = factories.CollectionRequestFactory.create(
             id=666,
