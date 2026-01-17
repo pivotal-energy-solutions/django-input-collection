@@ -18,3 +18,4 @@ db.sqlite3
 .idea
 .coverage
 /django_input_collection.egg-info/
+/.claude/settings.local.json
