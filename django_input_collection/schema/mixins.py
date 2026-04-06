@@ -563,6 +563,57 @@ class ChecklistConsumerMixin:
         data["valid_responses"] = self._get_valid_responses(instrument)
 
         return Response(data)
+    
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path=r"checklist/instruments/(?P<instrument_id>[^/.]+)/valid_responses",
+    )
+    def checklist_instrument_valid_response(self, request, instrument_id=None, *args, **kwargs):
+        """
+        Get the valid responses for a specific checklist instrument.
+
+        Query Parameters:
+            user_role (str): User role context ('rater' or 'qa'), defaults to 'rater'
+
+        Returns:
+            A dict containing valid_responses for the requested instrument.
+        """
+        obj = self.get_object()
+        user_role = self.get_user_role(request)
+
+        collection_request = self.get_collection_request(obj)
+        if not collection_request:
+            raise NotFound("No checklist found for this object.")
+
+        try:
+            collector = self.get_collector(obj, request.user, user_role)
+        except Exception as e:
+            raise PermissionDenied(str(e))
+
+        from django_input_collection.models import CollectionInstrument
+
+        try:
+            instrument = CollectionInstrument.objects.get(
+                id=instrument_id, collection_request=collection_request
+            )
+        except CollectionInstrument.DoesNotExist:
+            raise NotFound(f"Instrument {instrument_id} not found.")
+
+        serializer_class = self.get_instrument_serializer_class()
+        serializer = serializer_class(
+            instrument,
+            context={"request": request, "user": request.user, "user_role": user_role},
+        )
+        valid_responses = serializer.get_valid_responses(instrument)
+
+        return Response(valid_responses)
+        
+    def get_input_model(self):
+        """Return the CollectedInput model for the checklist."""
+        from django_input_collection.models import CollectedInput
+
+        return CollectedInput
 
     def _build_checklist_response(self, collection_request, collector, user, user_role) -> dict:
         """
@@ -577,17 +628,22 @@ class ChecklistConsumerMixin:
         Returns:
             Dictionary with checklist data including sections and progress
         """
-        from django_input_collection.models import CollectedInput, CollectionGroup
+        from django_input_collection.models import CollectionGroup
 
-        # Get all instruments for this request
-        all_instruments = list(collection_request.collectioninstrument_set.all().order_by("order"))
+        # Get all instruments for this request and prefetch related data for faster rendering.
+        all_instruments = list(
+            collection_request.collectioninstrument_set
+            .select_related("group", "type", "response_policy", "measure")
+            .prefetch_related("suggested_responses", "conditions")
+            .order_by("order")
+        )
 
         # Build instrument lookup and collect answers
         instrument_by_measure = {i.measure_id: i for i in all_instruments}
 
         # Get all collected inputs for this collection request
         collected_inputs = (
-            CollectedInput.objects.filter(collection_request=collection_request)
+            self.get_input_model().objects.filter(collection_request=collection_request)
             .select_related("user")
             .order_by("-date_created")
         )
@@ -598,16 +654,21 @@ class ChecklistConsumerMixin:
             if ci.instrument_id not in input_by_instrument:
                 input_by_instrument[ci.instrument_id] = ci
 
-        # Get sections (groups)
-        groups = CollectionGroup.objects.filter(collection_request=collection_request).order_by(
-            "order"
-        )
-
-        # Build instrument -> group mapping
+        # Build instrument lookup and group membership from the already-fetched instruments.
         instrument_to_group = {}
-        for group in groups:
-            for instrument in group.collectioninstrument_set.all():
+        grouped_instruments = {}
+        for instrument in all_instruments:
+            group = instrument.group
+            if group:
+                grouped_instruments.setdefault(group, []).append(instrument)
                 instrument_to_group[instrument.id] = group
+
+        groups = list(grouped_instruments.keys())
+        groups.sort(
+            key=lambda group: getattr(group, "order", 0)
+            if hasattr(group, "order")
+            else min((instr.order or 0) for instr in grouped_instruments[group])
+        )
 
         # Track progress
         progress = {
@@ -625,7 +686,9 @@ class ChecklistConsumerMixin:
         # Process grouped instruments
         for group in groups:
             section_questions = []
-            group_instruments = list(group.collectioninstrument_set.all().order_by("order"))
+            group_instruments = sorted(
+                grouped_instruments[group], key=lambda instrument: instrument.order or 0
+            )
 
             for instrument in group_instruments:
                 question_data = self._build_question_data(
@@ -638,13 +701,14 @@ class ChecklistConsumerMixin:
                 section_questions.append(question_data)
 
             if section_questions:
+                group_name = getattr(group, "name", None) or getattr(group, "id", "Untitled Section")
                 sections_data.append(
                     {
-                        "name": group.name or "Untitled Section",
+                        "name": group_name,
                         "slug": getattr(group, "slug", None)
-                        or self._slugify(group.name or "section"),
-                        "description": group.description or "",
-                        "order": group.order or 0,
+                        or self._slugify(group_name or "section"),
+                        "description": getattr(group, "description", ""),
+                        "order": getattr(group, "order", 0) or 0,
                         "questions": section_questions,
                     }
                 )
@@ -920,9 +984,8 @@ class ChecklistConsumerMixin:
             raise ValidationError({"measure": f"No instrument found for measure '{measure_id}'."})
 
         # Find existing input to update
-        from django_input_collection.models import CollectedInput
 
-        existing_input = CollectedInput.objects.filter(instrument=instrument).first()
+        existing_input = self.get_input_model().objects.filter(instrument=instrument).first()
 
         # Store using collector
         collected_input = collector.store(
