@@ -563,7 +563,7 @@ class ChecklistConsumerMixin:
         data["valid_responses"] = self._get_valid_responses(instrument)
 
         return Response(data)
-    
+
     @action(
         detail=True,
         methods=["get"],
@@ -587,7 +587,7 @@ class ChecklistConsumerMixin:
             raise NotFound("No checklist found for this object.")
 
         try:
-            collector = self.get_collector(obj, request.user, user_role)
+            self.get_collector(obj, request.user, user_role)
         except Exception as e:
             raise PermissionDenied(str(e))
 
@@ -608,7 +608,7 @@ class ChecklistConsumerMixin:
         valid_responses = serializer.get_valid_responses(instrument)
 
         return Response(valid_responses)
-        
+
     def get_input_model(self):
         """Return the CollectedInput model for the checklist."""
         from django_input_collection.models import CollectedInput
@@ -632,8 +632,9 @@ class ChecklistConsumerMixin:
 
         # Get all instruments for this request and prefetch related data for faster rendering.
         all_instruments = list(
-            collection_request.collectioninstrument_set
-            .select_related("group", "type", "response_policy", "measure")
+            collection_request.collectioninstrument_set.select_related(
+                "group", "type", "response_policy", "measure"
+            )
             .prefetch_related("suggested_responses", "conditions")
             .order_by("order")
         )
@@ -643,7 +644,8 @@ class ChecklistConsumerMixin:
 
         # Get all collected inputs for this collection request
         collected_inputs = (
-            self.get_input_model().objects.filter(collection_request=collection_request)
+            self.get_input_model()
+            .objects.filter(collection_request=collection_request)
             .select_related("user")
             .order_by("-date_created")
         )
@@ -665,9 +667,11 @@ class ChecklistConsumerMixin:
 
         groups = list(grouped_instruments.keys())
         groups.sort(
-            key=lambda group: getattr(group, "order", 0)
-            if hasattr(group, "order")
-            else min((instr.order or 0) for instr in grouped_instruments[group])
+            key=lambda group: (
+                getattr(group, "order", 0)
+                if hasattr(group, "order")
+                else min((instr.order or 0) for instr in grouped_instruments[group])
+            )
         )
 
         # Track progress
@@ -701,7 +705,9 @@ class ChecklistConsumerMixin:
                 section_questions.append(question_data)
 
             if section_questions:
-                group_name = getattr(group, "name", None) or getattr(group, "id", "Untitled Section")
+                group_name = getattr(group, "name", None) or getattr(
+                    group, "id", "Untitled Section"
+                )
                 sections_data.append(
                     {
                         "name": group_name,
