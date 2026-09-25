@@ -533,23 +533,100 @@ class ChecklistConsumerMixinTests(TestCase):
         mock_collector.is_instrument_allowed = Mock(return_value=True)
         mock_collector.get_method = Mock(side_effect=Exception("No method"))
 
-        # Mock the CollectionGroup query to avoid the bug in the mixin code
-        # The mixin incorrectly queries CollectionGroup.objects.filter(collection_request=...)
-        # but CollectionGroup doesn't have a collection_request field
-        with patch("django_input_collection.models.CollectionGroup.objects") as mock_manager:
-            mock_manager.filter.return_value.order_by.return_value = []
+        # Sections come from each instrument's group; CollectionGroup has no request FK.
+        result = self.viewset._build_checklist_response(
+            collection_request=self.cr,
+            collector=mock_collector,
+            user=self.user,
+            user_role="rater",
+        )
 
-            result = self.viewset._build_checklist_response(
-                collection_request=self.cr,
-                collector=mock_collector,
-                user=self.user,
-                user_role="rater",
-            )
-
-        self.assertIn("id", result)
-        self.assertIn("sections", result)
-        self.assertIn("progress", result)
         self.assertEqual(result["id"], self.cr.id)
+        self.assertEqual(
+            [(s["name"], len(s["questions"])) for s in result["sections"]],
+            [("consumer-section", 1)],
+        )
+        self.assertEqual(result["progress"]["total"], 1)
+
+    def test_build_checklist_response_orders_sections_by_first_instrument(self):
+        later = factories.CollectionGroupFactory.create(id="later-section")
+        factories.CollectionInstrumentFactory.create(
+            collection_request=self.cr, group=later, order=self.instrument.order + 10
+        )
+        mock_collector = Mock()
+        mock_collector.is_instrument_allowed = Mock(return_value=True)
+        mock_collector.get_method = Mock(side_effect=Exception("No method"))
+
+        result = self.viewset._build_checklist_response(
+            collection_request=self.cr, collector=mock_collector, user=self.user, user_role="rater"
+        )
+
+        self.assertEqual(
+            [s["name"] for s in result["sections"]], ["consumer-section", "later-section"]
+        )
+
+    def test_input_model_defaults_to_the_swappable_model(self):
+        from ..models import get_input_model
+
+        self.assertIs(self.viewset.get_input_model(), get_input_model())
+        answer_serializer = self.viewset.get_answer_serializer_class()
+        self.assertIs(answer_serializer.Meta.model, get_input_model())
+
+    def _valid_responses(self, viewset):
+        mock_obj = Mock()
+        mock_obj.collection_request = self.cr
+        mock_obj.collector = Mock()
+        viewset.set_object(mock_obj)
+        request = self.factory.get(
+            f"/test/checklist/instruments/{self.instrument.id}/valid_responses/"
+        )
+        request.user = self.user
+        request.query_params = {}
+        return viewset.checklist_instrument_valid_response(
+            request, instrument_id=str(self.instrument.id)
+        )
+
+    def test_valid_responses_fall_back_to_suggested_responses(self):
+        """The default instrument serializer has no get_valid_responses."""
+        response = self._valid_responses(self.viewset)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(sorted(x["value"] for x in response.data), ["No", "Yes"])
+
+    def test_valid_responses_use_the_consumer_serializer_when_it_can(self):
+        base = self.viewset.get_instrument_serializer_class()
+
+        class RichSerializer(base):
+            def get_valid_responses(self, instrument):
+                return [{"value": "from-serializer"}]
+
+        viewset = ChecklistConsumerMixinViewSet()
+        viewset.get_instrument_serializer_class = lambda: RichSerializer
+
+        response = self._valid_responses(viewset)
+
+        self.assertEqual(response.data, [{"value": "from-serializer"}])
+
+    def test_process_answer_serializes_with_the_default_answer_serializer(self):
+        from ..models import get_input_model
+
+        collected = get_input_model().objects.create(
+            collection_request=self.cr, instrument=self.instrument, user=self.user, data="Yes"
+        )
+        collector = Mock()
+        collector.get_instrument = Mock(return_value=self.instrument)
+        collector.store = Mock(return_value=collected)
+
+        data = self.viewset._process_answer(
+            collector=collector,
+            answer_data={"measure": "consumer-q", "data": {"input": "Yes"}},
+            home_status=Mock(),
+            user=self.user,
+            user_role="rater",
+        )
+
+        self.assertEqual(data["id"], collected.id)
+        self.assertEqual(data["instrument"], self.instrument.id)
 
     def test_checklist_action_no_collection_request(self):
         """Test checklist action when no collection request found."""
