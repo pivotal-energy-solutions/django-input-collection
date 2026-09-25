@@ -315,21 +315,24 @@ class ChecklistConsumerMixin:
 
         Override to use a custom serializer.
         """
-        # Import here to avoid circular imports
-        from django_input_collection.models import CollectedInput
         from rest_framework import serializers
+
+        input_model = self.get_input_model()
+        # user_role only exists on some swapped-in input models.
+        model_fields = {f.name for f in input_model._meta.get_fields()}
+        optional_fields = tuple(f for f in ("user_role",) if f in model_fields)
 
         class DefaultCollectedInputSerializer(serializers.ModelSerializer):
             """Basic serializer for collected inputs."""
 
             class Meta:
-                model = CollectedInput
+                model = input_model
                 fields = (
                     "id",
                     "instrument",
                     "data",
                     "user",
-                    "user_role",
+                    *optional_fields,
                     "date_created",
                     "date_modified",
                 )
@@ -605,15 +608,21 @@ class ChecklistConsumerMixin:
             instrument,
             context={"request": request, "user": request.user, "user_role": user_role},
         )
-        valid_responses = serializer.get_valid_responses(instrument)
+        # Consumer serializers may know richer responses (e.g. cascading selects); the default
+        # serializer doesn't define get_valid_responses, so fall back to suggested responses.
+        get_valid_responses = getattr(serializer, "get_valid_responses", None)
+        if get_valid_responses is None:
+            valid_responses = self._get_valid_responses(instrument)
+        else:
+            valid_responses = get_valid_responses(instrument)
 
         return Response(valid_responses)
 
     def get_input_model(self):
-        """Return the CollectedInput model for the checklist."""
-        from django_input_collection.models import CollectedInput
+        """Return the CollectedInput model for the checklist (honours INPUT_COLLECTEDINPUT_MODEL)."""
+        from django_input_collection.models import get_input_model
 
-        return CollectedInput
+        return get_input_model()
 
     def _build_checklist_response(self, collection_request, collector, user, user_role) -> dict:
         """
