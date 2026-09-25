@@ -1,8 +1,9 @@
-from django.db.models import QuerySet
+from django.db.models import QuerySet, prefetch_related_objects
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from ....collection import CollectionRequestQueryMinimizerMixin
+from ....managers.collection_instrument import CONDITION_PREFETCH
 from ....models import CollectionInstrument
 from .bound_suggested_response import BoundSuggestedResponseSerializer
 from .contextual_collected_input import ContextualCollectedInputsSerializer
@@ -75,7 +76,12 @@ class CollectionInstrumentListSerializer(serializers.ListSerializer):
             self.root._context["collector_mixin"] = _collector_mixin
 
         self.mixin = self.context.get("collector_mixin")
-        return [self._get_instrument_data(x) for x in self.context["collector_mixin"].instruments]
+        instruments = self.context["collector_mixin"].instruments
+        # _get_instrument_data() tests every instrument's conditions; load the tree once.
+        prefetch_related_objects(
+            [x["_instrument_object"] for x in instruments], *CONDITION_PREFETCH
+        )
+        return [self._get_instrument_data(x) for x in instruments]
 
 
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):

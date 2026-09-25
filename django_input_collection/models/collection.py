@@ -158,25 +158,30 @@ class CollectionInstrument(DatesModel, models.Model):
     def test_conditions(self, **kwargs):
         """Checks data all Conditions gating this instrument."""
         results = []
-        for idx, condition in enumerate(self.conditions.all(), start=1):
+        # One read, served from with_conditions() prefetch when the caller used it.
+        conditions = list(self.conditions.all())
+        for idx, condition in enumerate(conditions, start=1):
             result = condition.test(**kwargs)
             if self.test_requirement_type == "all-pass" and result is False:
-                log_method(
-                    f"Instrument Condition {idx}/{self.conditions.count()} with "
-                    f"{self.get_test_requirement_type_display()!r} failed condition "
-                    f"{condition} - returning False"
-                )
+                if _should_log:
+                    log_method(
+                        f"Instrument Condition {idx}/{len(conditions)} with "
+                        f"{self.get_test_requirement_type_display()!r} failed condition "
+                        f"{condition} - returning False"
+                    )
                 return False
             elif self.test_requirement_type == "one-pass" and result is True:
-                log_method(
-                    f"Instrument Condition {idx}/{self.conditions.count()} with "
-                    f"{self.get_test_requirement_type_display()!r} passed condition "
-                    f"{condition} - returning True"
-                )
+                if _should_log:
+                    log_method(
+                        f"Instrument Condition {idx}/{len(conditions)} with "
+                        f"{self.get_test_requirement_type_display()!r} passed condition "
+                        f"{condition} - returning True"
+                    )
                 return True
             elif self.test_requirement_type == "all-fail":
                 result = not result
             results.append(result)
+        if _should_log:
             log_method(
                 f"All Instrument Conditions have run with "
                 f"{self.get_test_requirement_type_display()!r} returning {all(results)}"
