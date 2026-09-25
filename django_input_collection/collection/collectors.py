@@ -129,7 +129,8 @@ class BaseCollector(object, metaclass=CollectorType):
         # Save 255 queries
         instruments = (
             self.get_instruments()
-            .prefetch_related("conditions__condition_group", "collectedinput_set")
+            .with_conditions()
+            .prefetch_related("collectedinput_set")
             .select_related("response_policy")
         )
         serializer_class = self.get_serializer_class("instrument")
@@ -286,7 +287,7 @@ class BaseCollector(object, metaclass=CollectorType):
                         flag_queryset = queryset.filter_for_condition_resolver(resolver_name)
 
                     # Check each instrument for the desired pass/fail result
-                    for instrument in flag_queryset:
+                    for instrument in flag_queryset.with_conditions():
                         if flag is None or predicate(instrument, flag):
                             flagged_pks.add(instrument.pk)
 

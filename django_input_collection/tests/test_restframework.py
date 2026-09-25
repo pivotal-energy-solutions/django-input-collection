@@ -241,8 +241,8 @@ class InstrumentTests(RestFrameworkTestCase):
         # Query 3/4 - Collection Request
         overhead_queries = 4
 
-        # This absolutely needs rework.
-        EXPECTED = 14  # WTF
+        # Condition trees are prefetched once (CONDITION_PREFETCH), not loaded per instrument.
+        EXPECTED = 11
 
         with self.assertNumQueries(overhead_queries + EXPECTED):
             response = self.client.get(

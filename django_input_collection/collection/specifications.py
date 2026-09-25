@@ -74,8 +74,10 @@ class CollectionRequestQueryMinimizerMixin(object):
         """Cached list of Test Cases"""
         from django_input_collection.models import ConditionGroup
 
-        condition_group_ids = self.condition_group_ids
-        condition_group_ids += [x["id"] for x in self.child_condition_groups]
+        # Copy - += would extend the cached condition_group_ids list in place.
+        condition_group_ids = self.condition_group_ids + [
+            x["id"] for x in self.child_condition_groups
+        ]
 
         CaseThrough = ConditionGroup.cases.through
         cases = CaseThrough.objects.filter(
