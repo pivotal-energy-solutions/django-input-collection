@@ -302,8 +302,9 @@ from django_input_collection.schema import (
     register_condition_validator,
 )
 
+
 # Register import resolver (schema -> database)
-@register_condition_resolver('simulation')
+@register_condition_resolver("simulation")
 def resolve_simulation(source: str, values: list | None) -> str | None:
     """Return data_getter string or None if unresolved."""
     registry_entry = SimulationConditionRegistry.get_by_slug(source)
@@ -311,14 +312,16 @@ def resolve_simulation(source: str, values: list | None) -> str | None:
         return f"simulation:{registry_entry.resolver_path}"
     return None
 
+
 # Register export resolver (database -> schema)
-@register_condition_resolver('simulation', direction='export')
+@register_condition_resolver("simulation", direction="export")
 def export_simulation(path: str) -> str | None:
     """Return slug from resolver path, or None."""
     return resolver_to_slug_cache.get(path)
 
+
 # Register validator for serializer validation
-@register_condition_validator('simulation')
+@register_condition_validator("simulation")
 def validate_simulation(source: str, values: list) -> tuple[bool, str | None]:
     """Validate condition source and values. Returns (is_valid, error_message)."""
     registry_entry = SimulationConditionRegistry.get_by_slug(source)
@@ -334,6 +337,7 @@ Applications can register a handler for response flags (comment_required, photo_
 ```python
 from django_input_collection.schema import register_bound_response_handler
 
+
 @register_bound_response_handler()
 class AxisBoundResponseHandler:
     @staticmethod
@@ -342,10 +346,10 @@ class AxisBoundResponseHandler:
         AxisBoundSuggestedResponse.objects.create(
             collection_instrument=instrument,
             suggested_response=suggested_response,
-            comment_required=flags.get('comment_required', False),
-            photo_required=flags.get('photo_required', False),
-            document_required=flags.get('document_required', False),
-            is_considered_failure=flags.get('is_considered_failure', False),
+            comment_required=flags.get("comment_required", False),
+            photo_required=flags.get("photo_required", False),
+            document_required=flags.get("document_required", False),
+            is_considered_failure=flags.get("is_considered_failure", False),
         )
 
     @staticmethod
@@ -355,13 +359,13 @@ class AxisBoundResponseHandler:
         for bound in instrument.bound_suggested_responses.all():
             response_flags = {}
             if bound.comment_required:
-                response_flags['comment_required'] = True
+                response_flags["comment_required"] = True
             if bound.photo_required:
-                response_flags['photo_required'] = True
+                response_flags["photo_required"] = True
             if bound.document_required:
-                response_flags['document_required'] = True
+                response_flags["document_required"] = True
             if bound.is_considered_failure:
-                response_flags['is_considered_failure'] = True
+                response_flags["is_considered_failure"] = True
             if response_flags:
                 flags[bound.suggested_response.data] = response_flags
         return flags

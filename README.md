@@ -39,8 +39,8 @@ Configure swappable models in your settings (optional):
 
 ```python
 # Use default models
-INPUT_COLLECTEDINPUT_MODEL = 'django_input_collection.CollectedInput'
-INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = 'django_input_collection.BoundSuggestedResponse'
+INPUT_COLLECTEDINPUT_MODEL = "django_input_collection.CollectedInput"
+INPUT_BOUNDSUGGESTEDRESPONSE_MODEL = "django_input_collection.BoundSuggestedResponse"
 ```
 
 ## Core Concepts
@@ -138,6 +138,7 @@ Use the provided mixins to add checklist endpoints to your ViewSets:
 ```python
 from rest_framework.viewsets import ModelViewSet
 from django_input_collection.schema.mixins import ChecklistSchemaMixin, ChecklistConsumerMixin
+
 
 class MyViewSet(ChecklistSchemaMixin, ChecklistConsumerMixin, ModelViewSet):
     def get_collection_request(self, obj):
