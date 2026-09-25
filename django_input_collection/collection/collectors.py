@@ -10,6 +10,7 @@ from django.db.models import Model, F
 from ..encoders import CollectionSpecificationJSONEncoder
 from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
+from .resolvers import read_pass
 from . import specifications, CollectionRequestQueryMinimizerMixin
 from . import methods
 from . import utils
@@ -287,9 +288,10 @@ class BaseCollector(object, metaclass=CollectorType):
                         flag_queryset = queryset.filter_for_condition_resolver(resolver_name)
 
                     # Check each instrument for the desired pass/fail result
-                    for instrument in flag_queryset.with_conditions():
-                        if flag is None or predicate(instrument, flag):
-                            flagged_pks.add(instrument.pk)
+                    with read_pass():
+                        for instrument in flag_queryset.with_conditions():
+                            if flag is None or predicate(instrument, flag):
+                                flagged_pks.add(instrument.pk)
 
                 include_pks |= flagged_pks
 

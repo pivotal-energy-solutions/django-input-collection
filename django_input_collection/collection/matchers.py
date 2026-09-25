@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 _should_log, log_method = app.get_verbose_logging
 
+SUGGESTED_MATCH_TYPES = ("all-suggested", "one-suggested", "all-custom", "one-custom")
+
 
 def test_condition_case(
     values, match_type, match_data=None, suggested_values=None, key_input=None, key_case=None
@@ -33,7 +35,8 @@ def test_condition_case(
     functions for that purpose.
     """
 
-    if suggested_values is None:
+    # Only these read suggested_values; skip it (often a lazy queryset) for the rest.
+    if suggested_values is None or match_type not in SUGGESTED_MATCH_TYPES:
         suggested_values = []
 
     values = list_wrap(values, coerce_iterables=True)
