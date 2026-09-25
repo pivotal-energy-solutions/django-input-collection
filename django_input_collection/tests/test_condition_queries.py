@@ -10,7 +10,8 @@ from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
 from ..api.restframework.serializers import CollectionInstrumentSerializer
-from ..collection import collectors
+from ..collection import collectors, resolvers
+from ..collection.resolvers import read_pass
 from . import factories
 
 CONDITION_TABLES = (
@@ -90,6 +91,56 @@ class ConditionQueryCountTests(TestCase):
         children = collection_request.collectioninstrument_set.filter(conditions__isnull=False)
         results = sorted(child.test_conditions() for child in children.order_by("id"))
         self.assertEqual(results, [False, True])
+
+
+class ReadPassTests(TestCase):
+    """The pass cache's edge cases: nesting, context keys, and unkeyable context."""
+
+    def test_nested_pass_shares_the_outer_cache(self):
+        with read_pass():
+            outer = resolvers._read_pass_cache.get()
+            with read_pass():
+                self.assertIs(resolvers._read_pass_cache.get(), outer)
+            self.assertIs(resolvers._read_pass_cache.get(), outer)
+        self.assertIsNone(resolvers._read_pass_cache.get())
+
+    def test_freeze_makes_context_hashable(self):
+        user = factories.CollectionRequestFactory.create()
+        frozen = resolvers._freeze(
+            {"user": user, "ids": [2, 1], "pair": (1, "a"), "tags": {"x"}, "n": 3}
+        )
+        hash(frozen)
+        self.assertEqual(
+            frozen,
+            (
+                ("ids", (2, 1)),
+                ("n", 3),
+                ("pair", (1, "a")),
+                ("tags", frozenset({"x"})),
+                ("user", (user._meta.label, user.pk)),
+            ),
+        )
+
+    def test_freeze_rejects_unhashable_values(self):
+        with self.assertRaises(TypeError):
+            resolvers._freeze({"blob": bytearray(b"x")})
+
+    def test_unkeyable_context_resolves_uncached(self):
+        class UnhashableId(int):
+            __hash__ = None  # A usable filter value that can't be a cache key
+
+        collection_request, parent = build_request(1)
+        child = collection_request.collectioninstrument_set.filter(conditions__isnull=False).get()
+        resolver = resolvers.InstrumentResolver()
+        context = {"instrument_id": UnhashableId(parent.id)}
+
+        with read_pass():
+            first = resolver.resolve(child, parent_pk=str(parent.id), **context)
+            self.assertEqual(resolvers._read_pass_cache.get(), {})
+            parent.collectedinput_set.update(data="bar")
+            second = resolver.resolve(child, parent_pk=str(parent.id), **context)
+
+        self.assertEqual((first["data"], second["data"]), (["foo"], ["bar"]))
 
 
 RESOLVER_TABLES = (
