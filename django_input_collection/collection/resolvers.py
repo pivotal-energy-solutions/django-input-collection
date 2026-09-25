@@ -1,17 +1,59 @@
 import re
 import logging
+from contextlib import contextmanager
+from contextvars import ContextVar
 
-from django.db.models import Manager
+from django.db.models import Manager, Model
 from django.db.models.query import QuerySet
 
 from . import exceptions
 
 
-__all__ = ["resolve", "Resolver", "InstrumentResolver", "AttributeResolver", "DebugResolver"]
+__all__ = [
+    "resolve",
+    "read_pass",
+    "Resolver",
+    "InstrumentResolver",
+    "AttributeResolver",
+    "DebugResolver",
+]
 
 log = logging.getLogger(__name__)
 
 registry = []
+
+_read_pass_cache: ContextVar[dict | None] = ContextVar("resolver_read_pass", default=None)
+
+
+@contextmanager
+def read_pass():
+    """Resolve each parent instrument once for the duration of a read-only evaluation pass.
+
+    Wrap only code that evaluates conditions without writing inputs: answers are cached until
+    the block exits, and the next pass re-reads them. Nested passes share the outer cache.
+    """
+    if _read_pass_cache.get() is not None:
+        yield
+        return
+    token = _read_pass_cache.set({})
+    try:
+        yield
+    finally:
+        _read_pass_cache.reset(token)
+
+
+def _freeze(value):
+    """Hashable form of resolver context; raises TypeError for values it can't key on."""
+    if isinstance(value, Model):
+        return (value._meta.label, value.pk)
+    if isinstance(value, dict):
+        return tuple(sorted((k, _freeze(v)) for k, v in value.items()))
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(v) for v in value)
+    if isinstance(value, (set, frozenset)):
+        return frozenset(_freeze(v) for v in value)
+    hash(value)
+    return value
 
 
 def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
@@ -123,6 +165,16 @@ class InstrumentResolver(Resolver):
     def resolve(self, instrument, parent_pk=None, measure=None, **context):
         from ..models import CollectionInstrument
 
+        cache, key = _read_pass_cache.get(), None
+        if cache is not None:
+            try:
+                key = (instrument.collection_request_id, parent_pk, measure, _freeze(context))
+            except TypeError:
+                key = None  # Unkeyable context: resolve uncached rather than risk a collision
+        if key is not None and key in cache:
+            values, suggested_values = cache[key]
+            return {"data": list(values), "suggested_values": suggested_values}
+
         if parent_pk:
             lookup = {"pk": parent_pk}
         elif measure:
@@ -137,8 +189,10 @@ class InstrumentResolver(Resolver):
         # up hitting the database.
         suggested_values = instrument.suggested_responses.values_list("data", flat=True)
 
+        if key is not None:
+            cache[key] = (values, suggested_values)
         return {
-            "data": values,
+            "data": list(values),
             "suggested_values": suggested_values,
         }
 

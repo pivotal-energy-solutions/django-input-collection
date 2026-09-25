@@ -10,7 +10,8 @@ from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
 from ..api.restframework.serializers import CollectionInstrumentSerializer
-from ..collection import collectors
+from ..collection import collectors, resolvers
+from ..collection.resolvers import read_pass
 from . import factories
 
 CONDITION_TABLES = (
@@ -90,3 +91,152 @@ class ConditionQueryCountTests(TestCase):
         children = collection_request.collectioninstrument_set.filter(conditions__isnull=False)
         results = sorted(child.test_conditions() for child in children.order_by("id"))
         self.assertEqual(results, [False, True])
+
+
+class ReadPassTests(TestCase):
+    """The pass cache's edge cases: nesting, context keys, and unkeyable context."""
+
+    def test_nested_pass_shares_the_outer_cache(self):
+        with read_pass():
+            outer = resolvers._read_pass_cache.get()
+            with read_pass():
+                self.assertIs(resolvers._read_pass_cache.get(), outer)
+            self.assertIs(resolvers._read_pass_cache.get(), outer)
+        self.assertIsNone(resolvers._read_pass_cache.get())
+
+    def test_freeze_makes_context_hashable(self):
+        user = factories.CollectionRequestFactory.create()
+        frozen = resolvers._freeze(
+            {"user": user, "ids": [2, 1], "pair": (1, "a"), "tags": {"x"}, "n": 3}
+        )
+        hash(frozen)
+        self.assertEqual(
+            frozen,
+            (
+                ("ids", (2, 1)),
+                ("n", 3),
+                ("pair", (1, "a")),
+                ("tags", frozenset({"x"})),
+                ("user", (user._meta.label, user.pk)),
+            ),
+        )
+
+    def test_freeze_rejects_unhashable_values(self):
+        with self.assertRaises(TypeError):
+            resolvers._freeze({"blob": bytearray(b"x")})
+
+    def test_unkeyable_context_resolves_uncached(self):
+        class UnhashableId(int):
+            __hash__ = None  # A usable filter value that can't be a cache key
+
+        collection_request, parent = build_request(1)
+        child = collection_request.collectioninstrument_set.filter(conditions__isnull=False).get()
+        resolver = resolvers.InstrumentResolver()
+        context = {"instrument_id": UnhashableId(parent.id)}
+
+        with read_pass():
+            first = resolver.resolve(child, parent_pk=str(parent.id), **context)
+            self.assertEqual(resolvers._read_pass_cache.get(), {})
+            parent.collectedinput_set.update(data="bar")
+            second = resolver.resolve(child, parent_pk=str(parent.id), **context)
+
+        self.assertEqual((first["data"], second["data"]), (["foo"], ["bar"]))
+
+
+RESOLVER_TABLES = (
+    "django_input_collection_collectioninstrument",
+    "django_input_collection_collectedinput",
+    "django_input_collection_suggestedresponse",
+)
+
+
+def resolver_queries(queries) -> int:
+    return sum(1 for q in queries if any(t in q["sql"] for t in RESOLVER_TABLES))
+
+
+class ResolverQueryCountTests(TestCase):
+    """Within one read pass, a shared parent instrument is resolved once, not per condition."""
+
+    def _get_instruments(self, num_children):
+        collection_request, _parent = build_request(num_children)
+        collector = collectors.Collector(collection_request)
+        with CaptureQueriesContext(connection) as queries:
+            allowed = set(collector.get_instruments(active=True).values_list("id", flat=True))
+        return allowed, resolver_queries(queries)
+
+    def _list_serializer(self, num_children):
+        collection_request, _parent = build_request(num_children)
+        collector = collectors.Collector(collection_request)
+        with CaptureQueriesContext(connection) as queries:
+            data = CollectionInstrumentSerializer(
+                instance=collection_request.collectioninstrument_set.all(),
+                many=True,
+                context={"collector": collector},
+            ).data
+        return {x["id"] for x in data if x["is_condition_met"]}, resolver_queries(queries)
+
+    def test_get_instruments_resolver_queries_do_not_scale(self):
+        allowed_small, small = self._get_instruments(2)
+        allowed_large, large = self._get_instruments(6)
+        self.assertEqual((len(allowed_small), len(allowed_large)), (2, 4))
+        self.assertEqual(small, large)
+
+    def test_list_serializer_resolver_queries_do_not_scale(self):
+        allowed_small, small = self._list_serializer(2)
+        allowed_large, large = self._list_serializer(6)
+        self.assertEqual((len(allowed_small), len(allowed_large)), (2, 4))
+        self.assertEqual(small, large)
+
+    def test_each_pass_sees_answers_changed_since_the_last(self):
+        collection_request, parent = build_request(2)
+        collector = collectors.Collector(collection_request)
+        before = set(collector.get_instruments(active=True).values_list("id", flat=True))
+
+        parent.collectedinput_set.update(data="bar")  # match child now fails, mismatch passes
+        after = set(collector.get_instruments(active=True).values_list("id", flat=True))
+
+        self.assertEqual(len(before), 2)
+        self.assertEqual(len(after), 2)
+        self.assertNotEqual(before, after)
+
+    def test_is_instrument_allowed_outside_a_pass_is_never_cached(self):
+        collection_request, parent = build_request(1)
+        collector = collectors.Collector(collection_request)
+        child = collection_request.collectioninstrument_set.filter(conditions__isnull=False).get()
+
+        self.assertTrue(collector.is_instrument_allowed(child))
+        parent.collectedinput_set.update(data="bar")
+        self.assertFalse(collector.is_instrument_allowed(child))
+
+    def test_suggested_responses_only_read_for_suggested_match_types(self):
+        collection_request, parent = build_request(2)  # "match"/"mismatch" cases only
+        collector = collectors.Collector(collection_request)
+        child = collection_request.collectioninstrument_set.filter(conditions__isnull=False)[0]
+        with CaptureQueriesContext(connection) as queries:
+            collector.is_instrument_allowed(child)
+        suggested = [q for q in queries if "django_input_collection_suggestedresponse" in q["sql"]]
+        self.assertEqual(suggested, [])
+
+    def test_suggested_match_types_still_evaluate(self):
+        collection_request = factories.CollectionRequestFactory.create()
+        suggested = factories.SuggestedResponseFactory.create(data="yes")
+        parent = factories.CollectionInstrumentFactory.create(
+            collection_request=collection_request, suggested_responses=[suggested]
+        )
+        answer = factories.CollectedInputFactory.create(
+            instrument=parent, collection_request=collection_request, data="yes"
+        )
+        child = factories.CollectionInstrumentFactory.create(collection_request=collection_request)
+        factories.ConditionFactory.create(
+            instrument=child,
+            data_getter=f"instrument:{parent.id}",
+            condition_group=factories.ConditionGroupFactory.create(
+                requirement_type="all-pass",
+                cases=[factories.CaseFactory.create(match_type="all-custom")],
+            ),
+        )
+        collector = collectors.Collector(collection_request)
+
+        self.assertFalse(collector.is_instrument_allowed(child))  # "yes" is suggested
+        type(answer).objects.filter(pk=answer.pk).update(data="custom")
+        self.assertTrue(collector.is_instrument_allowed(child))

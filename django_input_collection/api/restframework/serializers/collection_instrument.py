@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from ....collection import CollectionRequestQueryMinimizerMixin
+from ....collection.resolvers import read_pass
 from ....managers.collection_instrument import CONDITION_PREFETCH
 from ....models import CollectionInstrument
 from .bound_suggested_response import BoundSuggestedResponseSerializer
@@ -81,7 +82,8 @@ class CollectionInstrumentListSerializer(serializers.ListSerializer):
         prefetch_related_objects(
             [x["_instrument_object"] for x in instruments], *CONDITION_PREFETCH
         )
-        return [self._get_instrument_data(x) for x in instruments]
+        with read_pass():
+            return [self._get_instrument_data(x) for x in instruments]
 
 
 class CollectionInstrumentSerializer(ReadWriteToggleMixin, serializers.ModelSerializer):
