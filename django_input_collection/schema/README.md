@@ -71,6 +71,7 @@ Each question in a section can have the following fields:
 | `order` | integer | No | auto | Display order within section |
 | `description` | string | No | "" | Additional description text |
 | `help_text` | string | No | "" | Help text (hidden until requested) |
+| `context` | object | No | {} | Free-form metadata for outside systems (e.g. `{"provides_for": [...]}`); never read by the collector |
 | `test_requirement_type` | string | No | "all-pass" | How multiple conditions are evaluated |
 | `responses` | array | No | [] | Inline response options |
 | `response_set` | string | No | - | Reference to a named response set |
@@ -145,6 +146,7 @@ Response flags define special behavior for specific response values:
 |------|-------------|
 | `comment_required` | User must provide a comment when selecting this response |
 | `photo_required` | User must attach a photo when selecting this response |
+| `video_required` | User must attach a video when selecting this response |
 | `document_required` | User must attach a document when selecting this response |
 | `is_considered_failure` | This response is considered a failure/deficiency |
 
@@ -348,6 +350,7 @@ class AxisBoundResponseHandler:
             suggested_response=suggested_response,
             comment_required=flags.get("comment_required", False),
             photo_required=flags.get("photo_required", False),
+            video_required=flags.get("video_required", False),
             document_required=flags.get("document_required", False),
             is_considered_failure=flags.get("is_considered_failure", False),
         )
@@ -362,6 +365,8 @@ class AxisBoundResponseHandler:
                 response_flags["comment_required"] = True
             if bound.photo_required:
                 response_flags["photo_required"] = True
+            if bound.video_required:
+                response_flags["video_required"] = True
             if bound.document_required:
                 response_flags["document_required"] = True
             if bound.is_considered_failure:

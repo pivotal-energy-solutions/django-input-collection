@@ -119,6 +119,21 @@ class InstrumentTests(TestCase):
         with self.assertNumQueries(7):
             specification.data
 
+    def test_instruments_never_load_context(self):
+        """Collectors read every instrument on each pass; the context column stays unloaded."""
+        self.parent_instrument.context = {"provides_for": ["simulation.window"]}
+        self.parent_instrument.save()
+
+        collector = RestFrameworkCollector(self.collection_request)
+        specification = collector.get_specification()
+
+        with self.assertNumQueries(1):
+            instruments = specification.instruments
+        self.assertEqual(len(instruments), 3)
+        for data in instruments:
+            self.assertNotIn("context", data)
+            self.assertIn("context", data["_instrument_object"].get_deferred_fields())
+
     def test_specification_query_counts(self):
         self.collector = RestFrameworkCollector(self.collection_request)
         specification = self.collector.get_specification()

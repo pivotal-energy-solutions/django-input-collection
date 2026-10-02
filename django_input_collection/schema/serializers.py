@@ -142,6 +142,7 @@ class ResponseFlagsSerializer(serializers.Serializer):
     comment_required = serializers.BooleanField(required=False, default=False)
     photo_required = serializers.BooleanField(required=False, default=False)
     document_required = serializers.BooleanField(required=False, default=False)
+    video_required = serializers.BooleanField(required=False, default=False)
     is_considered_failure = serializers.BooleanField(required=False, default=False)
 
 
@@ -369,6 +370,11 @@ class QuestionSerializer(serializers.Serializer):
         allow_blank=True,
         default="",
         help_text="Help text shown on hover or in help modal",
+    )
+    context = serializers.DictField(
+        required=False,
+        default=dict,
+        help_text="Free-form metadata for outside systems (e.g. {'provides_for': [...]})",
     )
     type = serializers.ChoiceField(
         choices=QUESTION_TYPES,

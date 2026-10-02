@@ -24,6 +24,8 @@ class CollectionInstrumentListSerializer(serializers.ListSerializer):
                 "comment_required": x["comment_required"],
                 "document_required": x["document_required"],
                 "photo_required": x["photo_required"],
+                # .get(): only Axis's bound-response model carries this flag
+                "video_required": x.get("video_required", False),
                 "suggested_response": x["suggested_response_id"],
                 "_suggested_response": x["bound_suggested_response_id"],
                 "data": x["suggested_response"],

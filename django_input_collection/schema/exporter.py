@@ -171,6 +171,8 @@ class CollectionRequestExporter:
             question["description"] = instrument.description
         if instrument.help:
             question["help_text"] = instrument.help
+        if instrument.context:
+            question["context"] = instrument.context
 
         # Export test_requirement_type if not default
         if instrument.test_requirement_type and instrument.test_requirement_type != "all-pass":

@@ -127,6 +127,8 @@ class CollectionInstrument(DatesModel, models.Model):
     text = models.TextField()
     description = models.TextField(blank=True)  # short text, always displayed
     help = models.TextField(blank=True)  # long text, always hidden unless requested
+    # What the answer is evidence for, read by outside systems; never by the collector.
+    context = models.JSONField(default=dict, blank=True)
 
     response_policy = models.ForeignKey("ResponsePolicy", on_delete=models.CASCADE)
     suggested_responses = models.ManyToManyField(

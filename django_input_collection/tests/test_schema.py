@@ -155,6 +155,32 @@ class SerializerValidationTests(TestCase):
         serializer = CollectionSchemaSerializer(data=schema)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
+    def test_video_required_flag_is_kept(self):
+        """A flag the serializer does not declare is silently dropped by DRF."""
+        schema = {
+            "version": "1.0",
+            "name": "Test Checklist",
+            "sections": [
+                {
+                    "name": "Section 1",
+                    "questions": [
+                        {
+                            "measure_id": "q1",
+                            "text": "Walkthrough recorded?",
+                            "type": "multiple-choice",
+                            "responses": ["Yes", "No"],
+                            "response_flags": {"Yes": {"video_required": True}},
+                        }
+                    ],
+                }
+            ],
+        }
+        serializer = CollectionSchemaSerializer(data=schema)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        flags = serializer.validated_data["sections"][0]["questions"][0]["response_flags"]
+        self.assertTrue(flags["Yes"]["video_required"])
+        self.assertFalse(flags["Yes"]["photo_required"])
+
     def test_invalid_schema_empty_sections(self):
         """Test that schema with no sections fails validation."""
         schema = {
@@ -812,3 +838,45 @@ class ExporterTests(TestCase):
         self.assertEqual(q2["measure_id"], "q2")
         self.assertIn("conditions", q2)
         self.assertEqual(len(q2["conditions"]), 1)
+
+
+class InstrumentContextSchemaTests(TestCase):
+    """A question's context tells outside systems what the answer is evidence for."""
+
+    def _schema(self, **question_extra):
+        question = {
+            "measure_id": "window-label",
+            "text": "Window label photographed?",
+            "type": "open",
+        }
+        question.update(question_extra)
+        return {
+            "version": "1.0",
+            "name": "Ctx",
+            "sections": [{"name": "S", "questions": [question]}],
+        }
+
+    def test_serializer_accepts_context(self):
+        schema = self._schema(context={"provides_for": ["simulation.window"]})
+        serializer = CollectionSchemaSerializer(data=schema)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        question = serializer.validated_data["sections"][0]["questions"][0]
+        self.assertEqual(question["context"], {"provides_for": ["simulation.window"]})
+
+    def test_serializer_rejects_non_object_context(self):
+        serializer = CollectionSchemaSerializer(data=self._schema(context=["simulation.window"]))
+        self.assertFalse(serializer.is_valid())
+
+    def test_builder_stores_and_exporter_round_trips_context(self):
+        context = {"provides_for": ["simulation.window", "simulation.simulation"]}
+        collection_request = CollectionRequestBuilder().build(self._schema(context=context))
+        instrument = collection_request.collectioninstrument_set.get()
+        self.assertEqual(instrument.context, context)
+
+        exported = CollectionRequestExporter().export(collection_request)
+        self.assertEqual(exported["sections"][0]["questions"][0]["context"], context)
+
+    def test_exporter_omits_empty_context(self):
+        collection_request = CollectionRequestBuilder().build(self._schema())
+        exported = CollectionRequestExporter().export(collection_request)
+        self.assertNotIn("context", exported["sections"][0]["questions"][0])

@@ -124,14 +124,14 @@ class CollectionRequestQueryMinimizerMixin(object):
         """Cached list of instruments"""
 
         instruments = (
-            self.collector.collection_request.collectioninstrument_set.all().select_related(
-                "response_policy", "measure", "segment", "group", "type"
-            )
+            self.collector.collection_request.collectioninstrument_set.all()
+            .select_related("response_policy", "measure", "segment", "group", "type")
+            .defer("context")  # metadata for outside systems; collectors never need it
         )
 
         results = []
         for item in instruments:
-            data = model_to_dict(item, exclude=["suggested_responses"])
+            data = model_to_dict(item, exclude=["suggested_responses", "context"])
             data["response_policy_info"] = model_to_dict(item.response_policy)
             data["measure"] = f"{item.measure.id}"
             data["segment"] = f"{item.segment.id}" if item.segment else None
