@@ -71,6 +71,7 @@ Each question in a section can have the following fields:
 | `order` | integer | No | auto | Display order within section |
 | `description` | string | No | "" | Additional description text |
 | `help_text` | string | No | "" | Help text (hidden until requested) |
+| `context` | object | No | {} | Free-form metadata for outside systems (e.g. `{"provides_for": [...]}`); never read by the collector |
 | `test_requirement_type` | string | No | "all-pass" | How multiple conditions are evaluated |
 | `responses` | array | No | [] | Inline response options |
 | `response_set` | string | No | - | Reference to a named response set |

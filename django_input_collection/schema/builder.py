@@ -235,6 +235,7 @@ class CollectionRequestBuilder:
             text=question["text"],
             description=question.get("description", ""),
             help=question.get("help_text", ""),
+            context=question.get("context") or {},
             order=order,
             test_requirement_type=question.get("test_requirement_type", "all-pass"),
         )

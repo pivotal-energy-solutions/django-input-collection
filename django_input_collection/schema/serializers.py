@@ -371,6 +371,11 @@ class QuestionSerializer(serializers.Serializer):
         default="",
         help_text="Help text shown on hover or in help modal",
     )
+    context = serializers.DictField(
+        required=False,
+        default=dict,
+        help_text="Free-form metadata for outside systems (e.g. {'provides_for': [...]})",
+    )
     type = serializers.ChoiceField(
         choices=QUESTION_TYPES,
         default="open",
