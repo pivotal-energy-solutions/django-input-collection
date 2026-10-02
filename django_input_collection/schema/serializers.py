@@ -142,6 +142,7 @@ class ResponseFlagsSerializer(serializers.Serializer):
     comment_required = serializers.BooleanField(required=False, default=False)
     photo_required = serializers.BooleanField(required=False, default=False)
     document_required = serializers.BooleanField(required=False, default=False)
+    video_required = serializers.BooleanField(required=False, default=False)
     is_considered_failure = serializers.BooleanField(required=False, default=False)
 
 

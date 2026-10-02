@@ -155,6 +155,32 @@ class SerializerValidationTests(TestCase):
         serializer = CollectionSchemaSerializer(data=schema)
         self.assertTrue(serializer.is_valid(), serializer.errors)
 
+    def test_video_required_flag_is_kept(self):
+        """A flag the serializer does not declare is silently dropped by DRF."""
+        schema = {
+            "version": "1.0",
+            "name": "Test Checklist",
+            "sections": [
+                {
+                    "name": "Section 1",
+                    "questions": [
+                        {
+                            "measure_id": "q1",
+                            "text": "Walkthrough recorded?",
+                            "type": "multiple-choice",
+                            "responses": ["Yes", "No"],
+                            "response_flags": {"Yes": {"video_required": True}},
+                        }
+                    ],
+                }
+            ],
+        }
+        serializer = CollectionSchemaSerializer(data=schema)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        flags = serializer.validated_data["sections"][0]["questions"][0]["response_flags"]
+        self.assertTrue(flags["Yes"]["video_required"])
+        self.assertFalse(flags["Yes"]["photo_required"])
+
     def test_invalid_schema_empty_sections(self):
         """Test that schema with no sections fails validation."""
         schema = {
