@@ -671,12 +671,11 @@ class ChecklistConsumerMixin:
         from django_input_collection.collection.collectors import BaseCollector
         from django_input_collection.collection.merge import load_instruments
 
-        # Display order is by "order" (as in 10.0.0); stable, so ties keep Meta ordering.
-        all_instruments = sorted(
-            load_instruments([collection_request]), key=lambda instrument: instrument.order or 0
-        )
+        instruments = load_instruments([collection_request])  # Meta order: the index needs it
+        # Display order is 10.0.0's de-facto one: "order", ties by pk.
+        all_instruments = sorted(instruments, key=lambda i: (i.order or 0, i.pk))
         input_model = self.get_input_model()
-        rows = (
+        rows = list(
             input_model.objects.filter(collection_request=collection_request)
             .select_related("user")
             .order_by("date_created", "id")
@@ -684,13 +683,34 @@ class ChecklistConsumerMixin:
         input_by_instrument = {row.instrument_id: row for row in rows}  # newest wins
         if not isinstance(collector, BaseCollector):
             return all_instruments, input_by_instrument, None  # no filter to trust: database path
-        # AnswerIndex contract: conditions read what this collector would, filtered the same way.
-        condition_rows = collector.filter_condition_inputs(
-            input_model.objects.filter(collection_request=collection_request).filter_for_context(
-                **collector.context
-            )
+        index = AnswerIndex(
+            instruments,
+            self._condition_rows(collection_request, collector, instruments, rows),
+            complete=True,
+        )
+        return all_instruments, input_by_instrument, index
+
+    def _condition_rows(self, collection_request, collector, instruments, rows):
+        """What this collector's instrument: conditions read (the AnswerIndex input contract)."""
+        from django_input_collection.collection.collectors import BaseCollector
+        from django_input_collection.managers.collected_input import CollectedInputQuerySet
+
+        getters = (c.data_getter for i in instruments for c in i.conditions.all())
+        if not any((getter or "").startswith("instrument:") for getter in getters):
+            return []  # nothing will consult the index
+        input_model = self.get_input_model()
+        unfiltered = (
+            not collector.context
+            and type(collector).filter_condition_inputs is BaseCollector.filter_condition_inputs
+            and type(input_model.objects.all()).filter_for_context
+            is CollectedInputQuerySet.filter_for_context
+        )
+        if unfiltered:
+            return rows  # the same set the answers came from: no second query
+        queryset = input_model.objects.filter(collection_request=collection_request)
+        return collector.filter_condition_inputs(
+            queryset.filter_for_context(**collector.context)
         ).order_by("date_created", "id")
-        return all_instruments, input_by_instrument, AnswerIndex(all_instruments, condition_rows)
 
     def _build_sections(self, all_instruments, collector, input_by_instrument, progress) -> list:
         """Section dicts (grouped sections, then "General" for ungrouped instruments)."""

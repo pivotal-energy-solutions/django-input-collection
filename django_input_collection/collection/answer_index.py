@@ -17,10 +17,13 @@ class AnswerIndex:
     index per filter (e.g. per role), never share one between collectors that filter differently.
 
     ``instruments`` should come from ``load_instruments`` (Meta ordering per request, bound
-    responses prefetched); requests with no instrument here defer to the database.
+    responses prefetched); requests with no instrument here defer to the database. Pass
+    ``complete=True`` only when they are every instrument of their requests: a gate missing from
+    a covered request then raises DoesNotExist from memory, as the database path would.
     """
 
-    def __init__(self, instruments, inputs):
+    def __init__(self, instruments, inputs, *, complete=False):
+        self.complete = complete
         self._by_request = defaultdict(dict)  # request id -> measure_id -> first instrument
         self._by_pk = {}
         for instrument in instruments:
@@ -51,7 +54,13 @@ class AnswerIndex:
             return None
         candidates = self._candidates(request_ids, parent_pk, measure)
         if not candidates:
-            return None  # the database path raises DoesNotExist; keep that behaviour
+            if self.complete:
+                from ..models import CollectionInstrument
+
+                raise CollectionInstrument.DoesNotExist(
+                    f"No gating instrument {parent_pk or measure!r}"
+                )
+            return None  # partial index: let the database decide
         for instrument in candidates:
             values = self._values.get(instrument.pk)
             if values:

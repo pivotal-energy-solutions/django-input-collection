@@ -9,11 +9,11 @@ from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
-from ..collection import collectors
+from ..collection import collectors, resolvers
 from ..collection.answer_index import AnswerIndex
 from ..collection.merge import load_instruments
-from ..collection.resolvers import read_pass
-from ..models import CollectedInput
+from ..collection.resolvers import read_pass, resolving_for
+from ..models import CollectedInput, CollectionInstrument
 from . import factories
 from .checklists import build_checklist, gate, question
 from .test_cross_request_conditions import Cooperative
@@ -135,3 +135,46 @@ class AnswerIndexContractTests(TestCase):
             seen = {i.measure_id: collector.is_instrument_allowed(i) for i in instruments}
         self.assertEqual(seen, {"q-gate": True, "q-0": True, "q-1": False})
         self.assertEqual(len(queries), 0, [q["sql"] for q in queries])
+
+
+class MissingGateTests(TestCase):
+    """A gate that exists nowhere fails like the database path, without repeating the search."""
+
+    def children(self, size):
+        request = build_checklist(size, prefix=f"g{size}")
+        instruments = load_instruments([request])
+        for child in instruments[1:]:
+            child.conditions.update(data_getter="instrument:nowhere")
+        return request, load_instruments([request])[1:]
+
+    def test_a_complete_index_raises_from_memory(self):
+        request, _ = self.children(1)
+        complete = AnswerIndex(load_instruments([request]), [], complete=True)
+        with self.assertRaises(CollectionInstrument.DoesNotExist):
+            complete.lookup([request.pk], measure="nowhere")
+        partial = AnswerIndex(load_instruments([request]), [])
+        self.assertIsNone(partial.lookup([request.pk], measure="nowhere"))
+
+    def resolve_missing(self, size, index=None):
+        request, children = self.children(size)
+        collector = collectors.Collector(request)
+        with read_pass(index=index(request) if index else None), resolving_for(collector):
+            with CaptureQueriesContext(connection) as queries:
+                with self.assertNoLogs(resolvers.log, "WARNING"):
+                    errors = [
+                        resolvers.resolve(child, "instrument:nowhere", fallback="x")[2]
+                        for child in children
+                    ]
+        self.assertTrue(all(isinstance(e, CollectionInstrument.DoesNotExist) for e in errors))
+        return len(queries)
+
+    def test_the_database_path_searches_once_per_pass(self):
+        self.assertEqual(self.resolve_missing(3), self.resolve_missing(9))
+        self.assertEqual(self.resolve_missing(3), 1)
+
+    def test_a_complete_index_never_searches(self):
+        def build(request):
+            return AnswerIndex(load_instruments([request]), [], complete=True)
+
+        self.assertEqual(self.resolve_missing(3, build), 0)
+        self.assertEqual(self.resolve_missing(9, build), 0)

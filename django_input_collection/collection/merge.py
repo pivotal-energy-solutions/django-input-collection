@@ -18,7 +18,9 @@ def load_instruments(requests) -> list:
     """Every instrument of ``requests`` with responses, bound flags and condition trees prefetched.
 
     Ordered by request, then ``CollectionInstrument.Meta.ordering`` within each request, so the
-    first instrument per measure is the one ``InstrumentResolver`` would pick.
+    first instrument per measure is the one ``InstrumentResolver`` would pick. Sort a copy for
+    display; build an AnswerIndex from this order. The ``suggested_responses`` M2M is not
+    prefetched (read ``bound_suggested_responses``): touching it costs a query per instrument.
     """
     from ..models import CollectionInstrument
 

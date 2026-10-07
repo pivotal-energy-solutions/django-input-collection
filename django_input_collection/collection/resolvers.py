@@ -3,6 +3,7 @@ import logging
 from contextlib import contextmanager
 from contextvars import ContextVar
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Manager, Model
 from django.db.models.query import QuerySet
 
@@ -94,6 +95,10 @@ def _hook(name, call, *args, **kwargs):
     """Run a collector/index hook; a failure there is a bug, so warn before resolve() falls back."""
     try:
         return call(*args, **kwargs)
+    except ObjectDoesNotExist:
+        if name != "index.lookup":
+            log.warning("Condition hook %s raised; the condition falls back", name, exc_info=True)
+        raise  # a complete AnswerIndex's definite miss stays as quiet as the database path's
     except Exception:
         log.warning("Condition hook %s raised; the condition falls back", name, exc_info=True)
         raise
@@ -262,10 +267,19 @@ class InstrumentResolver(Resolver):
             except TypeError:
                 key = None  # Unkeyable context: resolve uncached rather than risk a collision
         if key is not None and key in cache:
+            if isinstance(cache[key], ObjectDoesNotExist):
+                raise cache[key]  # missing gate: one search per pass, not one per condition
             values, suggested_values = cache[key]
             return {"data": list(values), "suggested_values": suggested_values}
 
-        values, suggested_values = self._lookup(requests, parent_pk, measure, context, collector)
+        try:
+            values, suggested_values = self._lookup(
+                requests, parent_pk, measure, context, collector
+            )
+        except ObjectDoesNotExist as missing:
+            if key is not None:
+                cache[key] = missing
+            raise
         if key is not None:
             cache[key] = (values, suggested_values)
         return {"data": list(values), "suggested_values": suggested_values}
