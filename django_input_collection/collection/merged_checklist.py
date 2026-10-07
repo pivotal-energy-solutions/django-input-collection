@@ -104,7 +104,11 @@ class MergedChecklist:
         return self.questions[measure_id].instrument
 
     def evaluate(self, measures=None) -> dict:
-        """measure_id -> True if any request's instrument is allowed; None if none could say."""
+        """measure_id -> True if any request's instrument is allowed; None if none could say.
+
+        A snapshot: answers are as of when the merge was built. Rebuild with merge_requests after
+        writing inputs.
+        """
         measures = list(self.questions) if measures is None else measures
         with read_pass(index=self.index):
             return {
