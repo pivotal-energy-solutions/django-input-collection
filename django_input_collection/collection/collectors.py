@@ -10,7 +10,7 @@ from django.db.models import Model, F
 from ..encoders import CollectionSpecificationJSONEncoder
 from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
-from .resolvers import read_pass
+from .resolvers import read_pass, resolving_for
 from . import specifications, CollectionRequestQueryMinimizerMixin
 from . import methods
 from . import utils
@@ -380,6 +380,29 @@ class BaseCollector(object, metaclass=CollectorType):
                 allowed.append(child)
         return allowed
 
+    def get_condition_requests(self, instrument):
+        """Requests an ``instrument:`` condition may search, own request first. Override to widen."""
+        return [instrument.collection_request]
+
+    def filter_condition_inputs(self, queryset):
+        """Narrow the inputs a condition reads (e.g. hide another role's answers)."""
+        return queryset
+
+    def widens_condition_requests(self):
+        """True when ``get_condition_requests`` is overridden (else only the own request is read)."""
+        return type(self).get_condition_requests is not BaseCollector.get_condition_requests
+
+    def condition_cache_key(self):
+        """Read-pass cache component for this collector's ``filter_condition_inputs``.
+
+        None (shared by every collector) when the filter isn't overridden, else the collector
+        itself: the cache holds it for the pass, so its identity can't be reused. Override with a
+        stable value (e.g. a role) to share entries between instances that filter alike.
+        """
+        if type(self).filter_condition_inputs is BaseCollector.filter_condition_inputs:
+            return None
+        return self
+
     def is_condition_successful(self, condition, **kwargs):
         """
         Like ``is_instrument_allowed()``, except that it tests only the given condition.  Using this
@@ -390,7 +413,8 @@ class BaseCollector(object, metaclass=CollectorType):
             kwargs["resolver_fallback_data"] = self.make_payload_data(condition.instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
-        return condition.test(key_input=key_input, key_case=key_case, **kwargs)
+        with resolving_for(self):
+            return condition.test(key_input=key_input, key_case=key_case, **kwargs)
 
     def is_instrument_allowed(self, instrument, **kwargs):
         """
@@ -402,9 +426,10 @@ class BaseCollector(object, metaclass=CollectorType):
             kwargs["resolver_fallback_data"] = self.make_payload_data(instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
-        return instrument.test_conditions(
-            key_input=key_input, key_case=key_case, context=self.context, **kwargs
-        )
+        with resolving_for(self):
+            return instrument.test_conditions(
+                key_input=key_input, key_case=key_case, context=self.context, **kwargs
+            )
 
     def is_measure_allowed(self, measure, **kwargs):
         instrument = self.get_instrument(measure)

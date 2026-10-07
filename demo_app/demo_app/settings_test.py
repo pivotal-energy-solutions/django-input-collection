@@ -17,7 +17,7 @@ DEFAULT_DB = {
     "NAME": ":memory:",
     "TEST": {"MIGRATE": False},
 }
-if os.environ.get("DB_TYPE") == "mysql":
+if os.environ.get("DB_TYPE") in ("mysql", "mariadb"):
     print("Using MySQL Backend!")
     DEFAULT_DB = mysql_db
 

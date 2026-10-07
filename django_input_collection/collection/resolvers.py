@@ -3,6 +3,7 @@ import logging
 from contextlib import contextmanager
 from contextvars import ContextVar
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Manager, Model
 from django.db.models.query import QuerySet
 
@@ -12,6 +13,11 @@ from . import exceptions
 __all__ = [
     "resolve",
     "read_pass",
+    "read_pass_cache",
+    "memoize",
+    "current_collector",
+    "resolving_for",
+    "current_answer_index",
     "Resolver",
     "InstrumentResolver",
     "AttributeResolver",
@@ -25,21 +31,81 @@ registry = []
 _read_pass_cache: ContextVar[dict | None] = ContextVar("resolver_read_pass", default=None)
 
 
+_answer_index: ContextVar = ContextVar("resolver_answer_index", default=None)
+_current_collector: ContextVar = ContextVar("resolver_collector", default=None)
+
+
 @contextmanager
-def read_pass():
+def read_pass(index=None):
     """Resolve each parent instrument once for the duration of a read-only evaluation pass.
 
     Wrap only code that evaluates conditions without writing inputs: answers are cached until
     the block exits, and the next pass re-reads them. Nested passes share the outer cache.
+    ``index`` (an AnswerIndex) answers instrument: conditions from memory for its requests.
     """
-    if _read_pass_cache.get() is not None:
-        yield
-        return
-    token = _read_pass_cache.set({})
+    tokens = []
+    if _read_pass_cache.get() is None:
+        tokens.append((_read_pass_cache, _read_pass_cache.set({})))
+    if index is not None:
+        tokens.append((_answer_index, _answer_index.set(index)))
     try:
         yield
     finally:
-        _read_pass_cache.reset(token)
+        for var, token in reversed(tokens):
+            var.reset(token)
+
+
+def read_pass_cache():
+    """The current pass's cache dict, or None outside a pass."""
+    return _read_pass_cache.get()
+
+
+def memoize(key, compute):
+    """``compute()`` once per read pass for ``key`` (hashable); uncached outside a pass."""
+    cache = _read_pass_cache.get()
+    if cache is None:
+        return compute()
+    key = tuple(key) if isinstance(key, (list, tuple)) else (key,)  # a str stays one part
+    full_key = ("memoize", *key)
+    if full_key not in cache:
+        cache[full_key] = compute()
+    return cache[full_key]
+
+
+def current_answer_index() -> "AnswerIndex | None":  # noqa: F821
+    """The AnswerIndex the current read pass was given, or None."""
+    return _answer_index.get()
+
+
+def current_collector():
+    """The collector testing conditions right now, or None."""
+    return _current_collector.get()
+
+
+@contextmanager
+def resolving_for(collector):
+    token = _current_collector.set(collector)
+    try:
+        yield
+    finally:
+        _current_collector.reset(token)
+
+
+def _hook(name, call, *args, **kwargs):
+    """Run a collector/index hook; a failure there is a bug, so warn before resolve() falls back."""
+    try:
+        return call(*args, **kwargs)
+    except ObjectDoesNotExist:
+        if name != "index.lookup":
+            log.warning("Condition hook %s raised; the condition falls back", name, exc_info=True)
+        raise  # a complete AnswerIndex's definite miss stays as quiet as the database path's
+    except Exception:
+        log.warning("Condition hook %s raised; the condition falls back", name, exc_info=True)
+        raise
+
+
+def _request_id(request):
+    return getattr(request, "pk", request)
 
 
 def _freeze(value):
@@ -162,39 +228,90 @@ class InstrumentResolver(Resolver):
     name = "instrument"
     pattern = r"((?P<parent_pk>\d+)|(?P<measure>.+))"
 
+    def search_requests(self, instrument, collector):
+        """Request ids to search, own request first, then whatever the collector adds.
+
+        Overrides of ``get_condition_requests`` may return requests or pks; both become ids, and
+        the common case never loads the ``collection_request`` FK.
+        """
+        own_id = instrument.collection_request_id
+        if collector is None or not collector.widens_condition_requests():
+            return [own_id]
+        ids = [own_id]
+        extra = _hook("get_condition_requests", collector.get_condition_requests, instrument)
+        for request_id in map(_request_id, extra):
+            if request_id not in ids:
+                ids.append(request_id)
+        return ids
+
     def resolve(self, instrument, parent_pk=None, measure=None, **context):
-        from ..models import CollectionInstrument
+        collector = current_collector()
+        requests = self.search_requests(instrument, collector)
+        index = current_answer_index()
+        if index is not None:
+            found = _hook(
+                "index.lookup", index.lookup, requests, parent_pk=parent_pk, measure=measure
+            )
+            if found is not None:
+                values, suggested_values = found
+                return {"data": list(values), "suggested_values": suggested_values}
 
         cache, key = _read_pass_cache.get(), None
         if cache is not None:
             try:
-                key = (instrument.collection_request_id, parent_pk, measure, _freeze(context))
+                # Collectors that filter inputs differently must not share an entry.
+                filter_key = None
+                if collector is not None:
+                    filter_key = _hook("condition_cache_key", collector.condition_cache_key)
+                key = (tuple(requests), filter_key, parent_pk, measure, _freeze(context))
             except TypeError:
                 key = None  # Unkeyable context: resolve uncached rather than risk a collision
         if key is not None and key in cache:
+            if isinstance(cache[key], ObjectDoesNotExist):
+                # Missing gate: one search per pass. A fresh exception keeps tracebacks short.
+                missing = cache[key]
+                raise type(missing)(*missing.args)
             values, suggested_values = cache[key]
             return {"data": list(values), "suggested_values": suggested_values}
 
-        if parent_pk:
-            lookup = {"pk": parent_pk}
-        elif measure:
-            lookup = {"measure_id": measure}
-        instrument = CollectionInstrument.objects.get(
-            collection_request=instrument.collection_request, **lookup
-        )
-        inputs = instrument.collectedinput_set.filter_for_context(**context)
-        values = list(inputs.values_list("data", flat=True))
-
-        # Avoid list coercion at this step so that match types not requiring this query won't end
-        # up hitting the database.
-        suggested_values = instrument.suggested_responses.values_list("data", flat=True)
-
+        try:
+            values, suggested_values = self._lookup(
+                requests, parent_pk, measure, context, collector
+            )
+        except ObjectDoesNotExist as missing:
+            if key is not None:
+                cache[key] = missing
+            raise
         if key is not None:
             cache[key] = (values, suggested_values)
-        return {
-            "data": list(values),
-            "suggested_values": suggested_values,
-        }
+        return {"data": list(values), "suggested_values": suggested_values}
+
+    def _lookup(self, requests, parent_pk, measure, context, collector):
+        from ..models import CollectionInstrument
+
+        lookup = {"pk": parent_pk} if parent_pk else {"measure_id": measure}
+        first = None
+        for position, request_id in enumerate(requests):
+            if parent_pk and position:
+                break  # a pk names one instrument in the condition's own request
+            parent = CollectionInstrument.objects.filter(
+                collection_request_id=request_id, **lookup
+            ).first()
+            if parent is None:
+                continue
+            first = first or parent
+            inputs = parent.collectedinput_set.filter_for_context(**context)
+            if collector is not None:
+                inputs = _hook("filter_condition_inputs", collector.filter_condition_inputs, inputs)
+            values = list(inputs.values_list("data", flat=True))
+            if values:
+                # Lazy: match types that don't need suggestions never query them.
+                return values, parent.suggested_responses.values_list("data", flat=True)
+        if first is None:
+            raise CollectionInstrument.DoesNotExist(
+                f"No gating instrument {parent_pk or measure!r}"
+            )
+        return [], first.suggested_responses.values_list("data", flat=True)
 
 
 class AttributeResolver(Resolver):
