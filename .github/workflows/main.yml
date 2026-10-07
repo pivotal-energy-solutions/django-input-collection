@@ -112,7 +112,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:latest
+        image: mariadb:11.4
         env:
           MARIADB_ROOT_PASSWORD: password
           # Django Check on 6.1 opens a live connection to the settings' database "db"
