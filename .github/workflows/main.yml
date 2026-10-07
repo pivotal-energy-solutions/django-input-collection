@@ -115,6 +115,8 @@ jobs:
         image: mariadb:latest
         env:
           MARIADB_ROOT_PASSWORD: password
+          # Django Check on 6.1 opens a live connection to the settings' database "db"
+          MARIADB_DATABASE: db
         ports:
           - 3306:3306
         options: >-
@@ -164,9 +166,8 @@ jobs:
           retention-days: 1
 
       - name: Django Check
-        # Use the test settings: the default settings point at MariaDB database "db",
-        # which CI never creates. This only passed before because Django <6.1 did not
-        # need a live connection to run these field checks.
+        # Use the test settings so sqlite legs need no server. On mariadb legs Django 6.1
+        # connects to database "db", which the service container creates.
         env:
           DB_TYPE: ${{ matrix.db }}
         run: export PYTHONPATH=`pwd` && python demo_app/manage.py check --settings=demo_app.settings_test
