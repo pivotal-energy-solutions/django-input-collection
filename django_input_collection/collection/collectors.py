@@ -10,7 +10,7 @@ from django.db.models import Model, F
 from ..encoders import CollectionSpecificationJSONEncoder
 from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
-from .resolvers import read_pass
+from .resolvers import read_pass, resolving_for
 from . import specifications, CollectionRequestQueryMinimizerMixin
 from . import methods
 from . import utils
@@ -380,6 +380,14 @@ class BaseCollector(object, metaclass=CollectorType):
                 allowed.append(child)
         return allowed
 
+    def get_condition_requests(self, instrument):
+        """Requests an ``instrument:`` condition may search, own request first. Override to widen."""
+        return [instrument.collection_request]
+
+    def filter_condition_inputs(self, queryset):
+        """Narrow the inputs a condition reads (e.g. hide another role's answers)."""
+        return queryset
+
     def is_condition_successful(self, condition, **kwargs):
         """
         Like ``is_instrument_allowed()``, except that it tests only the given condition.  Using this
@@ -390,7 +398,8 @@ class BaseCollector(object, metaclass=CollectorType):
             kwargs["resolver_fallback_data"] = self.make_payload_data(condition.instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
-        return condition.test(key_input=key_input, key_case=key_case, **kwargs)
+        with resolving_for(self):
+            return condition.test(key_input=key_input, key_case=key_case, **kwargs)
 
     def is_instrument_allowed(self, instrument, **kwargs):
         """
@@ -402,9 +411,10 @@ class BaseCollector(object, metaclass=CollectorType):
             kwargs["resolver_fallback_data"] = self.make_payload_data(instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
-        return instrument.test_conditions(
-            key_input=key_input, key_case=key_case, context=self.context, **kwargs
-        )
+        with resolving_for(self):
+            return instrument.test_conditions(
+                key_input=key_input, key_case=key_case, context=self.context, **kwargs
+            )
 
     def is_measure_allowed(self, measure, **kwargs):
         instrument = self.get_instrument(measure)
