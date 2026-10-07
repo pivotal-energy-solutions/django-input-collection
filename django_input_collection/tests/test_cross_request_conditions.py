@@ -210,3 +210,22 @@ class CacheHitQueryTests(TestCase):
         small, large = self.resolve_children(3), self.resolve_children(9)
         self.assertEqual(small, large)
         self.assertEqual(small, 2)  # parent instrument + its inputs, once per pass
+
+
+class MissingGateCacheTests(TestCase):
+    def test_a_cached_miss_does_not_grow_its_traceback(self):
+        request = factories.CollectionRequestFactory.create()
+        child = question(request, "child")
+        resolver = resolvers.InstrumentResolver()
+        depths = []
+        with read_pass():
+            for _ in range(3):
+                try:
+                    resolver.resolve(child, measure="nowhere")
+                except CollectionInstrument.DoesNotExist as error:
+                    depth, tb = 0, error.__traceback__
+                    while tb is not None:
+                        depth, tb = depth + 1, tb.tb_next
+                    depths.append(depth)
+        self.assertEqual(len(depths), 3)
+        self.assertEqual(depths[1], depths[2])

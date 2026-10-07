@@ -268,7 +268,9 @@ class InstrumentResolver(Resolver):
                 key = None  # Unkeyable context: resolve uncached rather than risk a collision
         if key is not None and key in cache:
             if isinstance(cache[key], ObjectDoesNotExist):
-                raise cache[key]  # missing gate: one search per pass, not one per condition
+                # Missing gate: one search per pass. A fresh exception keeps tracebacks short.
+                missing = cache[key]
+                raise type(missing)(*missing.args)
             values, suggested_values = cache[key]
             return {"data": list(values), "suggested_values": suggested_values}
 
