@@ -60,6 +60,22 @@ class BoundIndexTests(TestCase):
             _, data, _ = resolvers.resolve(child, "instrument:q-gate")
         self.assertEqual(data["data"], [])  # unbound answers for anyone, as before
 
+    def test_merge_binds_its_index_to_its_collector(self):
+        request = build_checklist(2)
+        collector = collectors.Collector(request)
+        merged = merge_requests([request], collectors={request.pk: collector})
+        self.assertTrue(merged.index.serves(collector))
+        self.assertFalse(merged.index.serves(HideYes(request)))
+        other = HideYes(request)
+        self.assertEqual(visibility(request, other, merged.index), visibility(request, other))
+        # condition_inputs= is vouched for by the caller: deliberately unbound.
+        vouched = merge_requests(
+            [request],
+            collectors={request.pk: collector},
+            condition_inputs=CollectedInput.objects.all(),
+        )
+        self.assertTrue(vouched.index.serves(None))
+
     def test_the_mixin_binds_its_index_to_its_collector(self):
         request = build_checklist(1)
         collector = collectors.Collector(request)
