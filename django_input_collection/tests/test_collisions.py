@@ -11,6 +11,7 @@ from django.test.utils import CaptureQueriesContext
 
 from ..models import CollectionRequest
 from ..schema.builder import CollectionRequestBuilder
+from ..schema.registry import BoundResponseRegistry
 from ..schema.collisions import (
     MeasureCollisionError,
     MeasureSignature,
@@ -76,6 +77,12 @@ class NormalizeTests(TestCase):
         self.assertEqual(normalize_flags(None), ())
         self.assertEqual(normalize_flags({"Yes": None}), ())
 
+    def test_flag_values_coerced_to_bool(self):
+        self.assertEqual(
+            normalize_flags({"No": {"comment_required": "true", "photo_required": 1}}),
+            normalize_flags({"No": {"comment_required": True, "photo_required": True}}),
+        )
+
     def test_provides_for_none_missing_and_string(self):
         schema = {
             "sections": [
@@ -92,7 +99,9 @@ class NormalizeTests(TestCase):
         }
         found = signatures_from_schema(schema)
         self.assertEqual({found[m].provides_for for m in "abc"}, {()})
-        self.assertEqual(found["d"].provides_for, ("x.y",))
+        # malformed bare string stays raw so it differs from a proper list
+        self.assertEqual(found["d"].provides_for, "x.y")
+        self.assertNotEqual(found["d"].provides_for, ("x.y",))
 
 
 class CheckTests(TestCase):
@@ -120,6 +129,22 @@ class CheckTests(TestCase):
         report.raise_for_errors()
 
 
+class FlagHandler:
+    """Test handler: flags kept in memory, bound rows via the plain m2m."""
+
+    store = {}
+
+    @classmethod
+    def create(cls, instrument, suggested_response, flags):
+        instrument.suggested_responses.add(suggested_response)
+        if flags:
+            cls.store.setdefault(instrument.pk, {})[suggested_response.data] = flags
+
+    @classmethod
+    def export(cls, instrument):
+        return cls.store.get(instrument.pk, {})
+
+
 class ProducerTests(TestCase):
     SCHEMA = {
         "sections": [
@@ -131,7 +156,10 @@ class ProducerTests(TestCase):
                         "text": "Q?",
                         "type": "multiple-choice",
                         "responses": ["Yes", "No", "Maybe"],
-                        "response_flags": {"No": {"comment_required": True}},
+                        "response_flags": {
+                            "No": {"comment_required": True},
+                            "Unlisted": {"photo_required": True},  # never stored
+                        },
                         "context": {"provides_for": ["simulation.simulation"]},
                     }
                 ],
@@ -139,14 +167,29 @@ class ProducerTests(TestCase):
         ]
     }
 
-    def test_schema_and_built_request_agree(self):
+    def _with_handler(self, handler):
+        original = BoundResponseRegistry._handler
+        BoundResponseRegistry._handler = handler
+        self.addCleanup(setattr, BoundResponseRegistry, "_handler", original)
+
+    def _assert_agree(self):
         built = CollectionRequestBuilder().build(self.SCHEMA)
         from_schema = signatures_from_schema(self.SCHEMA)["m"]
         from_request = signatures_for_request(built)["m"]
-        # demo BoundSuggestedResponse has no flag fields, so flags are not compared here
-        for name in ("type", "responses", "required", "text", "provides_for"):
-            with self.subTest(name):
-                self.assertEqual(getattr(from_schema, name), getattr(from_request, name))
+        self.assertEqual(
+            find_measure_collisions("s", {"m": from_schema}, {"r": {"m": from_request}}), []
+        )
+        return from_schema
+
+    def test_schema_and_built_request_agree_without_handler(self):
+        self._with_handler(None)  # builder discards flags, so the schema signature does too
+        self.assertEqual(self._assert_agree().response_flags, ())
+
+    def test_schema_and_built_request_agree_with_handler(self):
+        self._with_handler(FlagHandler)
+        self.assertEqual(
+            self._assert_agree().response_flags, (("No", (("comment_required", True),)),)
+        )
 
     def test_builder_refuses_before_writing(self):
         before = CollectionRequest.objects.count()

@@ -10,6 +10,8 @@ __credits__ = ["Steven Klass"]
 
 from dataclasses import dataclass, field
 
+from .registry import BoundResponseRegistry
+
 COLLISION_FIELDS = ("type", "responses", "response_flags", "required", "text", "provides_for")
 
 
@@ -26,23 +28,35 @@ class MeasureSignature:
 
 
 def normalize_flags(flags_by_response: dict) -> tuple:
-    """Order-insensitive flags; falsy flags and flagless responses drop out."""
+    """Order-insensitive flags coerced to bool; falsy flags and flagless responses drop out."""
     found = []
     for value, flags in (flags_by_response or {}).items():
-        items = tuple(sorted((str(k), v) for k, v in (flags or {}).items() if v))
+        items = tuple(sorted((str(k), True) for k, v in (flags or {}).items() if v))
         if items:
             found.append((str(value), items))
     return tuple(sorted(found))
 
 
 def provides_for(context) -> tuple:
-    """``provides_for`` as a sorted tuple; None, missing and [] are all ()."""
+    """``provides_for`` as a sorted tuple; None, missing and [] are all ().
+
+    A bare string is malformed (consumers would iterate its characters), so it is kept raw and
+    surfaces as a difference against any proper list.
+    """
     value = context.get("provides_for") if isinstance(context, dict) else None
     if not value:
         return ()
     if isinstance(value, str):
-        return (value,)
+        return value
     return tuple(sorted(str(v) for v in value))
+
+
+def _schema_flags(question: dict, responses: tuple) -> tuple:
+    """Flags as the builder stores them: none without a handler, only for listed responses."""
+    if not BoundResponseRegistry.has_handler():
+        return ()
+    flags = question.get("response_flags") or {}
+    return normalize_flags({k: v for k, v in flags.items() if str(k) in responses})
 
 
 def _schema_type(question: dict) -> str:
@@ -58,10 +72,11 @@ def signatures_from_schema(schema: dict) -> dict:
     for section in schema.get("sections", []):
         for q in section.get("questions", []):
             responses = q.get("responses") or response_sets.get(q.get("response_set"), [])
+            responses = tuple(str(r) for r in responses)
             found[q["measure_id"]] = MeasureSignature(
                 type=_schema_type(q),
-                responses=tuple(str(r) for r in responses),
-                response_flags=normalize_flags(q.get("response_flags")),
+                responses=responses,
+                response_flags=_schema_flags(q, responses),
                 required=bool(q.get("required", True)),
                 text=q.get("text") or "",
                 provides_for=provides_for(q.get("context")),
@@ -71,18 +86,24 @@ def signatures_from_schema(schema: dict) -> dict:
     return found
 
 
-def signature_from_instrument(instrument) -> MeasureSignature:
-    """Reads prefetched bound responses; see ``signatures_for_request``."""
+def _instrument_flags(instrument, bound_rows) -> dict:
+    """Bound ``get_flags()`` (prefetched, no queries); else the registered handler's export,
+    which may cost a query per instrument."""
     from .merged import response_flags
 
+    if bound_rows and not callable(getattr(bound_rows[0], "get_flags", None)):
+        return BoundResponseRegistry.export(instrument)  # {} without a handler
+    return {b.suggested_response.data: response_flags(b) for b in bound_rows}
+
+
+def signature_from_instrument(instrument) -> MeasureSignature:
+    """Reads prefetched bound responses; see ``signatures_for_request``."""
     bound_rows = sorted(instrument.bound_suggested_responses.all(), key=lambda b: b.pk)
     policy = instrument.response_policy
     return MeasureSignature(
         type=instrument.type_id or "open",
         responses=tuple(b.suggested_response.data for b in bound_rows),
-        response_flags=normalize_flags(
-            {b.suggested_response.data: response_flags(b) for b in bound_rows}
-        ),
+        response_flags=normalize_flags(_instrument_flags(instrument, bound_rows)),
         required=bool(policy and policy.required),
         text=instrument.text or "",
         provides_for=provides_for(instrument.context),
@@ -92,7 +113,8 @@ def signature_from_instrument(instrument) -> MeasureSignature:
 
 
 def signatures_for_request(collection_request) -> dict:
-    """Signatures of a stored request in a fixed number of queries."""
+    """Signatures of a stored request in a fixed number of queries when the bound model has
+    ``get_flags()``; the registry-export fallback may add a query per instrument."""
     instruments = collection_request.collectioninstrument_set.select_related(
         "response_policy"
     ).prefetch_related("bound_suggested_responses__suggested_response")
