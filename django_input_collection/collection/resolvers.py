@@ -3,6 +3,7 @@ import logging
 from contextlib import contextmanager
 from contextvars import ContextVar
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Manager, Model
 from django.db.models.query import QuerySet
 
@@ -64,13 +65,15 @@ def memoize(key, compute):
     cache = _read_pass_cache.get()
     if cache is None:
         return compute()
+    key = tuple(key) if isinstance(key, (list, tuple)) else (key,)  # a str stays one part
     full_key = ("memoize", *key)
     if full_key not in cache:
         cache[full_key] = compute()
     return cache[full_key]
 
 
-def current_answer_index():
+def current_answer_index() -> "AnswerIndex | None":  # noqa: F821
+    """The AnswerIndex the current read pass was given, or None."""
     return _answer_index.get()
 
 
@@ -123,13 +126,17 @@ def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
             data_info = {
                 "data": fallback,
             }
-            log.debug(
+            # A missing gating instrument is routine; anything else is likely a broken hook.
+            expected = isinstance(e, ObjectDoesNotExist)
+            log.log(
+                logging.DEBUG if expected else logging.WARNING,
                 "Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
                 resolver.__class__,
                 instrument.pk,
                 kwargs,
                 spec,
                 error,
+                exc_info=not expected,
             )
 
         return (resolver, data_info, error)
@@ -209,13 +216,17 @@ class InstrumentResolver(Resolver):
     pattern = r"((?P<parent_pk>\d+)|(?P<measure>.+))"
 
     def search_requests(self, instrument, collector):
-        """Own request first, then whatever the collector adds."""
-        own = instrument.collection_request
-        if collector is None:
-            return [own]
-        requests = [own]
+        """Own request first, then whatever the collector adds.
+
+        Entries are CollectionRequests or their pks: the own request is always its pk, so the
+        common case never loads the ``collection_request`` FK.
+        """
+        own_id = instrument.collection_request_id
+        if collector is None or not collector.widens_condition_requests():
+            return [own_id]
+        requests = [own_id]
         for request in collector.get_condition_requests(instrument):
-            if getattr(request, "pk", request) != own.pk:
+            if getattr(request, "pk", request) != own_id:
                 requests.append(request)
         return requests
 
@@ -233,7 +244,9 @@ class InstrumentResolver(Resolver):
         if cache is not None:
             try:
                 request_ids = tuple(getattr(r, "pk", r) for r in requests)
-                key = (request_ids, parent_pk, measure, _freeze(context))
+                # Collectors that filter inputs differently must not share an entry.
+                filter_key = collector.condition_cache_key() if collector is not None else None
+                key = (request_ids, filter_key, parent_pk, measure, _freeze(context))
             except TypeError:
                 key = None  # Unkeyable context: resolve uncached rather than risk a collision
         if key is not None and key in cache:

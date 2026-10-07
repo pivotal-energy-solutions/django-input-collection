@@ -388,6 +388,21 @@ class BaseCollector(object, metaclass=CollectorType):
         """Narrow the inputs a condition reads (e.g. hide another role's answers)."""
         return queryset
 
+    def widens_condition_requests(self):
+        """True when ``get_condition_requests`` is overridden (else only the own request is read)."""
+        return type(self).get_condition_requests is not BaseCollector.get_condition_requests
+
+    def condition_cache_key(self):
+        """Read-pass cache component for this collector's ``filter_condition_inputs``.
+
+        None (shared by every collector) when the filter isn't overridden, else the collector
+        itself: the cache holds it for the pass, so its identity can't be reused. Override with a
+        stable value (e.g. a role) to share entries between instances that filter alike.
+        """
+        if type(self).filter_condition_inputs is BaseCollector.filter_condition_inputs:
+            return None
+        return self
+
     def is_condition_successful(self, condition, **kwargs):
         """
         Like ``is_instrument_allowed()``, except that it tests only the given condition.  Using this
