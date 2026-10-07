@@ -23,6 +23,7 @@ from .mixins import (
     ChecklistSchemaMixin,
     ChecklistConsumerMixin,
 )
+from .merged import merged_checklist_payload, response_flags
 
 __all__ = [
     # Builder and Exporter
@@ -43,4 +44,7 @@ __all__ = [
     # ViewSet Mixins
     "ChecklistSchemaMixin",
     "ChecklistConsumerMixin",
+    # Merged (multi-request) checklist response
+    "merged_checklist_payload",
+    "response_flags",
 ]

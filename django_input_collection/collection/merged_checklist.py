@@ -19,7 +19,9 @@ class MergedQuestion:
     instrument: object  # the owner's
     instruments: tuple  # every request's, in request order
     section: str
-    answer: object = None
+    answer: object = None  # the newest row across the requests
+    # Every row of the answering instrument, oldest first: what its conditions read.
+    answers: list = field(default_factory=list)
 
 
 @dataclass
@@ -47,7 +49,7 @@ def request_sections(instruments) -> list[str]:
 class MergedChecklist:
     """``requests`` read as one checklist. Build with ``merge_requests``."""
 
-    def __init__(self, requests, collectors, by_request, answers, indexes, owner):
+    def __init__(self, requests, collectors, by_request, answers, indexes, owner, answer_rows=None):
         self.requests = list(requests)
         self.collectors = collectors
         self.answers = answers
@@ -57,10 +59,10 @@ class MergedChecklist:
         self.index = next(iter(indexes.values())) if len(shared) == 1 else None
         self._position = {request.pk: n for n, request in enumerate(self.requests)}
         self._children_map = None
-        self.questions = self._questions(by_request, owner)
+        self.questions = self._questions(by_request, owner, answer_rows or {})
         self.sections = self._sections(by_request)
 
-    def _questions(self, by_request, owner) -> dict:
+    def _questions(self, by_request, owner, answer_rows) -> dict:
         entries = defaultdict(list)
         for request in self.requests:
             for instrument in by_request.get(request.pk, ()):
@@ -69,8 +71,11 @@ class MergedChecklist:
         for measure_id, instruments in entries.items():
             answer = self.answers.get(measure_id)
             chosen = owner(measure_id, tuple(instruments), answer)
+            rows = (
+                list(answer_rows.get(answer.instrument_id, (answer,))) if answer is not None else []
+            )
             questions[measure_id] = MergedQuestion(
-                measure_id, chosen, tuple(instruments), section_name(chosen), answer
+                measure_id, chosen, tuple(instruments), section_name(chosen), answer, rows
             )
         return questions
 

@@ -393,6 +393,10 @@ class ChecklistConsumerMixin:
         obj = self.get_object()
         user_role = self.get_user_role(request)
 
+        merge = self.get_merge_requests(obj)
+        if merge:
+            return Response(self._build_merged_response(obj, request.user, user_role, merge))
+
         collection_request = self.get_collection_request(obj)
         if not collection_request:
             raise NotFound("No checklist found for this object.")
@@ -617,6 +621,49 @@ class ChecklistConsumerMixin:
             valid_responses = get_valid_responses(instrument)
 
         return Response(valid_responses)
+
+    def get_merge_requests(self, obj):
+        """Requests to merge, in priority order; None keeps the single-request checklist."""
+        return None
+
+    def get_merge_collectors(self, obj, user, user_role) -> dict:
+        """collection_request id -> collector, one per merged request."""
+        raise NotImplementedError("Subclass must implement get_merge_collectors()")
+
+    def get_merge_owner(self, obj):
+        """owner(measure_id, instruments, answer) -> the instrument a shared measure shows."""
+        from django_input_collection.collection.merge import first_owner
+
+        return first_owner
+
+    def get_merge_inputs(self, obj, requests, collectors):
+        """(answer rows, condition rows); None for either uses every input on the requests."""
+        return None, None
+
+    def _build_merged_response(self, obj, user, user_role, requests=None) -> dict:
+        """The checklist across ``get_merge_requests(obj)`` (see ``merged_checklist_payload``)."""
+        from django_input_collection.collection.merge import merge_requests
+
+        from .merged import merged_checklist_payload
+
+        requests = list(self.get_merge_requests(obj) if requests is None else requests)
+        try:
+            collectors = self.get_merge_collectors(obj, user, user_role)
+        except NotImplementedError:
+            raise
+        except Exception as e:  # as get_collector in the single-request checklist
+            raise PermissionDenied(str(e))
+        inputs, condition_inputs = self.get_merge_inputs(obj, requests, collectors)
+        merged = merge_requests(
+            requests,
+            collectors=collectors,
+            inputs=inputs,
+            condition_inputs=condition_inputs,
+            owner=self.get_merge_owner(obj),
+        )
+        return merged_checklist_payload(
+            merged, collectors=collectors, answer_payload=self._serialize_answer
+        )
 
     def get_input_model(self):
         """Return the CollectedInput model for the checklist (honours INPUT_COLLECTEDINPUT_MODEL)."""

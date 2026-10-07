@@ -80,13 +80,15 @@ def _ordered(queryset) -> list:
     return list(queryset.order_by("date_created", "id"))
 
 
-def _newest_answers(rows, instruments) -> dict:
+def _newest_answers(rows, instruments) -> tuple[dict, dict]:
+    """(measure_id -> newest row, instrument id -> its rows oldest first)."""
     measure_of = {instrument.pk: instrument.measure_id for instrument in instruments}
-    answers = {}
+    answers, by_instrument = {}, defaultdict(list)
     for row in rows:  # oldest first: the newest per measure wins
         if row.instrument_id in measure_of:
             answers[measure_of[row.instrument_id]] = row
-    return answers
+            by_instrument[row.instrument_id].append(row)
+    return answers, by_instrument
 
 
 def _filters_nothing(collector, queryset) -> bool:
@@ -138,7 +140,14 @@ def merge_requests(
     collector searches), not its own request's first; pk-based conditions stay in their request.
     ``condition_inputs`` must already be filtered as the collectors filter (see AnswerIndex).
     Without it each collector's index reads ``inputs`` through that collector's filters, so an
-    ``inputs`` override that narrows rows narrows what conditions see too.
+    ``inputs`` override that narrows rows narrows what conditions see too. Each question's
+    ``answers`` are every row of the instrument holding its newest ``answer`` (a multi-value
+    answer whole): the set its conditions read, given the same rows.
+
+    Partial-index mode: with ``instruments=`` given, a condition searching a request those
+    instruments don't cover falls back to the database lookup, which reads its own request
+    first, not the newest across requests. "Condition reads the displayed answer" then holds
+    only for covered requests.
     """
     requests = list(requests)
     complete = instruments is None
@@ -149,7 +158,7 @@ def merge_requests(
 
     inputs = _default_inputs(requests) if inputs is None else inputs
     rows = _ordered(inputs)
-    answers = _newest_answers(rows, instruments)
+    answers, answer_rows = _newest_answers(rows, instruments)
 
     def build(index_rows):
         return AnswerIndex(instruments, index_rows, complete=complete, newest_across=True)
@@ -159,4 +168,6 @@ def merge_requests(
         indexes = dict.fromkeys((request.pk for request in requests), shared)
     else:
         indexes = _indexes(requests, collectors, inputs, rows, build)
-    return MergedChecklist(requests, collectors, by_request, answers, indexes, owner)
+    return MergedChecklist(
+        requests, collectors, by_request, answers, indexes, owner, answer_rows=answer_rows
+    )
