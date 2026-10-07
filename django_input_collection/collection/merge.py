@@ -62,7 +62,11 @@ def share_requests(instruments, requests):
 
 
 def first_owner(measure_id, instruments, answer):
-    """Default owner: the first request (in the caller's order) that asks the measure."""
+    """Default owner: the request already holding the answer, else the first request asking it."""
+    if answer is not None:
+        for instrument in instruments:
+            if instrument.collection_request_id == answer.collection_request_id:
+                return instrument
     return instruments[0]
 
 
@@ -70,6 +74,10 @@ def _default_inputs(requests):
     from ..models import get_input_model
 
     return get_input_model().objects.filter(collection_request__in=[r.pk for r in requests])
+
+
+def _ordered(queryset) -> list:
+    return list(queryset.order_by("date_created", "id"))
 
 
 def _newest_answers(rows, instruments) -> dict:
@@ -89,26 +97,30 @@ def _filters_nothing(collector, queryset) -> bool:
     )
 
 
-def _index_rows(requests, collectors, inputs, rows):
-    """Rows for the AnswerIndex, filtered as the collectors filter, or None to read the database.
+def _filter_key(collector):
+    try:
+        return collector.condition_cache_key(), _freeze(collector.context)
+    except TypeError:
+        return ("unkeyable", id(collector))  # can't prove it filters like another: its own index
 
-    Without ``condition_inputs`` the index can stand in only when every collector filters alike;
-    then it reads ``inputs`` through that filter (reusing ``rows`` when the filter is a no-op).
+
+def _indexes(requests, collectors, inputs, rows, build):
+    """request id -> AnswerIndex over ``inputs`` as that request's collector filters them.
+
+    Collectors that filter alike share one index (one read; none when the filter is a no-op).
     """
-    signatures = set()
+    by_key, indexes = {}, {}
     for request in requests:
         collector = collectors[request.pk]
-        try:
-            signatures.add((collector.condition_cache_key(), _freeze(collector.context)))
-        except TypeError:
-            return None
-    if len(signatures) != 1:
-        return None  # collectors filter differently: no shared index (contract of AnswerIndex)
-    collector = collectors[requests[0].pk]
-    if _filters_nothing(collector, inputs):
-        return rows
-    filtered = collector.filter_condition_inputs(inputs.filter_for_context(**collector.context))
-    return list(filtered.order_by("date_created", "id"))
+        key = _filter_key(collector)
+        if key not in by_key:
+            if _filters_nothing(collector, inputs):
+                by_key[key] = build(rows)
+            else:
+                filtered = inputs.filter_for_context(**collector.context)
+                by_key[key] = build(_ordered(collector.filter_condition_inputs(filtered)))
+        indexes[request.pk] = by_key[key]
+    return indexes
 
 
 def merge_requests(
@@ -116,11 +128,17 @@ def merge_requests(
 ):
     """One checklist over ``requests`` (in priority order): one question per measure.
 
-    ``collectors`` maps request id -> that request's collector; conditions are evaluated by each
-    instrument's own collector. ``inputs`` (default: every input on the requests) give answers,
-    newest per measure. ``condition_inputs`` must already be filtered as the collectors filter
-    (see AnswerIndex); without it the index is derived when every collector filters alike.
-    ``owner(measure_id, instruments, answer)`` picks which instrument a shared measure shows.
+    ``collectors`` maps request id -> that request's collector; each instrument's conditions are
+    evaluated by its own request's collector. ``inputs`` (default: every input on the requests)
+    give the answers, newest per measure by (date_created, id). ``owner(measure_id, instruments,
+    answer)`` picks the instrument a shared measure shows (default: ``first_owner``).
+
+    Conditions read an AnswerIndex in ``newest_across`` mode: a measure-based ``instrument:``
+    condition sees the same answer the checklist displays (newest across the requests its
+    collector searches), not its own request's first; pk-based conditions stay in their request.
+    ``condition_inputs`` must already be filtered as the collectors filter (see AnswerIndex).
+    Without it each collector's index reads ``inputs`` through that collector's filters, so an
+    ``inputs`` override that narrows rows narrows what conditions see too.
     """
     requests = list(requests)
     complete = instruments is None
@@ -130,13 +148,15 @@ def merge_requests(
         by_request[instrument.collection_request_id].append(instrument)
 
     inputs = _default_inputs(requests) if inputs is None else inputs
-    rows = list(inputs.order_by("date_created", "id"))
+    rows = _ordered(inputs)
     answers = _newest_answers(rows, instruments)
+
+    def build(index_rows):
+        return AnswerIndex(instruments, index_rows, complete=complete, newest_across=True)
+
     if condition_inputs is not None:
-        index_rows = list(condition_inputs.order_by("date_created", "id"))
+        shared = build(_ordered(condition_inputs))
+        indexes = dict.fromkeys((request.pk for request in requests), shared)
     else:
-        index_rows = _index_rows(requests, collectors, inputs, rows)
-    index = None
-    if index_rows is not None:
-        index = AnswerIndex(instruments, index_rows, complete=complete)
-    return MergedChecklist(requests, collectors, by_request, answers, index, owner)
+        indexes = _indexes(requests, collectors, inputs, rows, build)
+    return MergedChecklist(requests, collectors, by_request, answers, indexes, owner)

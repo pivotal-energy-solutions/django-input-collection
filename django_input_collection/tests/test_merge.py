@@ -97,6 +97,65 @@ class MergeTests(TestCase):
         self.assertNotIn("Attic", [s.name for s in merged.sections])
         self.assertEqual(merged.questions["b-moved"].section, "Envelope")
 
+    def test_the_request_holding_the_answer_owns_a_shared_measure(self):
+        self.answer(self.b, "shared", "yes")
+        merged = self.merged()
+        self.assertEqual(merged.owner("shared").collection_request_id, self.b.pk)
+        self.assertEqual(merged.questions["shared"].section, "Envelope")
+
+    def test_an_answered_owner_brings_its_later_only_section(self):
+        question(self.a, "moved", group="Envelope", order=3)
+        question(self.b, "moved", group="Attic", order=0)
+        question(self.b, "attic-later", group="Attic", order=2)
+        self.answer(self.b, "moved", "yes")
+        merged = self.merged()
+        names = [s.name for s in merged.sections]
+        # B's own order: Commissioning (0, lower pk), Attic (0), Ducts (1), Envelope (5).
+        self.assertEqual(names, ["Envelope", "Commissioning", "Attic", "Ducts"])
+        placed = [q.measure_id for s in merged.sections for q in s.questions]
+        self.assertEqual(placed.count("moved"), 1)
+        attic = merged.sections[names.index("Attic")].questions
+        self.assertEqual([q.measure_id for q in attic], ["moved", "attic-later"])
+        envelope = merged.sections[0].questions
+        self.assertNotIn("moved", [q.measure_id for q in envelope])
+
+    def test_section_ties_break_by_display_order_not_meta_order(self):
+        request = factories.CollectionRequestFactory.create()
+        for measure, group, segment in (("x", "S1", "seg2"), ("y", "S2", "seg1")):
+            factories.CollectionInstrumentFactory.create(
+                collection_request=request,
+                measure=factories.MeasureFactory.create(id=measure),
+                group=factories.CollectionGroupFactory.create(id=group),
+                segment=factories.CollectionGroupFactory.create(id=segment),
+                order=0,
+            )  # Meta order puts y (seg1) first; display order (order, pk) puts x first
+        merged = merge_requests([request], collectors=coop(request))
+        self.assertEqual([s.name for s in merged.sections], ["S1", "S2"])
+
+    def test_conditions_see_the_displayed_answer_newest_across_requests(self):
+        question(self.b, "gate", group="Envelope", order=9)
+        question(self.a, "gate", group="Envelope", order=9)
+        child = self.a.collectioninstrument_set.get(measure_id="only-a")
+        gate(child, "gate")
+        self.answer(self.a, "gate", "no")  # older, own request
+        self.answer(self.b, "gate", "yes")  # newer
+        merged = self.merged()
+        self.assertEqual(merged.answers["gate"].data, "yes")
+        self.assertTrue(merged.evaluate()["only-a"])
+        # Outside a merge the own request still answers first (10.0.0 semantics).
+        collector = coop(self.a, self.b)[self.a.pk]
+        self.assertFalse(collector.is_instrument_allowed(child))
+
+    def test_conditions_follow_the_newest_answer_when_it_is_own(self):
+        question(self.b, "gate", group="Envelope", order=9)
+        question(self.a, "gate", group="Envelope", order=9)
+        gate(self.a.collectioninstrument_set.get(measure_id="only-a"), "gate")
+        self.answer(self.b, "gate", "yes")  # older
+        self.answer(self.a, "gate", "no")  # newer, own request
+        merged = self.merged()
+        self.assertEqual(merged.answers["gate"].data, "no")
+        self.assertFalse(merged.evaluate()["only-a"])
+
     def test_newest_answer_per_measure_across_requests(self):
         self.answer(self.a, "shared", "old")
         self.answer(self.b, "shared", "new")
@@ -176,21 +235,27 @@ class MergeTests(TestCase):
     def test_progress_counts_required_by_owner(self):
         required = factories.ResponsePolicyFactory.create(nickname="required", required=True)
         self.a.collectioninstrument_set.filter(measure_id="shared").update(response_policy=required)
-        self.answer(self.b, "shared", "yes")
+        self.answer(self.a, "shared", "yes")  # A holds the answer: A's required policy counts
         merged = self.merged()
         progress = merged.progress(merged.evaluate())
         self.assertEqual(progress["required_total"], 1)
         self.assertEqual(progress["required_answered"], 1)
         self.assertEqual(progress["answered"], 1)
+        self.answer(self.b, "shared", "newer")  # B now holds the newest: B owns, not required
+        self.assertEqual(self.merged().progress({})["required_total"], 0)
 
 
 class MergeQueryTests(TestCase):
     def requests(self, size, count):
         return [build_checklist(size, prefix=f"r{n}-{size}") for n in range(count)]
 
-    def count(self, size, count=2):
-        requests = self.requests(size, count)
-        collectors_ = coop(*requests)
+    def shared(self, size, count):
+        """Every request asks the same gate and children: conditions cross requests."""
+        return [build_checklist(size, prefix=f"s{size}") for _ in range(count)]
+
+    def count(self, size, count=2, shared=False, cls=Cooperative):
+        requests = (self.shared if shared else self.requests)(size, count)
+        collectors_ = coop(*requests, cls=cls)
         with CaptureQueriesContext(connection) as queries:
             merged = merge_requests(requests, collectors=collectors_)
             merged.progress(merged.evaluate())
@@ -206,6 +271,17 @@ class MergeQueryTests(TestCase):
     def test_queries_do_not_grow_with_instruments_across_three_requests(self):
         self.assertEqual(self.count(3, 3), self.count(9, 3))
         self.assertEqual(self.count(3, 3), MEASURED_TWO)
+
+    def test_shared_gates_do_not_grow_with_instruments(self):
+        for count in (2, 3):
+            self.assertEqual(self.count(3, count, shared=True), self.count(9, count, shared=True))
+            self.assertEqual(self.count(3, count, shared=True), MEASURED_TWO)
+
+    def test_differently_filtering_collectors_read_one_index_each(self):
+        # MEASURED_TWO + one filtered read per collector (HideYes filters per instance).
+        for count in (2, 3):
+            self.assertEqual(self.count(3, count, cls=HideYes), self.count(9, count, cls=HideYes))
+            self.assertEqual(self.count(3, count, cls=HideYes), MEASURED_TWO + count)
 
     def test_dependents_and_evaluate_subset_are_free(self):
         requests = self.requests(3, 2)

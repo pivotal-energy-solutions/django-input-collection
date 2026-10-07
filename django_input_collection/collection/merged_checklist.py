@@ -34,23 +34,27 @@ def section_name(instrument) -> str:
 
 
 def request_sections(instruments) -> list[str]:
-    """One request's section names in its own order (min instrument order; General first)."""
+    """One request's section names in its own order: General first, then by each section's
+    first instrument in display order ``(order or 0, pk)``, as the mixin orders them."""
     first_order = {}
     for instrument in instruments:
         name = section_name(instrument)
-        key = -1 if name == GENERAL else (instrument.order or 0)
+        key = (-1, 0) if name == GENERAL else (instrument.order or 0, instrument.pk)
         first_order[name] = min(first_order.get(name, key), key)
-    return sorted(first_order, key=first_order.get)  # stable: ties keep first-seen order
+    return sorted(first_order, key=first_order.get)
 
 
 class MergedChecklist:
     """``requests`` read as one checklist. Build with ``merge_requests``."""
 
-    def __init__(self, requests, collectors, by_request, answers, index, owner):
+    def __init__(self, requests, collectors, by_request, answers, indexes, owner):
         self.requests = list(requests)
         self.collectors = collectors
         self.answers = answers
-        self.index = index
+        self._indexes = indexes  # request id -> AnswerIndex its collector reads
+        shared = {id(index) for index in indexes.values()}
+        # The one index every collector reads; None when collectors filter differently.
+        self.index = next(iter(indexes.values())) if len(shared) == 1 else None
         self._position = {request.pk: n for n, request in enumerate(self.requests)}
         self._children_map = None
         self.questions = self._questions(by_request, owner)
@@ -102,12 +106,18 @@ class MergedChecklist:
                 measure_id: self._visible(self.questions[measure_id]) for measure_id in measures
             }
 
+    def _allowed(self, collector, instrument):
+        if self.index is not None:
+            return collector.is_instrument_allowed(instrument)
+        with read_pass(index=self._indexes[instrument.collection_request_id]):
+            return collector.is_instrument_allowed(instrument)
+
     def _visible(self, question):
         results = []
         for instrument in question.instruments:
             collector = self.collectors[instrument.collection_request_id]
             try:
-                results.append(collector.is_instrument_allowed(instrument))
+                results.append(self._allowed(collector, instrument))
             except Exception:  # as ChecklistConsumerMixin._get_instrument_visibility
                 results.append(None)
         if any(results):

@@ -16,14 +16,19 @@ class AnswerIndex:
     ``lookup`` bypasses both, so an input passed here is seen and one left out is not. Build one
     index per filter (e.g. per role), never share one between collectors that filter differently.
 
+    ``newest_across`` (merge_requests only): a measure lookup reads the searched request whose
+    newest answer is newest (ties by id), as the merged checklist displays it, instead of the own
+    request first. pk lookups never leave the own request either way.
+
     ``instruments`` should come from ``load_instruments`` (Meta ordering per request, bound
     responses prefetched); requests with no instrument here defer to the database. Pass
     ``complete=True`` only when they are every instrument of their requests: a gate missing from
     a covered request then raises DoesNotExist from memory, as the database path would.
     """
 
-    def __init__(self, instruments, inputs, *, complete=False):
+    def __init__(self, instruments, inputs, *, complete=False, newest_across=False):
         self.complete = complete
+        self.newest_across = newest_across
         self._by_request = defaultdict(dict)  # request id -> measure_id -> first instrument
         self._by_pk = {}
         for instrument in instruments:
@@ -32,8 +37,11 @@ class AnswerIndex:
             )
             self._by_pk[instrument.pk] = instrument
         self._values = defaultdict(list)  # instrument id -> [data, ...]
+        self._latest = {}  # instrument id -> (date_created, id) of its newest row
         for row in inputs:
             self._values[row.instrument_id].append(row.data)
+            stamp = (row.date_created, row.pk)
+            self._latest[row.instrument_id] = max(self._latest.get(row.instrument_id, stamp), stamp)
 
     def covers(self, request_ids) -> bool:
         return all(request_id in self._by_request for request_id in request_ids)
@@ -61,10 +69,12 @@ class AnswerIndex:
                     f"No gating instrument {parent_pk or measure!r}"
                 )
             return None  # partial index: let the database decide
-        for instrument in candidates:
-            values = self._values.get(instrument.pk)
-            if values:
-                return list(values), self._suggested(instrument)
+        answered = [instrument for instrument in candidates if self._values.get(instrument.pk)]
+        if answered:
+            chosen = answered[0]
+            if self.newest_across and not parent_pk:
+                chosen = max(answered, key=lambda instrument: self._latest[instrument.pk])
+            return list(self._values[chosen.pk]), self._suggested(chosen)
         return [], self._suggested(candidates[0])
 
     @staticmethod
