@@ -142,7 +142,9 @@ def merge_requests(
     Without it each collector's index reads ``inputs`` through that collector's filters, so an
     ``inputs`` override that narrows rows narrows what conditions see too. Each question's
     ``answers`` are every row of the instrument holding its newest ``answer`` (a multi-value
-    answer whole): the set its conditions read, given the same rows.
+    answer whole). They come from ``inputs``: they are the rows its conditions read when
+    conditions read the same rows, not when ``condition_inputs`` or a collector's filters narrow
+    what conditions read.
 
     Partial-index mode: with ``instruments=`` given, a condition searching a request those
     instruments don't cover falls back to the database lookup, which reads its own request

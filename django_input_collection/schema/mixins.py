@@ -623,7 +623,12 @@ class ChecklistConsumerMixin:
         return Response(valid_responses)
 
     def get_merge_requests(self, obj):
-        """Requests to merge, in priority order; None keeps the single-request checklist."""
+        """Requests to merge, in priority order; None keeps the single-request checklist.
+
+        The merged checklist has the single-request shape (see ``merged_checklist_payload``) and
+        honours the same per-question overrides, except visibility: it is the merge's (shown if
+        any request would show it), so ``_get_instrument_visibility`` is not called.
+        """
         return None
 
     def get_merge_collectors(self, obj, user, user_role) -> dict:
@@ -644,7 +649,7 @@ class ChecklistConsumerMixin:
         """The checklist across ``get_merge_requests(obj)`` (see ``merged_checklist_payload``)."""
         from django_input_collection.collection.merge import merge_requests
 
-        from .merged import merged_checklist_payload
+        from .merged import consumer_payload
 
         requests = list(self.get_merge_requests(obj) if requests is None else requests)
         try:
@@ -661,9 +666,7 @@ class ChecklistConsumerMixin:
             condition_inputs=condition_inputs,
             owner=self.get_merge_owner(obj),
         )
-        return merged_checklist_payload(
-            merged, collectors=collectors, answer_payload=self._serialize_answer
-        )
+        return consumer_payload(self, merged, collectors=collectors)
 
     def get_input_model(self):
         """Return the CollectedInput model for the checklist (honours INPUT_COLLECTEDINPUT_MODEL)."""
@@ -787,20 +790,24 @@ class ChecklistConsumerMixin:
             group_instruments = sorted(
                 grouped_instruments[group], key=lambda instrument: instrument.order or 0
             )
-            group_name = getattr(group, "name", None) or getattr(group, "id", "Untitled Section")
-            sections_data.append(
-                {
-                    "name": group_name,
-                    "slug": getattr(group, "slug", None) or self._slugify(group_name or "section"),
-                    "description": getattr(group, "description", ""),
-                    "order": getattr(group, "order", 0) or 0,
-                    "questions": questions(group_instruments),
-                }
-            )
+            sections_data.append(self._section_data(group, questions(group_instruments)))
         if ungrouped:
-            general = {"name": "General", "slug": "general", "description": "", "order": -1}
-            sections_data.insert(0, dict(general, questions=questions(ungrouped)))
+            sections_data.insert(0, self._section_data(None, questions(ungrouped)))
         return sections_data
+
+    def _section_data(self, group, questions) -> dict:
+        """One section dict; ``group`` None is the "General" section of ungrouped questions."""
+        if group is None:
+            general = {"name": "General", "slug": "general", "description": "", "order": -1}
+            return dict(general, questions=questions)
+        group_name = getattr(group, "name", None) or getattr(group, "id", "Untitled Section")
+        return {
+            "name": group_name,
+            "slug": getattr(group, "slug", None) or self._slugify(group_name or "section"),
+            "description": getattr(group, "description", ""),
+            "order": getattr(group, "order", 0) or 0,
+            "questions": questions,
+        }
 
     @staticmethod
     def _sorted_groups(grouped_instruments) -> list:

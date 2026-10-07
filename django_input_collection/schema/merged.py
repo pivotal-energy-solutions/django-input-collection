@@ -1,11 +1,11 @@
-"""merged.py: the checklist response for a MergedChecklist (ChecklistConsumerMixin's keys, merged)."""
+"""merged.py: the checklist response for a MergedChecklist (ChecklistConsumerMixin's shape, merged)."""
 
 __author__ = "Steven Klass"
 __date__ = "10/07/26 04:00 PM"
 __copyright__ = "Copyright 2011-2026 Pivotal Energy Solutions. All rights reserved."
 __credits__ = ["Steven Klass"]
 
-from django.utils.text import slugify
+from ..collection.merged_checklist import GENERAL
 
 
 def response_flags(bound) -> dict:
@@ -14,69 +14,10 @@ def response_flags(bound) -> dict:
     return (get_flags() or {}) if callable(get_flags) else {}
 
 
-def _responses(instrument):
-    bound_rows = list(instrument.bound_suggested_responses.all())  # prefetched by the merge
-    if not bound_rows:
-        return None
-    found = []
-    for bound in bound_rows:
-        item = {"value": bound.suggested_response.data}
-        flags = response_flags(bound)
-        if flags:
-            item["flags"] = flags
-        found.append(item)
-    return found
-
-
-def _conditions(instrument):
-    """The mixin's condition keys, plus the group's requirement and cases (all prefetched)."""
-    found = []
-    for condition in instrument.conditions.all():
-        if not condition.data_getter:
-            continue
-        kind, colon, source = condition.data_getter.partition(":")
-        if not colon:  # as the mixin: no prefix means an instrument
-            kind, source = "instrument", kind
-        group = condition.condition_group
-        found.append(
-            {
-                "type": kind,
-                "source": source,
-                "match_type": "match",  # as the mixin: conditions carry no match type of their own
-                "values": [],
-                "requirement_type": group.requirement_type,
-                "cases": [
-                    {"match_type": case.match_type, "match_data": case.match_data}
-                    for case in group.cases.all()
-                ],
-            }
-        )
-    return found
-
-
-def _constraints(collector, instrument):
-    try:
-        method = collector.get_method(instrument)
-        return method.get_constraints() if hasattr(method, "get_constraints") else None
-    except Exception:  # as the mixin: no method, no constraints
-        return None
-
-
-def default_answer_payload(row) -> dict:
-    """The mixin's answer keys (``ChecklistConsumerMixin._serialize_answer``)."""
-    return {
-        "id": row.pk,
-        "data": row.data,
-        "user_id": row.user_id,
-        "user_role": getattr(row, "user_role", None),
-        "date_created": row.date_created.isoformat() if row.date_created else None,
-        "date_modified": row.date_modified.isoformat() if row.date_modified else None,
-    }
-
-
-def _question(question, collectors, visible, answer_payload, extras):
+def _question(consumer, question, collectors, visible, by_measure, answer_payload, extras):
     instrument = question.instrument  # the owner's
     policy = instrument.response_policy
+    collector = collectors[instrument.collection_request_id]
     payload = {
         "id": instrument.pk,
         "measure_id": question.measure_id,
@@ -87,11 +28,11 @@ def _question(question, collectors, visible, answer_payload, extras):
         "help_text": instrument.help or "",
         "type": instrument.type_id or "open",
         "order": instrument.order or 0,
-        "is_required": bool(policy and policy.required),
+        "is_required": policy and policy.required,  # as the mixin: None without a policy
         "is_visible": visible,
-        "constraints": _constraints(collectors[instrument.collection_request_id], instrument),
-        "responses": _responses(instrument),
-        "conditions": _conditions(instrument),
+        "constraints": consumer._get_instrument_constraints(collector, instrument),
+        "responses": consumer._get_responses_with_flags(instrument),  # bound rows prefetched
+        "conditions": consumer._get_conditions(instrument, by_measure),
         "answer": answer_payload(question.answer) if question.answer is not None else None,
         # A multi-value answer whole: what the rater sees is what conditions evaluate.
         "answers": [answer_payload(row) for row in question.answers],
@@ -101,40 +42,64 @@ def _question(question, collectors, visible, answer_payload, extras):
     return payload
 
 
-def merged_checklist_payload(
-    merged, *, collectors, visibility=None, question_extras=None, answer_payload=None
+def consumer_payload(
+    consumer, merged, *, collectors, visibility=None, question_extras=None, answer_payload=None
 ) -> dict:
-    """``merged`` as ChecklistConsumerMixin's checklist: same question and answer keys, plus
-    ``collection_request`` (the owner's), ``collection_requests`` (every asking request) and
-    ``answers``; top level ``requests``, ``sections``, ``progress``.
-
-    ``visibility`` (default ``merged.evaluate()``) maps measure_id -> visible.
-    ``question_extras(question, payload) -> dict`` adds keys per question; ``answer_payload(row)``
-    replaces ``default_answer_payload``. Reads nothing the merge didn't prefetch.
+    """``merged_checklist_payload`` built with ``consumer``'s (a ChecklistConsumerMixin) per-question
+    overrides: ``_get_responses_with_flags`` (so ``_get_bound_response_flags`` /
+    ``_get_response_flags``), ``_get_conditions`` / ``_serialize_condition``,
+    ``_get_instrument_constraints``, ``_slugify`` and ``_serialize_answer``. Visibility is the
+    merge's (shown if any request shows it); ``_get_instrument_visibility`` is not called.
     """
     visibility = merged.evaluate() if visibility is None else visibility
-    answer_payload = answer_payload or default_answer_payload
-    sections = [
-        {
-            "name": section.name,
-            "slug": slugify(section.name) or "section",
-            "description": "",
-            "order": section.order,
-            "questions": [
-                _question(
-                    question,
-                    collectors,
-                    visibility.get(question.measure_id),
-                    answer_payload,
-                    question_extras,
-                )
-                for question in section.questions
-            ],
-        }
-        for section in merged.sections
-    ]
+    answer_payload = answer_payload or consumer._serialize_answer
+    by_measure = {measure_id: q.instrument for measure_id, q in merged.questions.items()}
+    sections = []
+    for section in merged.sections:
+        questions = [
+            _question(
+                consumer,
+                question,
+                collectors,
+                visibility.get(question.measure_id),
+                by_measure,
+                answer_payload,
+                question_extras,
+            )
+            for question in section.questions
+        ]
+        group = None if section.name == GENERAL else section.questions[0].instrument.group
+        sections.append(consumer._section_data(group, questions))
+    sections.sort(key=lambda s: s["order"])  # as the mixin: stable, General (-1) first
     return {
         "requests": [request.pk for request in merged.requests],
         "sections": sections,
         "progress": merged.progress(visibility),
     }
+
+
+def merged_checklist_payload(
+    merged, *, collectors, visibility=None, question_extras=None, answer_payload=None
+) -> dict:
+    """``merged`` in ChecklistConsumerMixin's checklist shape: the same section, question and
+    answer keys and values, plus per question ``collection_request`` (the owner's),
+    ``collection_requests`` (every asking request) and ``answers`` (every row of the answering
+    instrument, oldest first); top level ``requests``, ``sections``, ``progress`` (no
+    ``id``/``name``/``description``: no single request names a merge).
+
+    ``visibility`` (default ``merged.evaluate()``) maps measure_id -> visible.
+    ``question_extras(question, payload) -> dict`` adds keys per question; ``answer_payload(row)``
+    replaces the mixin's ``_serialize_answer``. Reads nothing the merge didn't prefetch.
+    ``answers`` come from the merge's ``inputs``; when conditions read a narrower
+    ``condition_inputs``, "answers = what conditions read" holds only where the rows agree.
+    """
+    from .mixins import ChecklistConsumerMixin
+
+    return consumer_payload(
+        ChecklistConsumerMixin(),
+        merged,
+        collectors=collectors,
+        visibility=visibility,
+        question_extras=question_extras,
+        answer_payload=answer_payload,
+    )

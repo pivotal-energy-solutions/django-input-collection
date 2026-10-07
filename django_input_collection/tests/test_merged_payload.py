@@ -13,6 +13,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 
+from ..collection import collectors
 from ..collection.merge import merge_requests
 from ..models import get_input_model
 from ..schema.merged import merged_checklist_payload
@@ -64,6 +65,10 @@ class MergedPayloadTests(TestCase):
         data = self.payload(a, b)
         self.assertEqual(data["requests"], [a.pk, b.pk])
         (section,) = data["sections"]
+        self.assertEqual(
+            {k: v for k, v in section.items() if k != "questions"},
+            {"name": "Section A", "slug": "section-a", "description": "", "order": 0},
+        )
         gate_q = section["questions"][0]
         self.assertEqual(set(gate_q), QUESTION_KEYS)
         self.assertEqual(gate_q["measure_id"], "m-gate")
@@ -74,11 +79,10 @@ class MergedPayloadTests(TestCase):
         self.assertEqual([r["value"] for r in gate_q["responses"]], ["yes", "no"])
         self.assertEqual(data["progress"]["total"], 3)
         child = section["questions"][1]
-        (condition,) = child["conditions"]
-        self.assertEqual(condition["type"], "instrument")
-        self.assertEqual(condition["source"], "m-gate")
-        self.assertEqual(condition["requirement_type"], "all-pass")
-        self.assertEqual(condition["cases"], [{"match_type": "match", "match_data": "yes"}])
+        self.assertEqual(
+            child["conditions"],
+            [{"type": "instrument", "source": "m-gate", "match_type": "match", "values": []}],
+        )
         self.assertTrue(child["is_visible"])
         self.assertFalse(section["questions"][2]["is_visible"])
 
@@ -192,3 +196,119 @@ class MixinMergedGetTests(TestCase):
         self.assertEqual(self.read(3, 2), self.read(9, 2))
         self.assertEqual(self.read(3, 2), self.read(3, 3))
         self.assertEqual(self.read(3, 2), 8)
+
+
+def strip_merge_keys(payload):
+    """A merged payload less its documented additions, to compare with the single-request one."""
+    sections = [
+        dict(
+            section,
+            questions=[
+                {k: v for k, v in q.items() if k not in MERGE_ONLY_KEYS}
+                for q in section["questions"]
+            ],
+        )
+        for section in payload["sections"]
+    ]
+    return {"sections": sections, "progress": payload["progress"]}
+
+
+MERGE_ONLY_KEYS = {"collection_request", "collection_requests", "answers"}
+
+
+class MergedParityTests(TestCase):
+    """A merge of one request is the single-request checklist plus the documented keys."""
+
+    def build(self):
+        request = build_checklist(3, prefix="par")
+        factories.CollectionInstrumentFactory.create(
+            collection_request=request,
+            measure=factories.MeasureFactory.create(id="par-general"),
+            group=None,
+            order=4,
+        )
+        question(request, "par-other", group="Section B", order=2, responses=("x",))
+        return request
+
+    def both(self, consumer, request):
+        collector = collectors.Collector(request)
+        single = consumer._build_checklist_response(request, collector, None, "rater")
+        merged = merge_requests([request], collectors={request.pk: collector})
+        from ..schema.merged import consumer_payload
+
+        return single, consumer_payload(consumer, merged, collectors={request.pk: collector})
+
+    def assertParity(self, consumer):
+        request = self.build()
+        single, merged = self.both(consumer, request)
+        self.assertEqual(merged["requests"], [request.pk])
+        self.assertEqual(
+            [s["name"] for s in single["sections"]], ["General", "Section A", "Section B"]
+        )
+        self.assertEqual(
+            {"sections": single["sections"], "progress": single["progress"]},
+            strip_merge_keys(merged),
+        )
+        return merged
+
+    def test_default_consumer(self):
+        self.assertParity(ChecklistConsumerMixin())
+        request = self.build()
+        collector = collectors.Collector(request)
+        merged = merge_requests([request], collectors={request.pk: collector})
+        payload = merged_checklist_payload(merged, collectors={request.pk: collector})
+        _, via_consumer = self.both(ChecklistConsumerMixin(), request)
+        self.assertEqual(payload, via_consumer)
+
+    def test_per_question_overrides_are_honoured(self):
+        class Overriding(ChecklistConsumerMixin):
+            def _get_bound_response_flags(self, bound):
+                return {"is_failure": bound.suggested_response.data == "no"}
+
+            def _serialize_condition(self, condition, instrument_by_measure):
+                return {"getter": condition.data_getter}
+
+            def _get_instrument_constraints(self, collector, instrument):
+                return {"max": instrument.order}
+
+            def _slugify(self, text):
+                return f"slug-{text}"
+
+        merged = self.assertParity(Overriding())
+        sections = {s["name"]: s for s in merged["sections"]}
+        self.assertEqual(sections["Section A"]["slug"], "slug-Section A")
+        gate_q, child = sections["Section A"]["questions"][:2]
+        self.assertEqual(gate_q["responses"][1], {"value": "no", "flags": {"is_failure": True}})
+        self.assertEqual(child["conditions"], [{"getter": "instrument:par-gate"}])
+        self.assertEqual(child["constraints"], {"max": 1})
+
+    def test_the_10_0_0_flags_hook_still_applies(self):
+        class Legacy(ChecklistConsumerMixin):
+            def _get_response_flags(self, instrument, suggested_response):
+                return {"legacy": suggested_response.data}
+
+        merged = self.assertParity(Legacy())
+        gate_q = merged["sections"][1]["questions"][0]
+        self.assertEqual(gate_q["responses"][0]["flags"], {"legacy": "yes"})
+
+    def test_overrides_cost_no_queries(self):
+        class Flagged(ChecklistConsumerMixin):
+            def _get_bound_response_flags(self, bound):
+                return {"value": bound.suggested_response.data}
+
+        counts = []
+        for size in (3, 9):
+            request = build_checklist(size, prefix=f"oq{size}")
+            consumer = Flagged()
+
+            class Merging(type(consumer)):
+                def get_merge_requests(self, obj):
+                    return [request]
+
+                def get_merge_collectors(self, obj, user, user_role):
+                    return {request.pk: collectors.Collector(request)}
+
+            with CaptureQueriesContext(connection) as queries:
+                Merging()._build_merged_response(object(), None, "rater")
+            counts.append(len(queries))
+        self.assertEqual(counts, [8, 8])
