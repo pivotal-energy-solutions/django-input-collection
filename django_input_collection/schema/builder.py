@@ -85,13 +85,18 @@ class CollectionRequestBuilder:
         self._instrument_cache = {}
         self._response_sets = {}
 
-    def build(self, schema: dict, existing_cr: CollectionRequest = None) -> CollectionRequest:
+    def build(
+        self, schema: dict, existing_cr: CollectionRequest = None, *, collision_check=None
+    ) -> CollectionRequest:
         """
         Build a CollectionRequest from a validated schema dict.
 
         Args:
             schema: Validated schema dictionary
             existing_cr: Optional existing CollectionRequest to update
+            collision_check: Optional ``callable(signatures) -> CollisionReport`` run before any
+                row is written; its warnings land in ``self.warnings``, its errors raise
+                ``MeasureCollisionError``.
 
         Returns:
             CollectionRequest instance
@@ -101,6 +106,13 @@ class CollectionRequestBuilder:
         self._measure_cache = {}
         self._instrument_cache = {}
         self._response_sets = schema.get("response_sets", {})
+
+        if collision_check is not None:
+            from .collisions import signatures_from_schema
+
+            report = collision_check(signatures_from_schema(schema))
+            self.warnings.extend(str(warning) for warning in report.warnings)
+            report.raise_for_errors()
 
         # Create or get CollectionRequest
         if existing_cr:
