@@ -638,120 +638,22 @@ class ChecklistConsumerMixin:
             Dictionary with checklist data including sections and progress
         """
         from django_input_collection.collection.resolvers import read_pass
-        from django_input_collection.managers.collection_instrument import CONDITION_PREFETCH
 
-        # Prefetch everything the per-question loop reads so it runs without per-instrument queries.
-        all_instruments = list(
-            collection_request.collectioninstrument_set.select_related(
-                "group", "type", "response_policy", "measure"
-            )
-            .prefetch_related(
-                "suggested_responses",
-                *CONDITION_PREFETCH,
-                "bound_suggested_responses__suggested_response",
-            )
-            .order_by("order")
+        all_instruments, input_by_instrument, index = self._load_checklist(
+            collection_request, collector
         )
-        instrument_by_measure = {i.measure_id: i for i in all_instruments}
-        rows = (
-            self.get_input_model()
-            .objects.filter(collection_request=collection_request)
-            .select_related("user")
-            .order_by("date_created", "id")
-        )
-        input_by_instrument = {row.instrument_id: row for row in rows}  # newest wins
-
-        # Build instrument lookup and group membership from the already-fetched instruments.
-        instrument_to_group = {}
-        grouped_instruments = {}
-        for instrument in all_instruments:
-            group = instrument.group
-            if group:
-                grouped_instruments.setdefault(group, []).append(instrument)
-                instrument_to_group[instrument.id] = group
-
-        groups = list(grouped_instruments.keys())
-        groups.sort(
-            key=lambda group: (
-                getattr(group, "order", 0)
-                if hasattr(group, "order")
-                else min((instr.order or 0) for instr in grouped_instruments[group])
+        progress = {
+            "total": len(all_instruments),
+            "answered": 0,
+            "visible": 0,
+            "required_total": 0,
+            "required_answered": 0,
+        }
+        # One read pass: conditions read their parent answers from the index, not the database.
+        with read_pass(index=index):
+            sections_data = self._build_sections(
+                all_instruments, collector, input_by_instrument, progress
             )
-        )
-
-        # One read pass: each parent answer is resolved once for every condition that reads it.
-        with read_pass():
-            # Track progress
-            progress = {
-                "total": len(all_instruments),
-                "answered": 0,
-                "visible": 0,
-                "required_total": 0,
-                "required_answered": 0,
-            }
-
-            # Build sections
-            sections_data = []
-            ungrouped_questions = []
-
-            # Process grouped instruments
-            for group in groups:
-                section_questions = []
-                group_instruments = sorted(
-                    grouped_instruments[group], key=lambda instrument: instrument.order or 0
-                )
-
-                for instrument in group_instruments:
-                    question_data = self._build_question_data(
-                        instrument=instrument,
-                        collector=collector,
-                        collected_input=input_by_instrument.get(instrument.id),
-                        instrument_by_measure=instrument_by_measure,
-                        progress=progress,
-                    )
-                    section_questions.append(question_data)
-
-                if section_questions:
-                    group_name = getattr(group, "name", None) or getattr(
-                        group, "id", "Untitled Section"
-                    )
-                    sections_data.append(
-                        {
-                            "name": group_name,
-                            "slug": getattr(group, "slug", None)
-                            or self._slugify(group_name or "section"),
-                            "description": getattr(group, "description", ""),
-                            "order": getattr(group, "order", 0) or 0,
-                            "questions": section_questions,
-                        }
-                    )
-
-            # Process ungrouped instruments
-            for instrument in all_instruments:
-                if instrument.id not in instrument_to_group:
-                    question_data = self._build_question_data(
-                        instrument=instrument,
-                        collector=collector,
-                        collected_input=input_by_instrument.get(instrument.id),
-                        instrument_by_measure=instrument_by_measure,
-                        progress=progress,
-                    )
-                    ungrouped_questions.append(question_data)
-
-        # Add ungrouped as "General" section if any
-        if ungrouped_questions:
-            sections_data.insert(
-                0,
-                {
-                    "name": "General",
-                    "slug": "general",
-                    "description": "",
-                    "order": -1,
-                    "questions": ungrouped_questions,
-                },
-            )
-
-        # Sort sections by order
         sections_data.sort(key=lambda s: s["order"])
 
         return {
@@ -762,6 +664,88 @@ class ChecklistConsumerMixin:
             "sections": sections_data,
             "progress": progress,
         }
+
+    def _load_checklist(self, collection_request, collector):
+        """Instruments, the latest answer per instrument, and an AnswerIndex, in fixed queries."""
+        from django_input_collection.collection.answer_index import AnswerIndex
+        from django_input_collection.collection.collectors import BaseCollector
+        from django_input_collection.collection.merge import load_instruments
+
+        # Display order is by "order" (as in 10.0.0); stable, so ties keep Meta ordering.
+        all_instruments = sorted(
+            load_instruments([collection_request]), key=lambda instrument: instrument.order or 0
+        )
+        input_model = self.get_input_model()
+        rows = (
+            input_model.objects.filter(collection_request=collection_request)
+            .select_related("user")
+            .order_by("date_created", "id")
+        )
+        input_by_instrument = {row.instrument_id: row for row in rows}  # newest wins
+        if not isinstance(collector, BaseCollector):
+            return all_instruments, input_by_instrument, None  # no filter to trust: database path
+        # AnswerIndex contract: conditions read what this collector would, filtered the same way.
+        condition_rows = collector.filter_condition_inputs(
+            input_model.objects.filter(collection_request=collection_request).filter_for_context(
+                **collector.context
+            )
+        ).order_by("date_created", "id")
+        return all_instruments, input_by_instrument, AnswerIndex(all_instruments, condition_rows)
+
+    def _build_sections(self, all_instruments, collector, input_by_instrument, progress) -> list:
+        """Section dicts (grouped sections, then "General" for ungrouped instruments)."""
+        instrument_by_measure = {i.measure_id: i for i in all_instruments}
+        grouped_instruments = {}
+        ungrouped = []
+        for instrument in all_instruments:
+            if instrument.group:
+                grouped_instruments.setdefault(instrument.group, []).append(instrument)
+            else:
+                ungrouped.append(instrument)
+
+        def questions(instruments):
+            return [
+                self._build_question_data(
+                    instrument=instrument,
+                    collector=collector,
+                    collected_input=input_by_instrument.get(instrument.id),
+                    instrument_by_measure=instrument_by_measure,
+                    progress=progress,
+                )
+                for instrument in instruments
+            ]
+
+        sections_data = []
+        for group in self._sorted_groups(grouped_instruments):
+            group_instruments = sorted(
+                grouped_instruments[group], key=lambda instrument: instrument.order or 0
+            )
+            group_name = getattr(group, "name", None) or getattr(group, "id", "Untitled Section")
+            sections_data.append(
+                {
+                    "name": group_name,
+                    "slug": getattr(group, "slug", None) or self._slugify(group_name or "section"),
+                    "description": getattr(group, "description", ""),
+                    "order": getattr(group, "order", 0) or 0,
+                    "questions": questions(group_instruments),
+                }
+            )
+        if ungrouped:
+            general = {"name": "General", "slug": "general", "description": "", "order": -1}
+            sections_data.insert(0, dict(general, questions=questions(ungrouped)))
+        return sections_data
+
+    @staticmethod
+    def _sorted_groups(grouped_instruments) -> list:
+        groups = list(grouped_instruments.keys())
+        groups.sort(
+            key=lambda group: (
+                getattr(group, "order", 0)
+                if hasattr(group, "order")
+                else min((instr.order or 0) for instr in grouped_instruments[group])
+            )
+        )
+        return groups
 
     def _build_question_data(
         self, instrument, collector, collected_input, instrument_by_measure, progress
