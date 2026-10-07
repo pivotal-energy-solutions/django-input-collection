@@ -24,7 +24,9 @@ def get_input_model():
 
 def get_boundsuggestedresponse_model():
     try:
-        return django_apps.get_model(settings.INPUT_COLLECTEDINPUT_MODEL, require_ready=False)
+        return django_apps.get_model(
+            settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL, require_ready=False
+        )
     except ValueError:
         raise ImproperlyConfigured(
             "INPUT_BOUNDSUGGESTEDRESPONSE_MODEL must be of the form 'app_label.model_name'"
@@ -32,7 +34,7 @@ def get_boundsuggestedresponse_model():
     except LookupError:
         raise ImproperlyConfigured(
             "INPUT_BOUNDSUGGESTEDRESPONSE_MODEL refers to model '%s' that has not been installed"
-            % settings.INPUT_COLLECTEDINPUT_MODEL
+            % settings.INPUT_BOUNDSUGGESTEDRESPONSE_MODEL
         )
 
 

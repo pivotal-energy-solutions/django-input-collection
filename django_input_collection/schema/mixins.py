@@ -637,33 +637,29 @@ class ChecklistConsumerMixin:
         Returns:
             Dictionary with checklist data including sections and progress
         """
-        from django_input_collection.models import CollectionGroup
+        from django_input_collection.collection.resolvers import read_pass
+        from django_input_collection.managers.collection_instrument import CONDITION_PREFETCH
 
-        # Get all instruments for this request and prefetch related data for faster rendering.
+        # Prefetch everything the per-question loop reads so it runs without per-instrument queries.
         all_instruments = list(
             collection_request.collectioninstrument_set.select_related(
                 "group", "type", "response_policy", "measure"
             )
-            .prefetch_related("suggested_responses", "conditions")
+            .prefetch_related(
+                "suggested_responses",
+                *CONDITION_PREFETCH,
+                "bound_suggested_responses__suggested_response",
+            )
             .order_by("order")
         )
-
-        # Build instrument lookup and collect answers
         instrument_by_measure = {i.measure_id: i for i in all_instruments}
-
-        # Get all collected inputs for this collection request
-        collected_inputs = (
+        rows = (
             self.get_input_model()
             .objects.filter(collection_request=collection_request)
             .select_related("user")
-            .order_by("-date_created")
+            .order_by("date_created", "id")
         )
-
-        # Map instrument_id -> most recent input
-        input_by_instrument = {}
-        for ci in collected_inputs:
-            if ci.instrument_id not in input_by_instrument:
-                input_by_instrument[ci.instrument_id] = ci
+        input_by_instrument = {row.instrument_id: row for row in rows}  # newest wins
 
         # Build instrument lookup and group membership from the already-fetched instruments.
         instrument_to_group = {}
@@ -683,62 +679,64 @@ class ChecklistConsumerMixin:
             )
         )
 
-        # Track progress
-        progress = {
-            "total": len(all_instruments),
-            "answered": 0,
-            "visible": 0,
-            "required_total": 0,
-            "required_answered": 0,
-        }
+        # One read pass: each parent answer is resolved once for every condition that reads it.
+        with read_pass():
+            # Track progress
+            progress = {
+                "total": len(all_instruments),
+                "answered": 0,
+                "visible": 0,
+                "required_total": 0,
+                "required_answered": 0,
+            }
 
-        # Build sections
-        sections_data = []
-        ungrouped_questions = []
+            # Build sections
+            sections_data = []
+            ungrouped_questions = []
 
-        # Process grouped instruments
-        for group in groups:
-            section_questions = []
-            group_instruments = sorted(
-                grouped_instruments[group], key=lambda instrument: instrument.order or 0
-            )
-
-            for instrument in group_instruments:
-                question_data = self._build_question_data(
-                    instrument=instrument,
-                    collector=collector,
-                    collected_input=input_by_instrument.get(instrument.id),
-                    instrument_by_measure=instrument_by_measure,
-                    progress=progress,
-                )
-                section_questions.append(question_data)
-
-            if section_questions:
-                group_name = getattr(group, "name", None) or getattr(
-                    group, "id", "Untitled Section"
-                )
-                sections_data.append(
-                    {
-                        "name": group_name,
-                        "slug": getattr(group, "slug", None)
-                        or self._slugify(group_name or "section"),
-                        "description": getattr(group, "description", ""),
-                        "order": getattr(group, "order", 0) or 0,
-                        "questions": section_questions,
-                    }
+            # Process grouped instruments
+            for group in groups:
+                section_questions = []
+                group_instruments = sorted(
+                    grouped_instruments[group], key=lambda instrument: instrument.order or 0
                 )
 
-        # Process ungrouped instruments
-        for instrument in all_instruments:
-            if instrument.id not in instrument_to_group:
-                question_data = self._build_question_data(
-                    instrument=instrument,
-                    collector=collector,
-                    collected_input=input_by_instrument.get(instrument.id),
-                    instrument_by_measure=instrument_by_measure,
-                    progress=progress,
-                )
-                ungrouped_questions.append(question_data)
+                for instrument in group_instruments:
+                    question_data = self._build_question_data(
+                        instrument=instrument,
+                        collector=collector,
+                        collected_input=input_by_instrument.get(instrument.id),
+                        instrument_by_measure=instrument_by_measure,
+                        progress=progress,
+                    )
+                    section_questions.append(question_data)
+
+                if section_questions:
+                    group_name = getattr(group, "name", None) or getattr(
+                        group, "id", "Untitled Section"
+                    )
+                    sections_data.append(
+                        {
+                            "name": group_name,
+                            "slug": getattr(group, "slug", None)
+                            or self._slugify(group_name or "section"),
+                            "description": getattr(group, "description", ""),
+                            "order": getattr(group, "order", 0) or 0,
+                            "questions": section_questions,
+                        }
+                    )
+
+            # Process ungrouped instruments
+            for instrument in all_instruments:
+                if instrument.id not in instrument_to_group:
+                    question_data = self._build_question_data(
+                        instrument=instrument,
+                        collector=collector,
+                        collected_input=input_by_instrument.get(instrument.id),
+                        instrument_by_measure=instrument_by_measure,
+                        progress=progress,
+                    )
+                    ungrouped_questions.append(question_data)
 
         # Add ungrouped as "General" section if any
         if ungrouped_questions:
@@ -817,23 +815,25 @@ class ChecklistConsumerMixin:
         return question_data
 
     def _get_responses_with_flags(self, instrument) -> Optional[list]:
-        """Get responses with their flags for multiple-choice instruments."""
-        if not instrument.suggested_responses.exists():
+        """Responses in bound order, flags from the prefetched bound rows (no query per instrument)."""
+        bound_rows = list(instrument.bound_suggested_responses.all())
+        if not bound_rows:
             return None
-
         responses = []
-        for sr in instrument.suggested_responses.all():
-            response_data = {"value": sr.data}
-
-            # Try to get flags from bound response (application-specific)
-            # This hook allows applications to add their own flag handling
-            flags = self._get_response_flags(instrument, sr)
+        for bound in bound_rows:
+            data = {"value": bound.suggested_response.data}
+            flags = self._get_bound_response_flags(bound)
+            if flags is None:  # 10.0.0 hook, for consumers that still override it
+                flags = self._get_response_flags(instrument, bound.suggested_response)
             if flags:
-                response_data["flags"] = flags
-
-            responses.append(response_data)
-
+                data["flags"] = flags
+            responses.append(data)
         return responses
+
+    def _get_bound_response_flags(self, bound) -> Optional[dict]:
+        """Flags on a bound response; swapped bound models with ``get_flags()`` supply them."""
+        get_flags = getattr(bound, "get_flags", None)
+        return get_flags() if callable(get_flags) else None
 
     def _get_response_flags(self, instrument, suggested_response) -> Optional[dict]:
         """
@@ -924,7 +924,7 @@ class ChecklistConsumerMixin:
             "id": collected_input.id,
             "data": collected_input.data,
             "user_id": collected_input.user_id,
-            "user_role": collected_input.user_role,
+            "user_role": getattr(collected_input, "user_role", None),  # not on every input model
             "date_created": collected_input.date_created.isoformat()
             if collected_input.date_created
             else None,
