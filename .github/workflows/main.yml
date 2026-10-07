@@ -148,6 +148,11 @@ jobs:
         env:
           PYTHONWARNINGS: once::DeprecationWarning
           DB_TYPE: ${{ matrix.db }}
+          MARIADB_DATABASE: db
+          MARIADB_USER: root
+          MARIADB_PASSWORD: password
+          MARIADB_HOST: 127.0.0.1
+          MARIADB_PORT: "3306"
         run: export PYTHONPATH=`pwd` && coverage run
       - name: "Upload Coverage Results for PY:${{ matrix.python-version }} DB:${{ matrix.db}} DJ:${{ matrix.django-version }}"
         uses: actions/upload-artifact@v7
