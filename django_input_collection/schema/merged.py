@@ -79,7 +79,13 @@ def consumer_payload(
 
 
 def merged_checklist_payload(
-    merged, *, collectors, visibility=None, question_extras=None, answer_payload=None
+    merged,
+    *,
+    collectors,
+    visibility=None,
+    question_extras=None,
+    answer_payload=None,
+    consumer=None,
 ) -> dict:
     """``merged`` in ChecklistConsumerMixin's checklist shape: the same section, question and
     answer keys and values, plus per question ``collection_request`` (the owner's),
@@ -92,11 +98,16 @@ def merged_checklist_payload(
     replaces the mixin's ``_serialize_answer``. Reads nothing the merge didn't prefetch.
     ``answers`` come from the merge's ``inputs``; when conditions read a narrower
     ``condition_inputs``, "answers = what conditions read" holds only where the rows agree.
+
+    ``consumer`` (a ChecklistConsumerMixin subclass or instance, e.g. the viewset class) applies
+    its overrides as ``consumer_payload`` does, so a caller outside a view gets the view's shape.
+    Default: the plain mixin.
     """
     from .mixins import ChecklistConsumerMixin
 
+    consumer = ChecklistConsumerMixin if consumer is None else consumer
     return consumer_payload(
-        ChecklistConsumerMixin(),
+        consumer() if isinstance(consumer, type) else consumer,
         merged,
         collectors=collectors,
         visibility=visibility,
