@@ -248,7 +248,7 @@ class InstrumentResolver(Resolver):
         collector = current_collector()
         requests = self.search_requests(instrument, collector)
         index = current_answer_index()
-        if index is not None:
+        if index is not None and _hook("index.serves", index.serves, collector):
             found = _hook(
                 "index.lookup", index.lookup, requests, parent_pk=parent_pk, measure=measure
             )

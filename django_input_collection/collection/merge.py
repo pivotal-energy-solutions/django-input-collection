@@ -10,7 +10,7 @@ from collections.abc import Callable
 
 from ..managers.collected_input import CollectedInputQuerySet
 from ..managers.collection_instrument import CONDITION_PREFETCH
-from .answer_index import AnswerIndex
+from .answer_index import AnswerIndex, filter_key
 from .merged_checklist import (  # noqa: F401 (re-exported: the public names are collection.merge.*)
     GENERAL,
     MergedChecklist,
@@ -18,7 +18,6 @@ from .merged_checklist import (  # noqa: F401 (re-exported: the public names are
     MergedSection,
     section_name,
 )
-from .resolvers import _freeze
 
 # owner(measure_id, instruments in request order, newest answer or None) -> the instrument shown
 Owner = Callable[[str, tuple, object], object]
@@ -99,28 +98,24 @@ def _filters_nothing(collector, queryset) -> bool:
     )
 
 
-def _filter_key(collector):
-    try:
-        return collector.condition_cache_key(), _freeze(collector.context)
-    except TypeError:
-        return ("unkeyable", id(collector))  # can't prove it filters like another: its own index
-
-
 def _indexes(requests, collectors, inputs, rows, build):
     """request id -> AnswerIndex over ``inputs`` as that request's collector filters them.
 
-    Collectors that filter alike share one index (one read; none when the filter is a no-op).
+    Collectors that filter alike share one index (one read; none when the filter is a no-op),
+    bound to that filter key.
     """
     by_key, indexes = {}, {}
     for request in requests:
         collector = collectors[request.pk]
-        key = _filter_key(collector)
+        key = filter_key(collector)
         if key not in by_key:
             if _filters_nothing(collector, inputs):
-                by_key[key] = build(rows)
+                by_key[key] = build(rows, collector)
             else:
                 filtered = inputs.filter_for_context(**collector.context)
-                by_key[key] = build(_ordered(collector.filter_condition_inputs(filtered)))
+                by_key[key] = build(
+                    _ordered(collector.filter_condition_inputs(filtered)), collector
+                )
         indexes[request.pk] = by_key[key]
     return indexes
 
@@ -162,10 +157,13 @@ def merge_requests(
     rows = _ordered(inputs)
     answers, answer_rows = _newest_answers(rows, instruments)
 
-    def build(index_rows):
-        return AnswerIndex(instruments, index_rows, complete=complete, newest_across=True)
+    def build(index_rows, collector=None):
+        return AnswerIndex(
+            instruments, index_rows, complete=complete, newest_across=True, collector=collector
+        )
 
     if condition_inputs is not None:
+        # The caller vouches for every collector's filters: unbound.
         shared = build(_ordered(condition_inputs))
         indexes = dict.fromkeys((request.pk for request in requests), shared)
     else:
