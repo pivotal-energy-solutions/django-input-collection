@@ -23,7 +23,7 @@ from .mixins import (
     ChecklistSchemaMixin,
     ChecklistConsumerMixin,
 )
-from .merged import merged_checklist_payload, response_flags
+from .merged import consumer_payload, merged_checklist_payload, response_flags
 from .collisions import (
     COLLISION_FIELDS,
     CollisionReport,
@@ -58,6 +58,7 @@ __all__ = [
     "ChecklistConsumerMixin",
     # Merged (multi-request) checklist response
     "merged_checklist_payload",
+    "consumer_payload",
     "response_flags",
     # Measure-collision validation
     "COLLISION_FIELDS",

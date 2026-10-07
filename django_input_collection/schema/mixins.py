@@ -737,6 +737,7 @@ class ChecklistConsumerMixin:
             instruments,
             self._condition_rows(collection_request, collector, instruments, rows),
             complete=True,
+            collector=collector,
         )
         return all_instruments, input_by_instrument, index
 

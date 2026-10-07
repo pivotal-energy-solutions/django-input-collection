@@ -7,6 +7,18 @@ __credits__ = ["Steven Klass"]
 
 from collections import defaultdict
 
+from .resolvers import _freeze
+
+_ANY = object()  # an unbound index answers for every collector
+
+
+def filter_key(collector):
+    """What makes two collectors' condition reads alike: their filter key and context."""
+    try:
+        return collector.condition_cache_key(), _freeze(collector.context)
+    except TypeError:
+        return ("unkeyable", id(collector))  # can't prove it filters like another: its own key
+
 
 class AnswerIndex:
     """What InstrumentResolver would read from the database, held in memory.
@@ -24,11 +36,15 @@ class AnswerIndex:
     responses prefetched); requests with no instrument here defer to the database. Pass
     ``complete=True`` only when they are every instrument of their requests: a gate missing from
     a covered request then raises DoesNotExist from memory, as the database path would.
+
+    ``collector`` binds the index to that collector's ``filter_key``: a collector that filters
+    differently (or no collector) then reads the database. Unbound, it answers for anyone.
     """
 
-    def __init__(self, instruments, inputs, *, complete=False, newest_across=False):
+    def __init__(self, instruments, inputs, *, complete=False, newest_across=False, collector=None):
         self.complete = complete
         self.newest_across = newest_across
+        self.filter_key = _ANY if collector is None else filter_key(collector)
         self._by_request = defaultdict(dict)  # request id -> measure_id -> first instrument
         self._by_pk = {}
         for instrument in instruments:
@@ -42,6 +58,12 @@ class AnswerIndex:
             self._values[row.instrument_id].append(row.data)
             stamp = (row.date_created, row.pk)
             self._latest[row.instrument_id] = max(self._latest.get(row.instrument_id, stamp), stamp)
+
+    def serves(self, collector) -> bool:
+        """True when ``collector`` reads what this index was built from."""
+        if self.filter_key is _ANY:
+            return True
+        return collector is not None and filter_key(collector) == self.filter_key
 
     def covers(self, request_ids) -> bool:
         return all(request_id in self._by_request for request_id in request_ids)
