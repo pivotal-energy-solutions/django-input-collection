@@ -107,7 +107,7 @@ class CrossRequestTests(TestCase):
         self.answer(early, self.a)
         self.assertTrue(self.allowed())
 
-    def test_broken_hooks_warn_but_missing_gates_stay_quiet(self):
+    def test_broken_hooks_warn_but_resolver_misses_stay_quiet(self):
         class Broken(Cooperative):
             __noregister__ = True
 
@@ -116,11 +116,20 @@ class CrossRequestTests(TestCase):
 
         with self.assertLogs(resolvers.log, "WARNING") as logs:
             self.assertFalse(self.allowed(Broken))  # still falls back
-        self.assertIn("broken hook", logs.output[0])
+        self.assertIn("get_condition_requests", logs.output[0])
 
-        self.child.conditions.update(data_getter="instrument:nowhere")
-        with self.assertNoLogs(resolvers.log, "WARNING"):
-            self.assertFalse(self.allowed(Cooperative, others=[self.b]))
+        for getter in ("instrument:nowhere", "attr:no.such.path"):
+            self.child.conditions.update(data_getter=getter)
+            with self.assertNoLogs(resolvers.log, "WARNING"):
+                self.assertFalse(self.allowed(Cooperative, others=[self.b]))
+
+    def test_search_requests_are_ids_own_first(self):
+        collector = Cooperative(self.a)
+        collector.others = [self.b, self.b.pk, self.a]  # objects or pks, duplicates dropped
+        search = resolvers.InstrumentResolver().search_requests
+        self.assertEqual(search(self.child, collector), [self.a.pk, self.b.pk])
+        self.assertEqual(search(self.child, collectors.Collector(self.a)), [self.a.pk])
+        self.assertEqual(search(self.child, None), [self.a.pk])
 
     def test_current_collector_is_published_only_while_testing(self):
         seen = []

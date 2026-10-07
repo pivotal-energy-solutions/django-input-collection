@@ -3,7 +3,6 @@ import logging
 from contextlib import contextmanager
 from contextvars import ContextVar
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Manager, Model
 from django.db.models.query import QuerySet
 
@@ -91,6 +90,19 @@ def resolving_for(collector):
         _current_collector.reset(token)
 
 
+def _hook(name, call, *args, **kwargs):
+    """Run a collector/index hook; a failure there is a bug, so warn before resolve() falls back."""
+    try:
+        return call(*args, **kwargs)
+    except Exception:
+        log.warning("Condition hook %s raised; the condition falls back", name, exc_info=True)
+        raise
+
+
+def _request_id(request):
+    return getattr(request, "pk", request)
+
+
 def _freeze(value):
     """Hashable form of resolver context; raises TypeError for values it can't key on."""
     if isinstance(value, Model):
@@ -126,17 +138,13 @@ def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
             data_info = {
                 "data": fallback,
             }
-            # A missing gating instrument is routine; anything else is likely a broken hook.
-            expected = isinstance(e, ObjectDoesNotExist)
-            log.log(
-                logging.DEBUG if expected else logging.WARNING,
+            log.debug(
                 "Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
                 resolver.__class__,
                 instrument.pk,
                 kwargs,
                 spec,
                 error,
-                exc_info=not expected,
             )
 
         return (resolver, data_info, error)
@@ -216,26 +224,29 @@ class InstrumentResolver(Resolver):
     pattern = r"((?P<parent_pk>\d+)|(?P<measure>.+))"
 
     def search_requests(self, instrument, collector):
-        """Own request first, then whatever the collector adds.
+        """Request ids to search, own request first, then whatever the collector adds.
 
-        Entries are CollectionRequests or their pks: the own request is always its pk, so the
-        common case never loads the ``collection_request`` FK.
+        Overrides of ``get_condition_requests`` may return requests or pks; both become ids, and
+        the common case never loads the ``collection_request`` FK.
         """
         own_id = instrument.collection_request_id
         if collector is None or not collector.widens_condition_requests():
             return [own_id]
-        requests = [own_id]
-        for request in collector.get_condition_requests(instrument):
-            if getattr(request, "pk", request) != own_id:
-                requests.append(request)
-        return requests
+        ids = [own_id]
+        extra = _hook("get_condition_requests", collector.get_condition_requests, instrument)
+        for request_id in map(_request_id, extra):
+            if request_id not in ids:
+                ids.append(request_id)
+        return ids
 
     def resolve(self, instrument, parent_pk=None, measure=None, **context):
         collector = current_collector()
         requests = self.search_requests(instrument, collector)
         index = current_answer_index()
         if index is not None:
-            found = index.lookup(requests, parent_pk=parent_pk, measure=measure)
+            found = _hook(
+                "index.lookup", index.lookup, requests, parent_pk=parent_pk, measure=measure
+            )
             if found is not None:
                 values, suggested_values = found
                 return {"data": list(values), "suggested_values": suggested_values}
@@ -243,10 +254,11 @@ class InstrumentResolver(Resolver):
         cache, key = _read_pass_cache.get(), None
         if cache is not None:
             try:
-                request_ids = tuple(getattr(r, "pk", r) for r in requests)
                 # Collectors that filter inputs differently must not share an entry.
-                filter_key = collector.condition_cache_key() if collector is not None else None
-                key = (request_ids, filter_key, parent_pk, measure, _freeze(context))
+                filter_key = None
+                if collector is not None:
+                    filter_key = _hook("condition_cache_key", collector.condition_cache_key)
+                key = (tuple(requests), filter_key, parent_pk, measure, _freeze(context))
             except TypeError:
                 key = None  # Unkeyable context: resolve uncached rather than risk a collision
         if key is not None and key in cache:
@@ -263,18 +275,18 @@ class InstrumentResolver(Resolver):
 
         lookup = {"pk": parent_pk} if parent_pk else {"measure_id": measure}
         first = None
-        for position, request in enumerate(requests):
+        for position, request_id in enumerate(requests):
             if parent_pk and position:
                 break  # a pk names one instrument in the condition's own request
             parent = CollectionInstrument.objects.filter(
-                collection_request=request, **lookup
+                collection_request_id=request_id, **lookup
             ).first()
             if parent is None:
                 continue
             first = first or parent
             inputs = parent.collectedinput_set.filter_for_context(**context)
             if collector is not None:
-                inputs = collector.filter_condition_inputs(inputs)
+                inputs = _hook("filter_condition_inputs", collector.filter_condition_inputs, inputs)
             values = list(inputs.values_list("data", flat=True))
             if values:
                 # Lazy: match types that don't need suggestions never query them.
