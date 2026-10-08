@@ -715,33 +715,67 @@ class ChecklistConsumerMixin:
             "progress": progress,
         }
 
+    def get_condition_load_requests(self, collection_request, collector):
+        """Other requests the checklist read's AnswerIndex covers; None (default) for its own only.
+
+        Return what the collector's ``get_condition_requests`` searches, so widened gates read
+        from memory instead of the database: requests or pks, or a CollectionRequest QuerySet
+        (folded into the instrument query, ordered by its ``order_by``; no extra query). Their
+        instruments and answers only feed conditions; the checklist shows its own request's.
+        """
+        return None
+
+    def condition_requests_loaded(self, collection_request, collector, requests):
+        """Called with ``[collection_request, *others that have instruments]`` once loaded, in
+        order, when ``get_condition_load_requests`` returned any (e.g. to seed the collector)."""
+
+    def get_checklist_inputs(self, collection_request, collector):
+        """Inputs the checklist shows as answers; newest per instrument wins. Not condition reads."""
+        return self.get_input_model().objects.filter(collection_request=collection_request)
+
     def _load_checklist(self, collection_request, collector):
         """Instruments, the latest answer per instrument, and an AnswerIndex, in fixed queries."""
         from django_input_collection.collection.answer_index import AnswerIndex
         from django_input_collection.collection.collectors import BaseCollector
-        from django_input_collection.collection.merge import load_instruments
 
-        instruments = load_instruments([collection_request])  # Meta order: the index needs it
+        indexed = isinstance(collector, BaseCollector)
+        instruments, requests = self._load_instruments(collection_request, collector, indexed)
+        own = [i for i in instruments if i.collection_request_id == collection_request.pk]
         # Display order is 10.0.0's de-facto one: "order", ties by pk.
-        all_instruments = sorted(instruments, key=lambda i: (i.order or 0, i.pk))
-        input_model = self.get_input_model()
+        all_instruments = sorted(own, key=lambda i: (i.order or 0, i.pk))
         rows = list(
-            input_model.objects.filter(collection_request=collection_request)
+            self.get_checklist_inputs(collection_request, collector)
             .select_related("user")
             .order_by("date_created", "id")
         )
         input_by_instrument = {row.instrument_id: row for row in rows}  # newest wins
-        if not isinstance(collector, BaseCollector):
+        if not indexed:
             return all_instruments, input_by_instrument, None  # no filter to trust: database path
         index = AnswerIndex(
             instruments,
-            self._condition_rows(collection_request, collector, instruments, rows),
+            self._condition_rows(collection_request, collector, own, rows, requests=requests),
             complete=True,
             collector=collector,
         )
         return all_instruments, input_by_instrument, index
 
-    def _condition_rows(self, collection_request, collector, instruments, rows):
+    def _load_instruments(self, collection_request, collector, indexed):
+        """(instruments in Meta order per request (the index needs it), the requests indexed)."""
+        from django_input_collection.collection.merge import (
+            load_condition_instruments,
+            load_instruments,
+        )
+
+        others = (
+            self.get_condition_load_requests(collection_request, collector) if indexed else None
+        )
+        if others is None:
+            return load_instruments([collection_request]), [collection_request]
+        instruments, requests = load_condition_instruments(collection_request, others)
+        self.condition_requests_loaded(collection_request, collector, requests)
+        return instruments, requests
+
+    def _condition_rows(self, collection_request, collector, instruments, rows, requests=None):
         """What this collector's instrument: conditions read (the AnswerIndex input contract)."""
         from django_input_collection.collection.collectors import BaseCollector
         from django_input_collection.managers.collected_input import CollectedInputQuerySet
@@ -752,13 +786,16 @@ class ChecklistConsumerMixin:
         input_model = self.get_input_model()
         unfiltered = (
             not collector.context
+            and len(requests or ()) <= 1
             and type(collector).filter_condition_inputs is BaseCollector.filter_condition_inputs
             and type(input_model.objects.all()).filter_for_context
             is CollectedInputQuerySet.filter_for_context
+            and type(self).get_checklist_inputs is ChecklistConsumerMixin.get_checklist_inputs
         )
         if unfiltered:
             return rows  # the same set the answers came from: no second query
-        queryset = input_model.objects.filter(collection_request=collection_request)
+        request_ids = [getattr(r, "pk", r) for r in requests or [collection_request]]
+        queryset = input_model.objects.filter(collection_request_id__in=request_ids)
         return collector.filter_condition_inputs(
             queryset.filter_for_context(**collector.context)
         ).order_by("date_created", "id")
