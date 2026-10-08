@@ -126,6 +126,23 @@ class MergedPayloadTests(TestCase):
         self.assertEqual(len(gate_q["answers"]), 1)
         self.assertEqual(gate_q["answers"][0]["id"], gate_q["answer"]["id"])
 
+    def test_is_required_if_any_request_requires_it(self):
+        a, b = build_checklist(0, prefix="r"), build_checklist(0, prefix="r", answer=False)
+        required = factories.ResponsePolicyFactory.create(nickname="required", required=True)
+        b.collectioninstrument_set.update(response_policy=required)  # optional on owner A
+        data = self.payload(a, b)
+        gate_q = data["sections"][0]["questions"][0]
+        self.assertEqual(gate_q["collection_request"], a.pk)
+        self.assertIs(gate_q["is_required"], True)
+        self.assertEqual(data["progress"]["required_total"], 1)
+        self.assertEqual(data["progress"]["required_answered"], 1)
+
+    def test_optional_everywhere_is_not_required(self):
+        a, b = build_checklist(0, prefix="n"), build_checklist(0, prefix="n", answer=False)
+        data = self.payload(a, b)
+        self.assertIs(data["sections"][0]["questions"][0]["is_required"], False)
+        self.assertEqual(data["progress"]["required_total"], 0)
+
     def test_unanswered_question(self):
         a = build_checklist(0, prefix="u", answer=False)
         gate_q = self.payload(a)["sections"][0]["questions"][0]

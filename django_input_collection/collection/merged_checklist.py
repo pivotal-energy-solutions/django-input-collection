@@ -23,6 +23,13 @@ class MergedQuestion:
     # Every row of the answering instrument, oldest first: what its conditions read.
     answers: list = field(default_factory=list)
 
+    @property
+    def is_required(self):
+        """Required if any request requires it; None only when no instrument has a policy."""
+        policies = [i.response_policy for i in self.instruments or (self.instrument,)]
+        policies = [policy for policy in policies if policy]
+        return any(policy.required for policy in policies) if policies else None
+
 
 @dataclass
 class MergedSection:
@@ -163,8 +170,7 @@ class MergedChecklist:
         keys = ("total", "answered", "visible", "required_total", "required_answered")
         progress = dict.fromkeys(keys, 0)
         for question in self.questions.values():
-            policy = question.instrument.response_policy
-            required = bool(policy and policy.required)
+            required = bool(question.is_required)  # as the payload's is_required
             progress["total"] += 1
             progress["visible"] += bool(visibility.get(question.measure_id))
             progress["required_total"] += required

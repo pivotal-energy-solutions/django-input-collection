@@ -16,7 +16,6 @@ def response_flags(bound) -> dict:
 
 def _question(consumer, question, collectors, visible, by_measure, answer_payload, extras):
     instrument = question.instrument  # the owner's
-    policy = instrument.response_policy
     collector = collectors[instrument.collection_request_id]
     payload = {
         "id": instrument.pk,
@@ -28,7 +27,7 @@ def _question(consumer, question, collectors, visible, by_measure, answer_payloa
         "help_text": instrument.help or "",
         "type": instrument.type_id or "open",
         "order": instrument.order or 0,
-        "is_required": policy and policy.required,  # as the mixin: None without a policy
+        "is_required": question.is_required,  # any request requiring it; None without a policy
         "is_visible": visible,
         "constraints": consumer._get_instrument_constraints(collector, instrument),
         "responses": consumer._get_responses_with_flags(instrument),  # bound rows prefetched

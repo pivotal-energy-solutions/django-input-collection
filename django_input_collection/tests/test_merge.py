@@ -5,11 +5,14 @@ __date__ = "10/07/26 04:00 PM"
 __copyright__ = "Copyright 2011-2026 Pivotal Energy Solutions. All rights reserved."
 __credits__ = ["Steven Klass"]
 
+from types import SimpleNamespace
+
 from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
 from ..collection.merge import load_instruments, merge_requests
+from ..collection.merged_checklist import MergedQuestion
 from ..models import get_input_model
 from . import factories
 from .checklists import build_checklist, gate, question
@@ -232,17 +235,59 @@ class MergeTests(TestCase):
         self.assertEqual(progress["visible"], 4)
         self.assertEqual(progress["answered"], 0)
 
-    def test_progress_counts_required_by_owner(self):
+    def require(self, request, measure):
         required = factories.ResponsePolicyFactory.create(nickname="required", required=True)
-        self.a.collectioninstrument_set.filter(measure_id="shared").update(response_policy=required)
-        self.answer(self.a, "shared", "yes")  # A holds the answer: A's required policy counts
+        request.collectioninstrument_set.filter(measure_id=measure).update(response_policy=required)
+
+    def test_progress_counts_required_whoever_owns(self):
+        self.require(self.a, "shared")
+        self.answer(self.a, "shared", "yes")  # A owns and requires it
         merged = self.merged()
         progress = merged.progress(merged.evaluate())
         self.assertEqual(progress["required_total"], 1)
         self.assertEqual(progress["required_answered"], 1)
         self.assertEqual(progress["answered"], 1)
-        self.answer(self.b, "shared", "newer")  # B now holds the newest: B owns, not required
-        self.assertEqual(self.merged().progress({})["required_total"], 0)
+        self.answer(self.b, "shared", "newer")  # B owns now; A still requires it
+        merged = self.merged()
+        self.assertEqual(merged.owner("shared").collection_request_id, self.b.pk)
+        self.assertEqual(merged.progress({})["required_total"], 1)
+        self.assertEqual(merged.progress({})["required_answered"], 1)
+
+    def test_required_if_any_request_requires_it(self):
+        self.require(self.b, "shared")  # optional on the owner (A), required on B
+        merged = self.merged()
+        self.assertEqual(merged.owner("shared").collection_request_id, self.a.pk)
+        self.assertIs(merged.questions["shared"].is_required, True)
+        self.assertEqual(merged.progress({})["required_total"], 1)
+        self.assertEqual(merged.progress({})["required_answered"], 0)
+
+    def test_required_on_the_owner_only_is_still_required(self):
+        self.require(self.a, "shared")
+        merged = self.merged()
+        self.assertIs(merged.questions["shared"].is_required, True)
+        self.assertEqual(merged.progress({})["required_total"], 1)
+
+    def test_optional_everywhere_is_not_required(self):
+        merged = self.merged()
+        self.assertIs(merged.questions["shared"].is_required, False)
+        self.assertEqual(merged.progress({})["required_total"], 0)
+
+    def test_none_only_when_no_instrument_has_a_policy(self):
+        def ask(*policies):
+            instruments = tuple(SimpleNamespace(response_policy=p) for p in policies)
+            return MergedQuestion("m", instruments[0], instruments, "General").is_required
+
+        optional, required = SimpleNamespace(required=False), SimpleNamespace(required=True)
+        self.assertIsNone(ask(None, None))
+        self.assertIs(ask(None, optional), False)  # one policy answers
+        self.assertIs(ask(None, required), True)
+
+    def test_is_required_adds_no_queries(self):
+        self.require(self.b, "shared")
+        merged = self.merged()
+        with self.assertNumQueries(0):
+            self.assertTrue(merged.questions["shared"].is_required)
+            merged.progress({})
 
 
 class MergeQueryTests(TestCase):
