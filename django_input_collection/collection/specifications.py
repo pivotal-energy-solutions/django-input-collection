@@ -99,9 +99,13 @@ class CollectionRequestQueryMinimizerMixin(object):
 
         BoundSuggestedResponseThrough = CollectionInstrument.suggested_responses.through
 
-        suggested_responses = BoundSuggestedResponseThrough.objects.filter(
-            collection_instrument_id__in=self.instrument_ids
-        ).select_related("suggested_response")
+        suggested_responses = (
+            BoundSuggestedResponseThrough.objects.filter(
+                collection_instrument_id__in=self.instrument_ids
+            )
+            .select_related("suggested_response")
+            .order_by("pk")
+        )  # binding order: the program's
         result = []
         for item in suggested_responses:
             data = model_to_dict(item)

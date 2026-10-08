@@ -39,7 +39,8 @@ class FormFieldMethod(InputMethod):
         if suggested_responses is not None:  # Allow empty list
             choices = [(x["id"], x["data"]) for x in suggested_responses]
         else:
-            choices = list(instrument.suggested_responses.values_list("id", "data"))
+            bound = instrument.bound_suggested_responses.order_by("pk")  # binding order
+            choices = list(bound.values_list("suggested_response_id", "suggested_response__data"))
         if choices:
             field.choices = choices
 

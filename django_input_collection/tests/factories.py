@@ -80,8 +80,9 @@ class CollectionInstrumentFactory(factory.django.DjangoModelFactory):
     def suggested_responses(self, create, extracted, **kwargs):
         if not create:
             return
-        if extracted:
-            self.suggested_responses.add(*extracted)
+        # One at a time: add(*many) binds in set order, so binding order would follow pk hashing.
+        for response in extracted or ():
+            self.suggested_responses.add(response)
 
     @factory.post_generation
     def condition_set(self, create, extracted, **kwargs):

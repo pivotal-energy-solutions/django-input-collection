@@ -228,8 +228,9 @@ class CollectionInstrument(DatesModel, models.Model):
         return Condition.objects.filter(data_getter="instrument:%d" % (self.pk,))
 
     def get_choices(self):
-        """Returns a list of SuggestedResponse ``data`` values."""
-        return list(self.suggested_responses.values_list("data", flat=True))
+        """Returns a list of SuggestedResponse ``data`` values, in binding order."""
+        bound = self.bound_suggested_responses.order_by("pk")
+        return list(bound.values_list("suggested_response__data", flat=True))
 
 
 class ResponsePolicy(DatesModel, models.Model):

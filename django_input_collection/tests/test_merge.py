@@ -350,4 +350,4 @@ class MergeQueryTests(TestCase):
         self.assertEqual(len(merged.answers), len(rows))
 
 
-MEASURED_TWO = 8
+MEASURED_TWO = 7  # bound rows + their responses: one ordered query
