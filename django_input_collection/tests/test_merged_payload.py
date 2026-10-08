@@ -126,6 +126,23 @@ class MergedPayloadTests(TestCase):
         self.assertEqual(len(gate_q["answers"]), 1)
         self.assertEqual(gate_q["answers"][0]["id"], gate_q["answer"]["id"])
 
+    def test_is_required_if_any_request_requires_it(self):
+        a, b = build_checklist(0, prefix="r"), build_checklist(0, prefix="r", answer=False)
+        required = factories.ResponsePolicyFactory.create(nickname="required", required=True)
+        b.collectioninstrument_set.update(response_policy=required)  # optional on owner A
+        data = self.payload(a, b)
+        gate_q = data["sections"][0]["questions"][0]
+        self.assertEqual(gate_q["collection_request"], a.pk)
+        self.assertIs(gate_q["is_required"], True)
+        self.assertEqual(data["progress"]["required_total"], 1)
+        self.assertEqual(data["progress"]["required_answered"], 1)
+
+    def test_optional_everywhere_is_not_required(self):
+        a, b = build_checklist(0, prefix="n"), build_checklist(0, prefix="n", answer=False)
+        data = self.payload(a, b)
+        self.assertIs(data["sections"][0]["questions"][0]["is_required"], False)
+        self.assertEqual(data["progress"]["required_total"], 0)
+
     def test_unanswered_question(self):
         a = build_checklist(0, prefix="u", answer=False)
         gate_q = self.payload(a)["sections"][0]["questions"][0]
@@ -143,7 +160,7 @@ class MergedPayloadTests(TestCase):
                 self.payload(a, b)
             counts.append(len(queries))
         self.assertEqual(counts[0], counts[1])
-        self.assertEqual(counts[0], 8)  # the merge's 8; the payload itself reads nothing
+        self.assertEqual(counts[0], 7)  # the merge's 7; the payload itself reads nothing
 
 
 class MixinMergedGetTests(TestCase):
@@ -195,7 +212,7 @@ class MixinMergedGetTests(TestCase):
     def test_merged_get_queries_do_not_grow_with_questions_or_requests(self):
         self.assertEqual(self.read(3, 2), self.read(9, 2))
         self.assertEqual(self.read(3, 2), self.read(3, 3))
-        self.assertEqual(self.read(3, 2), 8)
+        self.assertEqual(self.read(3, 2), 7)
 
 
 def strip_merge_keys(payload):
@@ -311,4 +328,63 @@ class MergedParityTests(TestCase):
             with CaptureQueriesContext(connection) as queries:
                 Merging()._build_merged_response(object(), None, "rater")
             counts.append(len(queries))
-        self.assertEqual(counts, [8, 8])
+        self.assertEqual(counts, [7, 7])
+
+
+class ChoiceOrderTests(TestCase):
+    """Choices follow binding order (the program's), not SuggestedResponse pk order."""
+
+    def setUp(self):
+        from ..models import SuggestedResponse
+
+        no = SuggestedResponse.objects.create(data="No")  # lower pk
+        yes = SuggestedResponse.objects.create(data="Yes")
+        self.request = factories.CollectionRequestFactory.create()
+        self.instrument = question(self.request, "order-q")
+        for response in (yes, no):  # bound Yes first
+            factories.BoundSuggestedResponseFactory.create(
+                collection_instrument=self.instrument, suggested_response=response
+            )
+
+    def test_specification(self):
+        from ..api.restframework.collection import RestFrameworkCollector
+
+        spec = RestFrameworkCollector(self.request).get_specification()
+        (data,) = spec.get_instruments_info()["instruments"].values()
+        choices = data["response_info"]["suggested_responses"]
+        self.assertEqual([c["data"] for c in choices], ["Yes", "No"])
+
+    def test_merged_and_single_request_payloads(self):
+        collector = collectors.Collector(self.request)
+        consumer = ChecklistConsumerMixin()
+        single = consumer._build_checklist_response(self.request, collector, None, "rater")
+        merged = self.payload_values(
+            merged_checklist_payload(
+                merge_requests([self.request], collectors={self.request.pk: collector}),
+                collectors={self.request.pk: collector},
+            )
+        )
+        self.assertEqual(self.payload_values(single), ["Yes", "No"])
+        self.assertEqual(merged, ["Yes", "No"])
+
+    def test_choices_and_valid_responses(self):
+        self.assertEqual(self.instrument.get_choices(), ["Yes", "No"])
+        valid = ChecklistConsumerMixin()._get_valid_responses(self.instrument)
+        self.assertEqual(valid, [{"value": "Yes"}, {"value": "No"}])
+
+    @staticmethod
+    def payload_values(payload):
+        (question_,) = payload["sections"][0]["questions"]
+        return [r["value"] for r in question_["responses"]]
+
+    def test_bound_queries_are_ordered(self):
+        """SQLite returns pk order anyway; MariaDB doesn't without ORDER BY. Pin the SQL."""
+        from ..api.restframework.collection import RestFrameworkCollector
+        from ..collection.merge import load_instruments
+
+        spec = RestFrameworkCollector(self.request).get_specification()
+        for load in (lambda: spec.suggested_responses, lambda: load_instruments([self.request])):
+            with CaptureQueriesContext(connection) as queries:
+                load()
+            (sql,) = [q["sql"] for q in queries if "boundsuggestedresponse" in q["sql"].lower()]
+            self.assertIn("ORDER BY", sql)

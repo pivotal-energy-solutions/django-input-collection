@@ -1020,10 +1020,8 @@ class ChecklistConsumerMixin:
 
     def _get_valid_responses(self, instrument) -> Optional[list]:
         """Get valid responses for multiple-choice instruments."""
-        if not instrument.suggested_responses.exists():
-            return None
-
-        return [{"value": r.data} for r in instrument.suggested_responses.all()]
+        values = instrument.get_choices()  # binding order
+        return [{"value": value} for value in values] or None
 
     def _process_answer(
         self, collector, answer_data: dict, home_status, user, user_role: str

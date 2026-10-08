@@ -45,13 +45,13 @@ class MixinQueryTests(TestCase):
         self.assertEqual(small["progress"]["total"], 4)
         self.assertEqual(large["progress"]["total"], 10)
         self.assertEqual(small_count, large_count)
-        self.assertEqual(small_count, 8)  # 10.0.0: grew by ~6 per question
+        self.assertEqual(small_count, 7)  # 10.0.0: grew by ~6 per question
 
     def test_query_count_is_pinned(self):
-        # instruments, bound responses (2), condition tree (4), answers (reused by conditions)
+        # instruments, bound responses (1, ordered), condition tree (4), answers (reused by conditions)
         request = build_checklist(27, prefix="x")
         collector = collectors.Collector(request)
-        with self.assertNumQueries(8):
+        with self.assertNumQueries(7):
             Consumer()._build_checklist_response(request, collector, None, "rater")
 
     def test_visibility_is_unchanged(self):
@@ -65,7 +65,7 @@ class MixinQueryTests(TestCase):
 
     def test_a_filtering_collector_costs_one_more_query(self):
         request = build_checklist(27, prefix="f")
-        with self.assertNumQueries(9):  # its condition inputs differ from the answers
+        with self.assertNumQueries(8):  # its condition inputs differ from the answers
             Consumer()._build_checklist_response(request, HideYes(request), None, "rater")
 
     def test_display_ties_are_by_pk_not_segment(self):
@@ -167,7 +167,7 @@ class MixinEquivalenceTests(TestCase):
             with CaptureQueriesContext(connection) as queries:
                 shown(request, collector)
             counts.append(len(queries))
-        self.assertEqual(counts, [8, 8])
+        self.assertEqual(counts, [7, 7])
 
     def test_no_instrument_conditions_skip_the_condition_rows(self):
         mine = get_user_model().objects.create(username="mine")
@@ -176,7 +176,7 @@ class MixinEquivalenceTests(TestCase):
             for instrument in CollectionInstrument.objects.filter(collection_request=request):
                 instrument.conditions.update(data_getter="attr:measure_id")
             collector = collectors.Collector(request, user=mine)  # would need its own query
-            with self.assertNumQueries(8):
+            with self.assertNumQueries(7):
                 shown(request, collector)
 
 

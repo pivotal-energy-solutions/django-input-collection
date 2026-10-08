@@ -8,6 +8,8 @@ __credits__ = ["Steven Klass"]
 from collections import defaultdict
 from collections.abc import Callable
 
+from django.db.models import Prefetch
+
 from ..managers.collected_input import CollectedInputQuerySet
 from ..managers.collection_instrument import CONDITION_PREFETCH
 from .answer_index import AnswerIndex, filter_key
@@ -22,11 +24,18 @@ from .merged_checklist import (  # noqa: F401 (re-exported: the public names are
 # owner(measure_id, instruments in request order, newest answer or None) -> the instrument shown
 Owner = Callable[[str, tuple, object], object]
 
-# Suggested values come from the bound rows; the plain suggested_responses M2M is not prefetched.
-INSTRUMENT_PREFETCH = (
-    "bound_suggested_responses__suggested_response",
-    *CONDITION_PREFETCH,
-)
+
+def bound_responses_prefetch():
+    """Bound rows in binding order (pk): the order the program defines its choices."""
+    from ..models import get_boundsuggestedresponse_model
+
+    bound = get_boundsuggestedresponse_model().objects.select_related("suggested_response")
+    return Prefetch("bound_suggested_responses", queryset=bound.order_by("pk"))
+
+
+def instrument_prefetch() -> tuple:
+    # Suggested values come from the bound rows; the plain suggested_responses M2M is not prefetched.
+    return (bound_responses_prefetch(), *CONDITION_PREFETCH)
 
 
 def load_instruments(requests) -> list:
@@ -43,7 +52,7 @@ def load_instruments(requests) -> list:
     instruments = list(
         CollectionInstrument.objects.filter(collection_request_id__in=request_ids)
         .select_related("group", "type", "response_policy", "measure")
-        .prefetch_related(*INSTRUMENT_PREFETCH)
+        .prefetch_related(*instrument_prefetch())
         .order_by("collection_request_id", *CollectionInstrument._meta.ordering)
     )
     share_requests(instruments, [r for r in requests if not isinstance(r, int)])
@@ -171,3 +180,9 @@ def merge_requests(
     return MergedChecklist(
         requests, collectors, by_request, answers, indexes, owner, answer_rows=answer_rows
     )
+
+
+def __getattr__(name):
+    if name == "INSTRUMENT_PREFETCH":  # pre-11.0.2 name; built lazily (needs the bound model)
+        return instrument_prefetch()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -203,10 +203,7 @@ class CollectionRequestExporter:
 
     def _export_responses(self, instrument) -> list:
         """Export suggested responses for an instrument."""
-        responses = []
-        for sr in instrument.suggested_responses.all():
-            responses.append(sr.data)
-        return responses
+        return instrument.get_choices()  # binding order
 
     def _export_conditions(self, instrument) -> list:
         """

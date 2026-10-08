@@ -77,10 +77,7 @@ class CollectionInstrumentAdmin(admin.ModelAdmin):
     _has_help.boolean = True
 
     def _suggested_responses(self, instance):
-        queryset = instance.suggested_responses
-        if queryset:
-            return "; ".join(queryset.values_list("data", flat=True))
-        return "(None)"
+        return "; ".join(instance.get_choices()) or "(None)"
 
     _suggested_responses.short_description = """Suggested responses"""
 
