@@ -59,6 +59,84 @@ def load_instruments(requests) -> list:
     return instruments
 
 
+def load_condition_instruments(request, others) -> tuple[list, list]:
+    """``load_instruments`` over ``request`` plus ``others``, and the requests that have any.
+
+    ``others`` is requests or pks, or a CollectionRequest QuerySet: a QuerySet is folded into the
+    one instrument query as a subquery, its requests come back on the instrument rows, and its
+    ``order_by`` (single-valued fields of the request) orders them, so it costs no query. Returns
+    ``(instruments, [request, *others])``: others in their order, as given (a QuerySet's as
+    objects), less ``request`` itself and any with no instrument.
+    """
+    from django.db.models import QuerySet
+
+    order = _subquery_order(others) if isinstance(others, QuerySet) else None
+    if order is None:
+        given = {}  # pk -> request as given, first occurrence wins
+        for other in others:
+            if _pk(other) != request.pk:
+                given.setdefault(_pk(other), other)
+        instruments = load_instruments([request, *given])
+        share_requests(instruments, [r for r in given.values() if not isinstance(r, int)])
+        found = {i.collection_request_id for i in instruments}
+        return instruments, [request, *[r for pk, r in given.items() if pk in found]]
+    instruments = _load_with_subquery(request, others, order)
+    first = {}  # other request id -> (its order values, request)
+    for instrument in instruments:
+        if instrument.collection_request_id != request.pk:
+            values = tuple(getattr(instrument, f"_load_order_{i}") for i in range(len(order)))
+            first.setdefault(
+                instrument.collection_request_id, (values, instrument.collection_request)
+            )
+    ordered = list(first.values())
+    for position in reversed(range(len(order))):  # stable sorts, last key first
+        ordered.sort(
+            key=lambda v: (v[0][position] is None, v[0][position]), reverse=order[position][1]
+        )
+    requests = [request, *[r for _values, r in ordered]]
+    share_requests(instruments, requests)  # one object per request
+    return instruments, requests
+
+
+def _pk(request):
+    return getattr(request, "pk", request)
+
+
+def _subquery_order(queryset):
+    """[(request field, descending), ...] ending in pk, or None when it can't ride a subquery."""
+    if queryset.query.is_sliced:
+        return None
+    fields = queryset.query.order_by
+    if not fields and queryset.query.default_ordering:
+        fields = queryset.model._meta.ordering
+    order = []
+    for field in fields:
+        if not isinstance(field, str) or field == "?" or "." in field:
+            return None  # an expression or raw SQL: evaluate the queryset instead
+        order.append((field.lstrip("-"), field.startswith("-")))
+    return [*order, ("pk", False)]
+
+
+def _load_with_subquery(request, others, order):
+    from django.db.models import F, Q
+
+    from ..models import CollectionInstrument
+
+    annotations = {
+        f"_load_order_{i}": F(f"collection_request__{field}") for i, (field, _d) in enumerate(order)
+    }
+    return list(
+        CollectionInstrument.objects.filter(
+            Q(collection_request_id=request.pk)
+            | Q(collection_request_id__in=others.order_by().values("pk"))
+        )
+        .select_related("group", "type", "response_policy", "measure", "collection_request")
+        .annotate(**annotations)
+        .prefetch_related(*instrument_prefetch())
+        .order_by("collection_request_id", *CollectionInstrument._meta.ordering)
+    )
+
+
 def share_requests(instruments, requests):
     """Point instruments at the caller's request objects, so per-request caches (e.g. a reverse
     one-to-one to the request's owner) are hit once per request, not once per instrument."""
