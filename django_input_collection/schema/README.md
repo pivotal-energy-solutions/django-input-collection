@@ -88,6 +88,12 @@ Each question in a section can have the following fields:
 | `float` | Decimal number input |
 | `date` | Date input |
 | `cascading-select` | Hierarchical selection |
+| `evidence` | Answered by uploaded files; no responses. Stores `"Uploaded"` |
+
+#### Constraints
+
+- `constraints.accept` (evidence only): lists `photo` / `video` / `document` (all three when absent).
+  Evidence questions take no responses; the stored answer is `"Uploaded"`, the files are the answer.
 
 #### test_requirement_type Values
 

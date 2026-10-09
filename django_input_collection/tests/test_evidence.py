@@ -7,11 +7,14 @@ __credits__ = ["Steven K"]
 
 import datetime
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from ..collection.methods import EVIDENCE_INPUT, EvidenceMethod
 from ..models.utils import clone_collection_request
 from ..schema.builder import CollectionRequestBuilder
 from ..schema.exporter import CollectionRequestExporter
+from ..schema.serializers import CollectionSchemaSerializer
 from . import factories
 
 
@@ -52,3 +55,51 @@ class InstrumentConstraintsTests(TestCase):
         cloned = clone_collection_request(instrument.collection_request)
         copy = cloned.collectioninstrument_set.get(measure_id=instrument.measure_id)
         self.assertEqual(copy.constraints, {"accept": ["photo"]})
+
+
+class EvidenceSchemaTests(TestCase):
+    def valid(self, **question_extra):
+        serializer = CollectionSchemaSerializer(data=schema(**question_extra))
+        return serializer.is_valid(), serializer.errors
+
+    def test_evidence_with_accept_is_valid(self):
+        ok, errors = self.valid(type="evidence", constraints={"accept": ["photo"]})
+        self.assertTrue(ok, errors)
+
+    def test_evidence_without_constraints_is_valid(self):
+        ok, errors = self.valid(type="evidence")
+        self.assertTrue(ok, errors)
+
+    def test_evidence_refuses_responses(self):
+        ok, _ = self.valid(type="evidence", responses=["Upload Photo"])
+        self.assertFalse(ok)
+
+    def test_evidence_refuses_other_constraints(self):
+        ok, _ = self.valid(type="evidence", constraints={"min": 1})
+        self.assertFalse(ok)
+
+    def test_accept_refuses_unknown_kinds_and_empty_lists(self):
+        self.assertFalse(self.valid(type="evidence", constraints={"accept": ["audio"]})[0])
+        self.assertFalse(self.valid(type="evidence", constraints={"accept": []})[0])
+
+    def test_accept_is_refused_on_other_types(self):
+        self.assertFalse(self.valid(type="open", constraints={"accept": ["photo"]})[0])
+
+    def test_builder_and_exporter_keep_the_type(self):
+        request = CollectionRequestBuilder().build(
+            schema(type="evidence", constraints={"accept": ["photo"]})
+        )
+        instrument = request.collectioninstrument_set.get()
+        self.assertEqual(instrument.type_id, "evidence")
+        self.assertEqual(instrument.bound_suggested_responses.count(), 0)
+        question = CollectionRequestExporter().export(request)["sections"][0]["questions"][0]
+        self.assertEqual(question["type"], "evidence")
+        self.assertEqual(question["constraints"], {"accept": ["photo"]})
+
+
+class EvidenceMethodTests(TestCase):
+    def test_only_the_marker_is_an_answer(self):
+        method = EvidenceMethod()
+        self.assertEqual(method.clean_input(EVIDENCE_INPUT), "Uploaded")
+        with self.assertRaises(ValidationError):
+            method.clean_input("Upload Photo")

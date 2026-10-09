@@ -10,6 +10,8 @@ from typing import Callable
 
 from rest_framework import serializers
 
+from ..collection.methods import EVIDENCE_KINDS, EVIDENCE_TYPE
+
 log = logging.getLogger(__name__)
 
 
@@ -108,6 +110,7 @@ class TypeConstraintsSerializer(serializers.Serializer):
     - integer/float: min, max
     - open: max_length
     - date: min_date, max_date (ISO format strings)
+    - evidence: accept (photo, video, document)
     """
 
     # Numeric constraints (integer, float)
@@ -120,6 +123,11 @@ class TypeConstraintsSerializer(serializers.Serializer):
     # Date constraints (ISO format: YYYY-MM-DD)
     min_date = serializers.DateField(required=False, allow_null=True)
     max_date = serializers.DateField(required=False, allow_null=True)
+
+    # Evidence (evidence): the kinds of file that answer it
+    accept = serializers.ListField(
+        child=serializers.ChoiceField(choices=EVIDENCE_KINDS), required=False, allow_empty=False
+    )
 
     def validate(self, data):
         """Validate constraint combinations"""
@@ -353,6 +361,7 @@ class QuestionSerializer(serializers.Serializer):
         "float",
         "date",
         "cascading-select",
+        "evidence",
     ]
 
     measure_id = serializers.SlugField(
@@ -432,6 +441,13 @@ class QuestionSerializer(serializers.Serializer):
                 {"responses": "Multiple-choice questions require responses or response_set"}
             )
 
+        if question_type == EVIDENCE_TYPE and (
+            responses or response_set or data.get("response_flags")
+        ):
+            raise serializers.ValidationError(
+                {"responses": "Evidence questions are answered by files, not responses"}
+            )
+
         # Validate response_flags keys match responses (if inline responses provided)
         response_flags = data.get("response_flags", {})
         if response_flags and responses:
@@ -482,6 +498,14 @@ class QuestionSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     {
                         "constraints": f"Invalid constraints for date type: {invalid}. Use min_date/max_date."
+                    }
+                )
+        elif question_type == EVIDENCE_TYPE:
+            invalid = provided - {"accept"}
+            if invalid:
+                raise serializers.ValidationError(
+                    {
+                        "constraints": f"Invalid constraints for evidence type: {invalid}. Use accept."
                     }
                 )
         elif question_type in ("multiple-choice", "cascading-select"):

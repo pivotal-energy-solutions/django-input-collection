@@ -56,6 +56,7 @@ class CollectionRequestBuilder:
         "float": "float",
         "date": "date",
         "cascading-select": "cascading-select",
+        "evidence": "evidence",
     }
 
     # Match type mappings

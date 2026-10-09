@@ -45,6 +45,7 @@ class CollectionRequestExporter:
         "float": "float",
         "date": "date",
         "cascading-select": "cascading-select",
+        "evidence": "evidence",
     }
 
     # Reverse map from requirement_type to logic
