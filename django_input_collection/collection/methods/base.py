@@ -80,7 +80,7 @@ class InputMethod(object):
         # Flatten defined errors
         if self.errors is None:
             self.errors = {}
-        self.errors = dict(base_errors, **self.errors)
+        self.errors = {**base_errors, **self.errors}
 
     def update(self, *args, **kwargs):
         _raise = kwargs.pop("_raise", True)
@@ -153,23 +153,23 @@ class InputMethod(object):
         return format_lazy(message, **format_kwargs)
 
     def get_best_exception_code(self, exception):
-        """Translate given exception to best isinstance() match in the ``errors`` keys."""
-        exception_rules = list(
-            code for code, message in self.errors.items() if isinstance(code, Exception)
-        )
+        """Translate given exception to the most specific matching exception class in ``errors``."""
+
+        def as_classes(code):
+            classes = code if isinstance(code, tuple) else (code,)
+            if classes and all(
+                isinstance(c, type) and issubclass(c, BaseException) for c in classes
+            ):
+                return classes
+            return None
 
         best_code = None
-        for lookup_types in exception_rules:
-            is_exception = isinstance(lookup_types, Exception)
-            use_isinstance = isinstance(lookup_types, tuple) and not isinstance(
-                lookup_types[0], Exception
-            )
-            if not is_exception and not use_isinstance:
+        for code in self.errors:
+            classes = as_classes(code)
+            if not classes or not isinstance(exception, classes):
                 continue
-
-            is_applicable = isinstance(exception, lookup_types)
-            is_more_specific = best_code is None or isinstance(exception, best_code)
-            if is_applicable and is_more_specific:
-                best_code = lookup_types
+            # More specific when every class in this key narrows the current best
+            if best_code is None or all(issubclass(c, best_code) for c in classes):
+                best_code = code
 
         return best_code
