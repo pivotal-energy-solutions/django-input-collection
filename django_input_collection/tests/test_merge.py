@@ -320,6 +320,60 @@ class MergeTests(TestCase):
             self.assertTrue(merged.questions["shared"].is_required)
             merged.progress({})
 
+    def envelope(self):
+        return [q.measure_id for q in self.merged().sections[0].questions]
+
+    def test_a_dependent_from_another_request_follows_its_parent(self):
+        question(self.a, "have-hvac", group="Envelope", order=3)
+        question(self.a, "after-hvac", group="Envelope", order=4)
+        gate(question(self.b, "hvac-model", group="Envelope", order=0), "have-hvac")
+        self.assertEqual(
+            self.envelope(), ["only-a", "shared", "have-hvac", "hvac-model", "after-hvac"]
+        )
+
+    def test_a_dependent_in_its_parents_request_keeps_its_order(self):
+        question(self.a, "have-hvac", group="Envelope", order=3)
+        question(self.a, "after-hvac", group="Envelope", order=4)
+        gate(question(self.a, "hvac-model", group="Envelope", order=9), "have-hvac")
+        self.assertEqual(
+            self.envelope(), ["only-a", "shared", "have-hvac", "after-hvac", "hvac-model"]
+        )
+
+    def test_a_dependent_in_another_section_stays_in_its_section(self):
+        question(self.a, "have-hvac", group="Envelope", order=3)
+        gate(question(self.b, "hvac-model", group="Ducts", order=5), "have-hvac")
+        ducts = next(s for s in self.merged().sections if s.name == "Ducts")
+        self.assertEqual([q.measure_id for q in ducts.questions], ["only-b", "hvac-model"])
+
+    def test_a_chain_across_requests_stays_together(self):
+        question(self.a, "have-hvac", group="Envelope", order=3)
+        question(self.a, "after-hvac", group="Envelope", order=4)
+        gate(question(self.b, "hvac-model", group="Envelope", order=0), "have-hvac")
+        gate(question(self.a, "model-photo", group="Envelope", order=8), "hvac-model")
+        self.assertEqual(
+            self.envelope(),
+            ["only-a", "shared", "have-hvac", "hvac-model", "model-photo", "after-hvac"],
+        )
+
+    def test_a_condition_cycle_drops_no_question(self):
+        one = question(self.a, "one", group="Envelope", order=3)
+        two = question(self.b, "two", group="Envelope", order=0)
+        gate(one, "two")
+        gate(two, "one")
+        self.assertEqual(sorted(self.envelope()), ["one", "only-a", "shared", "two"])
+
+    def test_ordering_adds_no_queries(self):
+        gate(question(self.b, "hvac-model", group="Envelope", order=0), "only-a")
+        requests = (self.a, self.b)
+        collectors = coop(*requests)
+        with CaptureQueriesContext(connection) as before:
+            merge_requests(requests, collectors=collectors)
+        self.assertGreater(len(before.captured_queries), 0)
+        # dependents() after the build reads the same prefetched conditions: no new queries
+        merged = merge_requests(requests, collectors=collectors)
+        with self.assertNumQueries(0):
+            merged.dependents("only-a")
+
 
 class MergeQueryTests(TestCase):
     def requests(self, size, count):

@@ -97,7 +97,7 @@ class MergedChecklist:
             buckets[question.section].append(question)
         sections = []
         for name in names:
-            items = sorted(buckets[name], key=self._question_key)
+            items = self._follow_parents(sorted(buckets[name], key=self._question_key))
             if items:
                 sections.append(MergedSection(name, len(sections), items))
         return sections
@@ -106,6 +106,47 @@ class MergedChecklist:
         instrument = question.instrument
         position = self._position[instrument.collection_request_id]
         return position, instrument.order or 0, instrument.pk
+
+    def _follow_parents(self, items) -> list:
+        """A question gated on another request's question in this section sits right after it;
+        a request's own order already places its dependants (Steven, 2026-10-08)."""
+        here = {q.measure_id: q for q in items}
+        children = self._children()
+        parent_of = {}
+        for question in items:
+            for child in children.get(question.measure_id, ()):
+                parent_of.setdefault(child, question.measure_id)  # the earliest parent wins
+        movers = set()
+        for question in items:
+            parent = here.get(parent_of.get(question.measure_id))
+            if parent is None:
+                continue
+            crosses = (
+                parent.instrument.collection_request_id != question.instrument.collection_request_id
+            )
+            if crosses or parent.measure_id in movers:  # a moved parent takes its chain along
+                movers.add(question.measure_id)
+        if not movers:
+            return items
+        placed, seen = [], set()
+
+        def place(question):
+            if question.measure_id in seen:
+                return
+            seen.add(question.measure_id)
+            placed.append(question)
+            for child in items:
+                if (
+                    child.measure_id in movers
+                    and parent_of[child.measure_id] == question.measure_id
+                ):
+                    place(child)
+
+        for question in items:
+            if question.measure_id not in movers:
+                place(question)
+        placed.extend(q for q in items if q.measure_id not in seen)  # cycles: keep every question
+        return placed
 
     def owner(self, measure_id):
         return self.questions[measure_id].instrument
