@@ -117,15 +117,22 @@ class MergedChecklist:
             for child in children.get(question.measure_id, ()):
                 parent_of.setdefault(child, question.measure_id)  # the earliest parent wins
         movers = set()
-        for question in items:
-            parent = here.get(parent_of.get(question.measure_id))
-            if parent is None:
-                continue
-            crosses = (
-                parent.instrument.collection_request_id != question.instrument.collection_request_id
-            )
-            if crosses or parent.measure_id in movers:  # a moved parent takes its chain along
-                movers.add(question.measure_id)
+        grown = True
+        while grown:  # to a fixed point: a child may sort before its moved parent
+            grown = False
+            for question in items:
+                if question.measure_id in movers:
+                    continue
+                parent = here.get(parent_of.get(question.measure_id))
+                if parent is None:
+                    continue
+                crosses = (
+                    parent.instrument.collection_request_id
+                    != question.instrument.collection_request_id
+                )
+                if crosses or parent.measure_id in movers:  # a moved parent takes its chain along
+                    movers.add(question.measure_id)
+                    grown = True
         if not movers:
             return items
         placed, seen = [], set()

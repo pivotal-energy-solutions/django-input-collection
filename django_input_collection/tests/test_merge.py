@@ -355,6 +355,16 @@ class MergeTests(TestCase):
             ["only-a", "shared", "have-hvac", "hvac-model", "model-photo", "after-hvac"],
         )
 
+    def test_a_chain_listed_child_first_stays_together(self):
+        question(self.a, "have-hvac", group="Envelope", order=3)
+        question(self.a, "after-hvac", group="Envelope", order=4)
+        gate(question(self.b, "hvac-model", group="Envelope", order=5), "have-hvac")
+        gate(question(self.b, "model-photo", group="Envelope", order=0), "hvac-model")
+        self.assertEqual(
+            self.envelope(),
+            ["only-a", "shared", "have-hvac", "hvac-model", "model-photo", "after-hvac"],
+        )
+
     def test_a_condition_cycle_drops_no_question(self):
         one = question(self.a, "one", group="Envelope", order=3)
         two = question(self.b, "two", group="Envelope", order=0)
