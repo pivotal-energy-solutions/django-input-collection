@@ -45,6 +45,7 @@ class CollectionRequestExporter:
         "float": "float",
         "date": "date",
         "cascading-select": "cascading-select",
+        "evidence": "evidence",
     }
 
     # Reverse map from requirement_type to logic
@@ -173,6 +174,8 @@ class CollectionRequestExporter:
             question["help_text"] = instrument.help
         if instrument.context:
             question["context"] = instrument.context
+        if instrument.constraints:
+            question["constraints"] = instrument.constraints
 
         # Export test_requirement_type if not default
         if instrument.test_requirement_type and instrument.test_requirement_type != "all-pass":

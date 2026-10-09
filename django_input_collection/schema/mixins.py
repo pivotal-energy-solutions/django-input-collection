@@ -18,6 +18,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
+from ..collection.methods import EVIDENCE_TYPE
 from .serializers import ChecklistSchemaSerializer
 from .builder import CollectionRequestBuilder
 from .exporter import CollectionRequestExporter
@@ -903,6 +904,7 @@ class ChecklistConsumerMixin:
             "is_required": is_required,
             "is_visible": is_visible,
             "constraints": self._get_instrument_constraints(collector, instrument),
+            "evidence_only": self._is_evidence_only(instrument),
             "responses": self._get_responses_with_flags(instrument),
             "conditions": self._get_conditions(instrument, instrument_by_measure),
             "answer": self._serialize_answer(collected_input) if collected_input else None,
@@ -1046,14 +1048,21 @@ class ChecklistConsumerMixin:
             return None
 
     def _get_instrument_constraints(self, collector, instrument) -> Optional[dict]:
-        """Get constraints for numeric instruments."""
+        """The method's constraints; else the ones the schema stored on the instrument."""
+        constraints = None
         try:
             method = collector.get_method(instrument)
             if hasattr(method, "get_constraints"):
-                return method.get_constraints()
+                constraints = method.get_constraints()
         except Exception:
             pass
-        return None
+        if not constraints and instrument.constraints:
+            return instrument.constraints
+        return constraints
+
+    def _is_evidence_only(self, instrument) -> bool:
+        """Whether the question's files are its answer (nothing to type or choose)."""
+        return instrument.type_id == EVIDENCE_TYPE
 
     def _get_valid_responses(self, instrument) -> Optional[list]:
         """Get valid responses for multiple-choice instruments."""

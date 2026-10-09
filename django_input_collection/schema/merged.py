@@ -30,6 +30,7 @@ def _question(consumer, question, collectors, visible, by_measure, answer_payloa
         "is_required": question.is_required,  # any request requiring it; None without a policy
         "is_visible": visible,
         "constraints": consumer._get_instrument_constraints(collector, instrument),
+        "evidence_only": consumer._is_evidence_only(instrument),
         "responses": consumer._get_responses_with_flags(instrument),  # bound rows prefetched
         "conditions": consumer._get_conditions(instrument, by_measure),
         "answer": answer_payload(question.answer) if question.answer is not None else None,

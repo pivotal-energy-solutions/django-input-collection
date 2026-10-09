@@ -129,6 +129,8 @@ class CollectionInstrument(DatesModel, models.Model):
     help = models.TextField(blank=True)  # long text, always hidden unless requested
     # What the answer is evidence for, read by outside systems; never by the collector.
     context = models.JSONField(default=dict, blank=True)
+    # Type-specific limits from the checklist schema, e.g. an evidence question's "accept".
+    constraints = models.JSONField(default=dict, blank=True)
 
     response_policy = models.ForeignKey("ResponsePolicy", on_delete=models.CASCADE)
     suggested_responses = models.ManyToManyField(
