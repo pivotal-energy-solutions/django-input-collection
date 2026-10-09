@@ -170,7 +170,8 @@ class MergedChecklist:
         keys = ("total", "answered", "visible", "required_total", "required_answered")
         progress = dict.fromkeys(keys, 0)
         for question in self.questions.values():
-            required = bool(question.is_required)  # as the payload's is_required
+            shown = visibility.get(question.measure_id) is not False  # unknown still counts
+            required = bool(question.is_required) and shown  # as the payload's is_required
             progress["total"] += 1
             progress["visible"] += bool(visibility.get(question.measure_id))
             progress["required_total"] += required

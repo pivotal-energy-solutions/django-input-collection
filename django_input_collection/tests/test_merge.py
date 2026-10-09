@@ -253,6 +253,37 @@ class MergeTests(TestCase):
         self.assertEqual(merged.progress({})["required_total"], 1)
         self.assertEqual(merged.progress({})["required_answered"], 1)
 
+    def test_a_hidden_required_question_is_not_counted(self):
+        self.require(self.a, "only-a")
+        gate(self.a.collectioninstrument_set.get(measure_id="only-a"), "shared")  # shown on "yes"
+        self.answer(self.a, "shared", "no")
+        merged = self.merged()
+        visibility = merged.evaluate()
+        self.assertIs(visibility["only-a"], False)
+        progress = merged.progress(visibility)
+        self.assertEqual(progress["required_total"], 0)
+        self.assertEqual(progress["required_answered"], 0)
+
+    def test_a_hidden_answered_required_question_is_not_counted(self):
+        self.require(self.a, "only-a")
+        gate(self.a.collectioninstrument_set.get(measure_id="only-a"), "shared")
+        self.answer(self.a, "only-a", "kept")  # answered while shown, then hidden
+        self.answer(self.a, "shared", "no")
+        merged = self.merged()
+        progress = merged.progress(merged.evaluate())
+        self.assertEqual(progress["required_total"], 0)
+        self.assertEqual(progress["required_answered"], 0)
+        self.assertEqual(progress["answered"], 2)  # the answer itself is kept
+
+    def test_a_shown_required_question_counts(self):
+        self.require(self.a, "only-a")
+        gate(self.a.collectioninstrument_set.get(measure_id="only-a"), "shared")
+        self.answer(self.a, "shared", "yes")
+        merged = self.merged()
+        progress = merged.progress(merged.evaluate())
+        self.assertEqual(progress["required_total"], 1)
+        self.assertEqual(progress["required_answered"], 0)
+
     def test_required_if_any_request_requires_it(self):
         self.require(self.b, "shared")  # optional on the owner (A), required on B
         merged = self.merged()
