@@ -212,6 +212,15 @@ class CollectionRequestBuilder:
             )
         return policy
 
+    @staticmethod
+    def _stored_constraints(question: dict) -> dict:
+        """The question's constraints as stored: unset values dropped, dates as ISO text."""
+        stored = {}
+        for key, value in (question.get("constraints") or {}).items():
+            if value is not None:
+                stored[key] = value.isoformat() if hasattr(value, "isoformat") else value
+        return stored
+
     def _build_instrument(
         self,
         collection_request: CollectionRequest,
@@ -248,6 +257,7 @@ class CollectionRequestBuilder:
             description=question.get("description", ""),
             help=question.get("help_text", ""),
             context=question.get("context") or {},
+            constraints=self._stored_constraints(question),
             order=order,
             test_requirement_type=question.get("test_requirement_type", "all-pass"),
         )
