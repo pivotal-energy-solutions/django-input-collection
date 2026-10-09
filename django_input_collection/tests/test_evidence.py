@@ -106,8 +106,11 @@ class EvidenceMethodTests(TestCase):
     def test_only_the_marker_is_an_answer(self):
         method = EvidenceMethod()
         self.assertEqual(method.clean_input(EVIDENCE_INPUT), "Uploaded")
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as ctx:
             method.clean_input("Upload Photo")
+        self.assertEqual(
+            ctx.exception.messages, ["An evidence question is answered by uploading a file."]
+        )
 
 
 class EvidencePayloadTests(TestCase):
