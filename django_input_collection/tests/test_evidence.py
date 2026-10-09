@@ -10,12 +10,17 @@ import datetime
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from ..collection import collectors
+from ..collection.merge import merge_requests
 from ..collection.methods import EVIDENCE_INPUT, EvidenceMethod
 from ..models.utils import clone_collection_request
 from ..schema.builder import CollectionRequestBuilder
 from ..schema.exporter import CollectionRequestExporter
+from ..schema.merged import merged_checklist_payload
+from ..schema.mixins import ChecklistConsumerMixin
 from ..schema.serializers import CollectionSchemaSerializer
 from . import factories
+from .test_merge import coop
 
 
 def schema(**question_extra):
@@ -103,3 +108,38 @@ class EvidenceMethodTests(TestCase):
         self.assertEqual(method.clean_input(EVIDENCE_INPUT), "Uploaded")
         with self.assertRaises(ValidationError):
             method.clean_input("Upload Photo")
+
+
+class EvidencePayloadTests(TestCase):
+    def payload(self, request, **kwargs):
+        collectors_ = coop(request)
+        merged = merge_requests([request], collectors=collectors_)
+        data = merged_checklist_payload(merged, collectors=collectors_, **kwargs)
+        return data["sections"][0]["questions"][0]
+
+    def test_an_evidence_question_says_so_with_its_accept(self):
+        request = CollectionRequestBuilder().build(
+            schema(type="evidence", constraints={"accept": ["photo"]})
+        )
+        question = self.payload(request)
+        self.assertTrue(question["evidence_only"])
+        self.assertEqual(question["constraints"], {"accept": ["photo"]})
+
+    def test_other_questions_are_not_evidence_only(self):
+        question = self.payload(CollectionRequestBuilder().build(schema()))
+        self.assertFalse(question["evidence_only"])
+
+    def test_a_consumer_decides(self):
+        class Everything(ChecklistConsumerMixin):
+            def _is_evidence_only(self, instrument):
+                return True
+
+        request = CollectionRequestBuilder().build(schema())
+        self.assertTrue(self.payload(request, consumer=Everything())["evidence_only"])
+
+    def test_the_single_request_payload_carries_it_too(self):
+        request = CollectionRequestBuilder().build(schema(type="evidence"))
+        data = ChecklistConsumerMixin()._build_checklist_response(
+            request, collectors.Collector(request), None, "rater"
+        )
+        self.assertTrue(data["sections"][0]["questions"][0]["evidence_only"])

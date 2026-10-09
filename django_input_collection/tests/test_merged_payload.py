@@ -34,6 +34,7 @@ QUESTION_KEYS = {
     "is_required",
     "is_visible",
     "constraints",
+    "evidence_only",
     "responses",
     "conditions",
     "answer",
