@@ -41,13 +41,10 @@ class EvidenceMethod(InputMethod):
     """An evidence question: no value to type or choose, only the marker that files arrived."""
 
     def clean_input(self, data):
-        # Base get_error can't resolve class-keyed errors (KeyError None), so raise directly
-        try:
-            return self.clean(data)
-        except ValueError as exception:
-            raise ValidationError(str(exception))
+        # Base clean_input funnels every exception through a broken error lookup (KeyError)
+        return self.clean(data)
 
     def clean(self, data):
         if data != EVIDENCE_INPUT:
-            raise ValueError("An evidence question is answered by uploading a file.")
+            raise ValidationError("An evidence question is answered by uploading a file.")
         return data

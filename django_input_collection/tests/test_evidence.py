@@ -143,3 +143,8 @@ class EvidencePayloadTests(TestCase):
             request, collectors.Collector(request), None, "rater"
         )
         self.assertTrue(data["sections"][0]["questions"][0]["evidence_only"])
+
+    def test_clean_raises_validation_error_directly(self):
+        self.assertEqual(EvidenceMethod().clean(EVIDENCE_INPUT), "Uploaded")
+        with self.assertRaises(ValidationError):
+            EvidenceMethod().clean("x")
