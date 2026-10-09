@@ -17,6 +17,7 @@ __all__ = [
 EVIDENCE_TYPE = "evidence"
 EVIDENCE_INPUT = "Uploaded"  # what an evidence answer stores; its files are the answer
 EVIDENCE_KINDS = ("photo", "video", "document")
+_EVIDENCE_ERROR = _("An evidence question is answered by uploading a file.")
 
 
 class CharMethod(InputMethod):
@@ -40,11 +41,11 @@ class FloatMethod(InputMethod):
 class EvidenceMethod(InputMethod):
     """An evidence question: no value to type or choose, only the marker that files arrived."""
 
-    def clean_input(self, data):
-        # Base clean_input funnels every exception through a broken error lookup (KeyError)
-        return self.clean(data)
+    errors = {
+        ValidationError: _EVIDENCE_ERROR,
+    }
 
     def clean(self, data):
         if data != EVIDENCE_INPUT:
-            raise ValidationError("An evidence question is answered by uploading a file.")
+            raise ValidationError(_EVIDENCE_ERROR)
         return data
