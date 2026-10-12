@@ -123,25 +123,21 @@ def clone_collection_request(collection_request):
             },
         )
         instrument_map[instrument.pk] = cloned_instrument.id
+        for bound_response in instrument.bound_suggested_responses.all():
+            lazy_clone(bound_response, collection_instrument_id=cloned_instrument.id)
+
+    # Conditions last: an ``instrument:<pk>`` getter names a (gate) instrument that may be cloned
+    # after the one it gates, so every instrument must be in the map first.
+    for instrument in collection_request.collectioninstrument_set.all():
         for condition in instrument.conditions.all():
-            # Known pre-existing issue, tracked separately: this rewrites any ``instrument:<pk>``
-            # getter to the clone's *own* pk, even when it named a different instrument.
             lazy_clone(
                 condition,
                 exclude=common_excludes,
                 **{
-                    "instrument_id": cloned_instrument.id,
-                    "data_getter": re.sub(
-                        r"^instrument:\d+$",
-                        "instrument:%d" % cloned_instrument.id,
-                        condition.data_getter,
-                    ),
+                    "instrument_id": instrument_map[instrument.pk],
+                    "data_getter": _remap_instrument_pk(condition.data_getter, instrument_map),
                 },
             )
-        for bound_response in instrument.bound_suggested_responses.all():
-            lazy_clone(bound_response, collection_instrument_id=cloned_instrument.id)
-
-    # Group conditions last: an ``instrument:<pk>`` getter names an instrument cloned above.
     for group in groups:
         for condition in group.conditions.all():
             lazy_clone(

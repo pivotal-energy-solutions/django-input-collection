@@ -1,4 +1,4 @@
-"""clone_collection_request copies repeat groups, membership and group conditions."""
+"""clone_collection_request copies repeat groups, membership and conditions."""
 
 __author__ = "Steven Klass"
 __date__ = "10/11/26 09:00 AM"
@@ -9,6 +9,7 @@ from django.test import TestCase
 
 from ..collection.merge import merge_requests
 from ..models.utils import clone_collection_request
+from . import factories
 from .checklists import question
 from .repeats import answer, doors, group_gate
 from .test_merge import coop
@@ -78,3 +79,55 @@ class CloneRepeatGroupTests(TestCase):
         )
         self.assertEqual(merged.groups["doors"].group.collection_request_id, cloned.pk)
         self.assertEqual(merged.questions["door-type#2"].repeat.label, "Door 2")
+
+
+class CloneInstrumentConditionTests(TestCase):
+    """An instrument condition's ``instrument:<pk>`` names its *gate*, not its own instrument."""
+
+    def condition(self, child, getter):
+        case = factories.CaseFactory.create(match_type="match", match_data="yes")
+        condition_group = factories.ConditionGroupFactory.create(
+            requirement_type="all-pass", cases=[case]
+        )
+        return factories.ConditionFactory.create(
+            instrument=child, condition_group=condition_group, data_getter=getter
+        )
+
+    def test_pk_getter_points_at_the_cloned_gate_not_the_cloned_child(self):
+        request = factories.CollectionRequestFactory.create()
+        gate_instrument = question(request, "gate", order=0)
+        child = question(request, "child", order=1)
+        self.condition(child, f"instrument:{gate_instrument.pk}")
+
+        cloned = clone_collection_request(request)
+
+        cloned_gate = cloned.collectioninstrument_set.get(measure_id="gate")
+        cloned_child = cloned.collectioninstrument_set.get(measure_id="child")
+        condition = cloned_child.conditions.get()
+        self.assertEqual(condition.data_getter, f"instrument:{cloned_gate.pk}")
+        self.assertNotEqual(condition.data_getter, f"instrument:{cloned_child.pk}")
+        self.assertEqual(child.conditions.get().data_getter, f"instrument:{gate_instrument.pk}")
+
+    def test_gate_cloned_after_its_child_still_remaps(self):
+        request = factories.CollectionRequestFactory.create()
+        child = question(request, "child", order=0)  # cloned first
+        gate_instrument = question(request, "gate", order=1)  # cloned second
+        self.assertLess(child.pk, gate_instrument.pk)
+        self.condition(child, f"instrument:{gate_instrument.pk}")
+
+        cloned = clone_collection_request(request)
+
+        cloned_gate = cloned.collectioninstrument_set.get(measure_id="gate")
+        cloned_child = cloned.collectioninstrument_set.get(measure_id="child")
+        self.assertEqual(cloned_child.conditions.get().data_getter, f"instrument:{cloned_gate.pk}")
+
+    def test_measure_getter_is_unchanged(self):
+        request = factories.CollectionRequestFactory.create()
+        question(request, "gate", order=0)
+        child = question(request, "child", order=1)
+        self.condition(child, "instrument:gate")
+
+        cloned = clone_collection_request(request)
+
+        cloned_child = cloned.collectioninstrument_set.get(measure_id="child")
+        self.assertEqual(cloned_child.conditions.get().data_getter, "instrument:gate")
