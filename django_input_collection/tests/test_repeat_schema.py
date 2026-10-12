@@ -11,7 +11,9 @@ from io import StringIO
 from django.test import TestCase
 
 from ..management.commands.validate_collection_schema import Command as ValidateCommand
+from ..schema.builder import CollectionRequestBuilder
 from ..schema.collisions import signatures_from_schema
+from ..schema.exporter import CollectionRequestExporter
 from ..schema.items import iter_questions
 from ..schema.serializers import CollectionSchemaSerializer, SectionSerializer
 
@@ -269,3 +271,121 @@ class SchemaReaderTests(TestCase):
         ValidateCommand(stdout=out)._print_summary(serializer.validated_data, True)
         self.assertIn("Questions: 6", out.getvalue())
         self.assertIn("door-glazing-area [float, required] (1 conditions)", out.getvalue())
+
+
+def build(schema=None, existing=None):
+    serializer = CollectionSchemaSerializer(data=schema or doors_schema())
+    serializer.is_valid(raise_exception=True)
+    return CollectionRequestBuilder().build(serializer.validated_data, existing)
+
+
+class RepeatBuilderTests(TestCase):
+    def test_groups_and_membership(self):
+        request = build()
+        group = request.repeat_groups.get()
+        self.assertEqual(
+            (group.slug, group.name, group.count_source, group.max_count, group.label, group.order),
+            ("doors", "Doors", "instrument:door-count", 20, "Door {n}", 3),
+        )
+        members = request.collectioninstrument_set.filter(repeat_group=group).order_by("order")
+        self.assertEqual(
+            [i.measure_id for i in members], ["door-type", "door-glazed", "door-glazing-area"]
+        )
+        self.assertEqual(
+            list(
+                request.collectioninstrument_set.order_by("order").values_list(
+                    "measure_id", flat=True
+                )
+            ),
+            [
+                "has-doors",
+                "door-count",
+                "door-type",
+                "door-glazed",
+                "door-glazing-area",
+                "door-notes",
+            ],
+        )
+        notes = request.collectioninstrument_set.get(measure_id="door-notes")
+        self.assertIsNone(notes.repeat_group_id)
+
+    def test_a_named_group(self):
+        schema = doors_schema()
+        repeat_of(schema)["name"] = "Exterior doors"
+        self.assertEqual(build(schema).repeat_groups.get().name, "Exterior doors")
+
+    def test_group_conditions_hang_on_the_group(self):
+        request = build()
+        group = request.repeat_groups.get()
+        self.assertEqual([c.data_getter for c in group.conditions.all()], ["instrument:has-doors"])
+        self.assertIsNone(group.conditions.get().instrument_id)
+        area = request.collectioninstrument_set.get(measure_id="door-glazing-area")
+        self.assertEqual([c.data_getter for c in area.conditions.all()], ["instrument:door-glazed"])
+
+    def test_bound_conditions_store_a_bound_getter(self):
+        request = build(model_driven(doors_schema()))
+        area = request.collectioninstrument_set.get(measure_id="door-glazing-area")
+        self.assertEqual(
+            [c.data_getter for c in area.conditions.all()], ["bound:qty_return_grills"]
+        )
+
+    def test_a_rebuild_updates_and_drops_groups(self):
+        request = build()
+        group_pk = request.repeat_groups.get().pk
+        schema = doors_schema()
+        repeat_of(schema)["max_count"] = 5
+        build(schema, request)
+        group = request.repeat_groups.get()
+        self.assertEqual((group.pk, group.max_count, group.conditions.count()), (group_pk, 5, 1))
+        schema = doors_schema()
+        schema["sections"][0]["questions"].pop(2)
+        build(schema, request)
+        self.assertFalse(request.repeat_groups.exists())
+
+
+class RepeatExporterTests(TestCase):
+    def export(self, schema=None):
+        return CollectionRequestExporter().export(build(schema), name="Doors")
+
+    def test_round_trip(self):
+        exported = self.export()
+        items = exported["sections"][0]["questions"]
+        self.assertEqual(
+            [item.get("measure_id") or item["repeat"]["id"] for item in items],
+            ["has-doors", "door-count", "doors", "door-notes"],
+        )
+        repeat = items[2]["repeat"]
+        self.assertEqual(repeat["count"], {"source": "instrument:door-count"})
+        self.assertEqual(
+            (repeat["max_count"], repeat["label"], repeat["name"]), (20, "Door {n}", "Doors")
+        )
+        self.assertEqual(
+            repeat["conditions"],
+            [
+                {
+                    "type": "instrument",
+                    "source": "has-doors",
+                    "match_type": "match",
+                    "values": ["Yes"],
+                }
+            ],
+        )
+        self.assertEqual(
+            [q["measure_id"] for q in repeat["questions"]],
+            ["door-type", "door-glazed", "door-glazing-area"],
+        )
+        again = CollectionSchemaSerializer(data=exported)
+        self.assertTrue(again.is_valid(), again.errors)
+        rebuilt = CollectionRequestBuilder().build(again.validated_data)
+        self.assertEqual(CollectionRequestExporter().export(rebuilt, name="Doors"), exported)
+
+    def test_response_sets_reach_into_repeats(self):
+        exported = self.export()
+        self.assertEqual(exported["response_sets"], {"yes-no": ["Yes", "No"]})
+        glazed = exported["sections"][0]["questions"][2]["repeat"]["questions"][1]
+        self.assertEqual(glazed["response_set"], "yes-no")
+
+    def test_bound_conditions_round_trip(self):
+        exported = self.export(model_driven(doors_schema()))
+        area = exported["sections"][0]["questions"][2]["repeat"]["questions"][2]
+        self.assertEqual(area["conditions"], [dict(BOUND_RULE)])
