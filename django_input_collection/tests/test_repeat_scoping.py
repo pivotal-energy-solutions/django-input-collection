@@ -184,3 +184,13 @@ class SingleRequestChecklistTests(TestCase):
         shown = {q["measure_id"]: q["answer"] for s in payload["sections"] for q in s["questions"]}
         self.assertIsNone(shown["q-0"])
         self.assertEqual(payload["progress"]["answered"], 1)  # the gate's answer only
+
+    def test_a_write_copy_in_the_collector_context_does_not_narrow_gate_reads(self):
+        request = build_checklist(2)  # q-gate answered "yes" (unrepeated); q-0 needs "yes"
+        payload = ChecklistConsumerMixin()._build_checklist_response(
+            request, collectors.Collector(request, repeat_index=2), None, "rater"
+        )
+        shown = {
+            q["measure_id"]: q["is_visible"] for s in payload["sections"] for q in s["questions"]
+        }
+        self.assertEqual(shown, {"q-gate": True, "q-0": True, "q-1": False})
