@@ -13,7 +13,7 @@ from django.db.models import Prefetch
 from ..managers.collected_input import CollectedInputQuerySet
 from ..managers.collection_instrument import CONDITION_PREFETCH
 from .answer_index import AnswerIndex, filter_key
-from .repeat import read_context
+from .repeat import question_key, read_context
 from .merged_checklist import (  # noqa: F401 (re-exported: the public names are collection.merge.*)
     GENERAL,
     MergedChecklist,
@@ -168,13 +168,17 @@ def _ordered(queryset) -> list:
 
 
 def _newest_answers(rows, instruments) -> tuple[dict, dict]:
-    """(measure_id -> newest row, instrument id -> its rows oldest first)."""
+    """(question key -> newest row, (instrument id, repeat index) -> its rows oldest first).
+
+    A row's key is its measure, or ``measure#n`` for copy n: newest per (measure, repeat_index).
+    """
     measure_of = {instrument.pk: instrument.measure_id for instrument in instruments}
     answers, by_instrument = {}, defaultdict(list)
-    for row in rows:  # oldest first: the newest per measure wins
+    for row in rows:  # oldest first: the newest per key wins
         if row.instrument_id in measure_of:
-            answers[measure_of[row.instrument_id]] = row
-            by_instrument[row.instrument_id].append(row)
+            repeat_index = getattr(row, "repeat_index", None)
+            answers[question_key(measure_of[row.instrument_id], repeat_index)] = row
+            by_instrument[(row.instrument_id, repeat_index)].append(row)
     return answers, by_instrument
 
 

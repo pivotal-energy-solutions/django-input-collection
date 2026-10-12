@@ -41,6 +41,8 @@ QUESTION_KEYS = {
     "answers",
     "collection_request",
     "collection_requests",
+    "key",
+    "repeat",
 }
 
 
@@ -231,7 +233,7 @@ def strip_merge_keys(payload):
     return {"sections": sections, "progress": payload["progress"]}
 
 
-MERGE_ONLY_KEYS = {"collection_request", "collection_requests", "answers"}
+MERGE_ONLY_KEYS = {"collection_request", "collection_requests", "answers", "key", "repeat"}
 
 
 class MergedParityTests(TestCase):

@@ -14,10 +14,25 @@ def response_flags(bound) -> dict:
     return (get_flags() or {}) if callable(get_flags) else {}
 
 
+def repeat_payload(info) -> dict | None:
+    """A question's ``repeat`` value: None, or where it sits in its repeat group."""
+    if info is None:
+        return None
+    return {
+        "group": info.group_slug,
+        "index": info.index,
+        "count": info.count,
+        "label": info.label,
+        "first": info.first,
+    }
+
+
 def _question(consumer, question, collectors, visible, by_measure, answer_payload, extras):
     instrument = question.instrument  # the owner's
     collector = collectors[instrument.collection_request_id]
     payload = {
+        "key": question.key,  # measure_id, or measure_id#n for copy n
+        "repeat": repeat_payload(question.repeat),
         "id": instrument.pk,
         "measure_id": question.measure_id,
         "collection_request": instrument.collection_request_id,
@@ -53,7 +68,7 @@ def consumer_payload(
     """
     visibility = merged.evaluate() if visibility is None else visibility
     answer_payload = answer_payload or consumer._serialize_answer
-    by_measure = {measure_id: q.instrument for measure_id, q in merged.questions.items()}
+    by_measure = {q.measure_id: q.instrument for q in merged.questions.values()}
     sections = []
     for section in merged.sections:
         questions = [
@@ -61,7 +76,7 @@ def consumer_payload(
                 consumer,
                 question,
                 collectors,
-                visibility.get(question.measure_id),
+                visibility.get(question.key),
                 by_measure,
                 answer_payload,
                 question_extras,
@@ -93,7 +108,7 @@ def merged_checklist_payload(
     instrument, oldest first); top level ``requests``, ``sections``, ``progress`` (no
     ``id``/``name``/``description``: no single request names a merge).
 
-    ``visibility`` (default ``merged.evaluate()``) maps measure_id -> visible.
+    ``visibility`` (default ``merged.evaluate()``) maps question key -> visible.
     ``question_extras(question, payload) -> dict`` adds keys per question; ``answer_payload(row)``
     replaces the mixin's ``_serialize_answer``. Reads nothing the merge didn't prefetch.
     ``answers`` come from the merge's ``inputs``; when conditions read a narrower

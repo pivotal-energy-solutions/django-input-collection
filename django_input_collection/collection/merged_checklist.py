@@ -22,6 +22,12 @@ class MergedQuestion:
     answer: object = None  # the newest row across the requests
     # Every row of the answering instrument, oldest first: what its conditions read.
     answers: list = field(default_factory=list)
+    key: str = ""  # measure_id, or "measure_id#n" for copy n; empty means measure_id
+    repeat: object = None  # RepeatInfo for a copy of a repeat group (Task 7), else None
+
+    def __post_init__(self):
+        if not self.key:
+            self.key = self.measure_id
 
     @property
     def is_required(self):
@@ -53,6 +59,14 @@ def request_sections(instruments) -> list[str]:
     return sorted(first_order, key=first_order.get)
 
 
+def _answer_rows(answer, answer_rows) -> list:
+    """Every row of the instrument and copy holding ``answer``, oldest first."""
+    if answer is None:
+        return []
+    slot = (answer.instrument_id, getattr(answer, "repeat_index", None))
+    return list(answer_rows.get(slot, (answer,)))
+
+
 class MergedChecklist:
     """``requests`` read as one checklist. Build with ``merge_requests``."""
 
@@ -78,11 +92,14 @@ class MergedChecklist:
         for measure_id, instruments in entries.items():
             answer = self.answers.get(measure_id)
             chosen = owner(measure_id, tuple(instruments), answer)
-            rows = (
-                list(answer_rows.get(answer.instrument_id, (answer,))) if answer is not None else []
-            )
             questions[measure_id] = MergedQuestion(
-                measure_id, chosen, tuple(instruments), section_name(chosen), answer, rows
+                measure_id,
+                chosen,
+                tuple(instruments),
+                section_name(chosen),
+                answer,
+                _answer_rows(answer, answer_rows),
+                key=measure_id,
             )
         return questions
 
@@ -109,66 +126,67 @@ class MergedChecklist:
 
     def _follow_parents(self, items) -> list:
         """A question gated on another request's question in this section sits right after it;
-        a request's own order already places its dependants (Steven, 2026-10-08)."""
-        here = {q.measure_id: q for q in items}
+        a request's own order already places its dependants (Steven, 2026-10-08). Copies of a
+        repeat group keep their place: they never move and never pull a question after them."""
+        plain = [q for q in items if q.repeat is None]
+        here = {q.key: q for q in plain}
         children = self._children()
         parent_of = {}
-        for question in items:
+        for question in plain:
             for child in children.get(question.measure_id, ()):
-                parent_of.setdefault(child, question.measure_id)  # the earliest parent wins
+                parent_of.setdefault(child, question.key)  # the earliest parent wins
         movers = set()
         grown = True
         while grown:  # to a fixed point: a child may sort before its moved parent
             grown = False
-            for question in items:
-                if question.measure_id in movers:
+            for question in plain:
+                if question.key in movers:
                     continue
-                parent = here.get(parent_of.get(question.measure_id))
+                parent = here.get(parent_of.get(question.key))
                 if parent is None:
                     continue
                 crosses = (
                     parent.instrument.collection_request_id
                     != question.instrument.collection_request_id
                 )
-                if crosses or parent.measure_id in movers:  # a moved parent takes its chain along
-                    movers.add(question.measure_id)
+                if crosses or parent.key in movers:  # a moved parent takes its chain along
+                    movers.add(question.key)
                     grown = True
         if not movers:
             return items
         placed, seen = [], set()
 
         def place(question):
-            if question.measure_id in seen:
+            if question.key in seen:
                 return
-            seen.add(question.measure_id)
+            seen.add(question.key)
             placed.append(question)
-            for child in items:
-                if (
-                    child.measure_id in movers
-                    and parent_of[child.measure_id] == question.measure_id
-                ):
+            for child in plain:
+                if child.key in movers and parent_of[child.key] == question.key:
                     place(child)
 
         for question in items:
-            if question.measure_id not in movers:
+            if question.key not in movers:
                 place(question)
-        placed.extend(q for q in items if q.measure_id not in seen)  # cycles: keep every question
+        placed.extend(q for q in items if q.key not in seen)  # cycles: keep every question
         return placed
 
-    def owner(self, measure_id):
-        return self.questions[measure_id].instrument
+    def owner(self, key):
+        """The instrument question ``key`` shows (a copy shows its measure's owner)."""
+        return self.questions[key].instrument
 
-    def evaluate(self, measures=None) -> dict:
-        """measure_id -> True if any request's instrument is allowed; None if none could say.
+    def evaluate(self, keys=None, *, measures=None) -> dict:
+        """question key -> True if any request's instrument is allowed; None if none could say.
 
-        A snapshot: answers are as of when the merge was built. Rebuild with merge_requests after
-        writing inputs.
+        ``measures`` is the pre-key name of ``keys`` (an unrepeated question's key is its
+        measure_id). A snapshot: answers are as of when the merge was built. Rebuild with
+        merge_requests after writing inputs.
         """
-        measures = list(self.questions) if measures is None else measures
+        if keys is None:
+            keys = measures
+        keys = list(self.questions) if keys is None else keys
         with read_pass(index=self.index):
-            return {
-                measure_id: self._visible(self.questions[measure_id]) for measure_id in measures
-            }
+            return {key: self._visible(self.questions[key]) for key in keys}
 
     def _allowed(self, collector, instrument):
         if self.index is not None:
@@ -215,13 +233,14 @@ class MergedChecklist:
         return self._children_map
 
     def progress(self, visibility) -> dict:
+        """Counts over question keys: each live copy of a repeat group counts as a question."""
         keys = ("total", "answered", "visible", "required_total", "required_answered")
         progress = dict.fromkeys(keys, 0)
         for question in self.questions.values():
-            shown = visibility.get(question.measure_id) is not False  # unknown still counts
+            shown = visibility.get(question.key) is not False  # unknown still counts
             required = bool(question.is_required) and shown  # as the payload's is_required
             progress["total"] += 1
-            progress["visible"] += bool(visibility.get(question.measure_id))
+            progress["visible"] += bool(visibility.get(question.key))
             progress["required_total"] += required
             if question.answer is not None:
                 progress["answered"] += 1
