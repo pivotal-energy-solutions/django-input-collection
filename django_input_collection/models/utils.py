@@ -98,19 +98,33 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
 
 
 def clone_collection_request(collection_request):
+    """A copy of ``collection_request``: its repeat groups, instruments (re-pointed at the cloned
+    groups), instrument and group conditions, and bound responses."""
     from . import CollectionInstrument, CollectionRequest
 
     common_excludes = ["date_created", "date_modified"]
     cloned = lazy_clone(collection_request, exclude=common_excludes)
+
+    groups = list(collection_request.repeat_groups.all())
+    group_map = {}  # original RepeatGroup pk -> cloned pk
+    for group in groups:
+        # RepeatGroup carries no timestamps, so there is nothing to exclude.
+        group_map[group.pk] = lazy_clone(group, exclude=[], collection_request_id=cloned.id).pk
+
+    instrument_map = {}  # original instrument pk -> cloned pk
     for instrument in collection_request.collectioninstrument_set.all():
         cloned_instrument = lazy_clone(
             instrument,
             exclude=common_excludes,
             **{
                 "collection_request_id": cloned.id,
+                "repeat_group_id": group_map.get(instrument.repeat_group_id),
             },
         )
+        instrument_map[instrument.pk] = cloned_instrument.id
         for condition in instrument.conditions.all():
+            # Known pre-existing issue, tracked separately: this rewrites any ``instrument:<pk>``
+            # getter to the clone's *own* pk, even when it named a different instrument.
             lazy_clone(
                 condition,
                 exclude=common_excludes,
@@ -126,7 +140,27 @@ def clone_collection_request(collection_request):
         for bound_response in instrument.bound_suggested_responses.all():
             lazy_clone(bound_response, collection_instrument_id=cloned_instrument.id)
 
+    # Group conditions last: an ``instrument:<pk>`` getter names an instrument cloned above.
+    for group in groups:
+        for condition in group.conditions.all():
+            lazy_clone(
+                condition,
+                exclude=common_excludes,
+                **{
+                    "repeat_group_id": group_map[group.pk],
+                    "data_getter": _remap_instrument_pk(condition.data_getter, instrument_map),
+                },
+            )
+
     return cloned
+
+
+def _remap_instrument_pk(data_getter, instrument_map):
+    """``instrument:<pk>`` -> the clone of that instrument; any other getter as written."""
+    match = re.fullmatch(r"instrument:(\d+)", data_getter)
+    if match is None or int(match.group(1)) not in instrument_map:
+        return data_getter
+    return "instrument:%d" % instrument_map[int(match.group(1))]
 
 
 class ConditionNode(Q):
