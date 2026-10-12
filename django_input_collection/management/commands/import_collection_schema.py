@@ -13,6 +13,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from django_input_collection.models import CollectionRequest
 from django_input_collection.schema import CollectionRequestBuilder, CollectionSchemaSerializer
+from django_input_collection.schema.items import iter_questions
 
 log = logging.getLogger(__name__)
 
@@ -109,16 +110,15 @@ class Command(BaseCommand):
         self.stdout.write(f"  Version: {schema.get('version', '1.0')}")
 
         sections = schema.get("sections", [])
-        total_questions = sum(len(s.get("questions", [])) for s in sections)
+        total_questions = sum(1 for _question in iter_questions(sections))
 
         self.stdout.write(f"  Sections: {len(sections)}")
         self.stdout.write(f"  Questions: {total_questions}")
 
         # Count conditions
         conditions_count = 0
-        for section in sections:
-            for question in section.get("questions", []):
-                conditions_count += len(question.get("conditions", []))
+        for question, _repeat in iter_questions(sections):
+            conditions_count += len(question.get("conditions", []))
 
         if conditions_count:
             self.stdout.write(f"  Conditions: {conditions_count}")
