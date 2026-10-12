@@ -8,6 +8,7 @@ from django.db.models import Manager, Model
 from django.db.models.query import QuerySet
 
 from . import exceptions
+from .repeat import current_copy, read_context, scoped_index
 
 
 __all__ = [
@@ -245,12 +246,21 @@ class InstrumentResolver(Resolver):
         return ids
 
     def resolve(self, instrument, parent_pk=None, measure=None, **context):
+        # A write collector's copy (context "repeat_index") never narrows a gate read: the copy
+        # being evaluated (current_copy) decides that, per gating instrument.
+        context = read_context(context)
+        copy = current_copy()
         collector = current_collector()
         requests = self.search_requests(instrument, collector)
         index = current_answer_index()
         if index is not None and _hook("index.serves", index.serves, collector):
             found = _hook(
-                "index.lookup", index.lookup, requests, parent_pk=parent_pk, measure=measure
+                "index.lookup",
+                index.lookup,
+                requests,
+                parent_pk=parent_pk,
+                measure=measure,
+                copy=copy,
             )
             if found is not None:
                 values, suggested_values = found
@@ -259,11 +269,12 @@ class InstrumentResolver(Resolver):
         cache, key = _read_pass_cache.get(), None
         if cache is not None:
             try:
-                # Collectors that filter inputs differently must not share an entry.
+                # Collectors that filter inputs differently must not share an entry; nor copies.
                 filter_key = None
                 if collector is not None:
                     filter_key = _hook("condition_cache_key", collector.condition_cache_key)
-                key = (tuple(requests), filter_key, parent_pk, measure, _freeze(context))
+                copy_key = None if copy is None else (copy.group_id, copy.index)
+                key = (tuple(requests), filter_key, parent_pk, measure, _freeze(context), copy_key)
             except TypeError:
                 key = None  # Unkeyable context: resolve uncached rather than risk a collision
         if key is not None and key in cache:
@@ -276,7 +287,7 @@ class InstrumentResolver(Resolver):
 
         try:
             values, suggested_values = self._lookup(
-                requests, parent_pk, measure, context, collector
+                requests, parent_pk, measure, context, collector, copy
             )
         except ObjectDoesNotExist as missing:
             if key is not None:
@@ -286,7 +297,7 @@ class InstrumentResolver(Resolver):
             cache[key] = (values, suggested_values)
         return {"data": list(values), "suggested_values": suggested_values}
 
-    def _lookup(self, requests, parent_pk, measure, context, collector):
+    def _lookup(self, requests, parent_pk, measure, context, collector, copy=None):
         from ..models import CollectionInstrument
 
         lookup = {"pk": parent_pk} if parent_pk else {"measure_id": measure}
@@ -294,13 +305,24 @@ class InstrumentResolver(Resolver):
         for position, request_id in enumerate(requests):
             if parent_pk and position:
                 break  # a pk names one instrument in the condition's own request
-            parent = CollectionInstrument.objects.filter(
-                collection_request_id=request_id, **lookup
-            ).first()
+            parent = (
+                CollectionInstrument.objects.select_related("repeat_group")
+                .filter(collection_request_id=request_id, **lookup)
+                .first()
+            )
             if parent is None:
                 continue
             first = first or parent
-            inputs = parent.collectedinput_set.filter_for_context(**context)
+            index = scoped_index(parent, copy)
+            rows = {"repeat_index": index} if index is not None else {"repeat_index__isnull": True}
+            # The copy filter goes first: a filter_for_context that keeps the latest row per
+            # instrument (UserLatestCollectedInputQuerySet) would otherwise collapse every copy
+            # into one row. Oldest first, as the AnswerIndex holds them: the last is the newest.
+            inputs = (
+                parent.collectedinput_set.filter(**rows)
+                .filter_for_context(**context)
+                .order_by("date_created", "id")
+            )
             if collector is not None:
                 inputs = _hook("filter_condition_inputs", collector.filter_condition_inputs, inputs)
             values = list(inputs.values_list("data", flat=True))

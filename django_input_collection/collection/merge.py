@@ -13,6 +13,7 @@ from django.db.models import Prefetch
 from ..managers.collected_input import CollectedInputQuerySet
 from ..managers.collection_instrument import CONDITION_PREFETCH
 from .answer_index import AnswerIndex, filter_key
+from .repeat import read_context
 from .merged_checklist import (  # noqa: F401 (re-exported: the public names are collection.merge.*)
     GENERAL,
     MergedChecklist,
@@ -199,7 +200,7 @@ def _indexes(requests, collectors, inputs, rows, build):
             if _filters_nothing(collector, inputs):
                 by_key[key] = build(rows, collector)
             else:
-                filtered = inputs.filter_for_context(**collector.context)
+                filtered = inputs.filter_for_context(**read_context(collector.context))
                 by_key[key] = build(
                     _ordered(collector.filter_condition_inputs(filtered)), collector
                 )

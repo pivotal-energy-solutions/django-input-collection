@@ -749,7 +749,11 @@ class ChecklistConsumerMixin:
             .select_related("user")
             .order_by("date_created", "id")
         )
-        input_by_instrument = {row.instrument_id: row for row in rows}  # newest wins
+        # Newest wins. The single-request checklist doesn't expand repeat groups: a copy's row
+        # is never an instrument's shown answer (the merged checklist shows copies).
+        input_by_instrument = {
+            row.instrument_id: row for row in rows if getattr(row, "repeat_index", None) is None
+        }
         if not indexed:
             return all_instruments, input_by_instrument, None  # no filter to trust: database path
         index = AnswerIndex(

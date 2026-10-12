@@ -8,6 +8,7 @@ __credits__ = ["Steven Klass"]
 from collections import defaultdict
 
 from .resolvers import _freeze
+from .repeat import scoped_index
 
 _ANY = object()  # an unbound index answers for every collector
 
@@ -52,12 +53,13 @@ class AnswerIndex:
                 instrument.measure_id, instrument
             )
             self._by_pk[instrument.pk] = instrument
-        self._values = defaultdict(list)  # instrument id -> [data, ...]
-        self._latest = {}  # instrument id -> (date_created, id) of its newest row
+        self._values = defaultdict(list)  # (instrument id, repeat index or None) -> [data, ...]
+        self._latest = {}  # the same key -> (date_created, id) of its newest row
         for row in inputs:
-            self._values[row.instrument_id].append(row.data)
+            slot = (row.instrument_id, getattr(row, "repeat_index", None))
+            self._values[slot].append(row.data)
             stamp = (row.date_created, row.pk)
-            self._latest[row.instrument_id] = max(self._latest.get(row.instrument_id, stamp), stamp)
+            self._latest[slot] = max(self._latest.get(slot, stamp), stamp)
 
     def serves(self, collector) -> bool:
         """True when ``collector`` reads what this index was built from."""
@@ -77,8 +79,12 @@ class AnswerIndex:
         found = [self._by_request[r].get(measure) for r in request_ids]
         return [instrument for instrument in found if instrument is not None]
 
-    def lookup(self, requests, parent_pk=None, measure=None):
-        """(values, suggested values) like InstrumentResolver, or None to defer to the database."""
+    def lookup(self, requests, parent_pk=None, measure=None, copy=None):
+        """(values, suggested values) like InstrumentResolver, or None to defer to the database.
+
+        ``copy`` (a CurrentCopy) scopes a gate in the copy's group to that copy's rows; any other
+        gate reads unrepeated rows only.
+        """
         request_ids = [getattr(r, "pk", r) for r in requests]
         if not request_ids or not self.covers(request_ids):
             return None
@@ -91,12 +97,16 @@ class AnswerIndex:
                     f"No gating instrument {parent_pk or measure!r}"
                 )
             return None  # partial index: let the database decide
-        answered = [instrument for instrument in candidates if self._values.get(instrument.pk)]
+
+        def slot(instrument):
+            return instrument.pk, scoped_index(instrument, copy)
+
+        answered = [instrument for instrument in candidates if self._values.get(slot(instrument))]
         if answered:
             chosen = answered[0]
             if self.newest_across and not parent_pk:
-                chosen = max(answered, key=lambda instrument: self._latest[instrument.pk])
-            return list(self._values[chosen.pk]), self._suggested(chosen)
+                chosen = max(answered, key=lambda instrument: self._latest[slot(instrument)])
+            return list(self._values[slot(chosen)]), self._suggested(chosen)
         return [], self._suggested(candidates[0])
 
     @staticmethod
