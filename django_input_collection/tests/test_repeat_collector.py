@@ -155,3 +155,26 @@ class CopyWriteTests(TestCase):
         self.assertTrue(
             collectors.Collector(self.request, repeat_index=2).is_instrument_allowed(area)
         )
+
+
+class ContextCountCollector(collectors.Collector):
+    """Copies depend on the context, so a memo shared across instances would be visible."""
+
+    __noregister__ = True
+
+    def _resolve_repeat(self, group):
+        count = self.context["count"]
+        return [Copy(n, f"Copy {n}") for n in range(1, count + 1)], count > 2
+
+
+class ResolveRepeatMemoIdentityTests(TestCase):
+    def test_temporary_collectors_in_one_pass_never_share_copies(self):
+        request, group, _found = doors(count_source="context:count")
+        with read_pass():
+            for _round in range(3):
+                for count in (1, 3, 2):
+                    collector = ContextCountCollector(request, count=count)
+                    copies = collector.resolve_repeat(group)
+                    self.assertEqual([c.index for c in copies], list(range(1, count + 1)))
+                    self.assertEqual(collector.repeat_clamped(group), count > 2)
+                    del collector  # free the id, as a short-lived collector would

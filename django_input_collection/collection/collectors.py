@@ -478,7 +478,9 @@ class BaseCollector(object, metaclass=CollectorType):
             self.note_repeat_clamped(group, clamped)
             return list(copies)
 
-        return memoize(("resolve_repeat", id(self), group.pk), compute)
+        # Keyed on the collector itself (identity hash), not id(self): the pass cache's reference
+        # keeps it alive, so a later collector can never reuse its id and inherit its copies.
+        return memoize(("resolve_repeat", self, group.pk), compute)
 
     def _resolve_repeat(self, group) -> tuple[list, bool]:
         """(copies, clamped) for ``group``'s count source; group conditions are already tested.
