@@ -68,6 +68,8 @@ def consumer_payload(
     """
     visibility = merged.evaluate() if visibility is None else visibility
     answer_payload = answer_payload or consumer._serialize_answer
+    # One entry per measure: every copy of a repeated measure shows its measure's one owner
+    # instrument (MergedChecklist._questions), so the copies agree on what this maps to.
     by_measure = {q.measure_id: q.instrument for q in merged.questions.values()}
     sections = []
     for section in merged.sections:
@@ -107,6 +109,12 @@ def merged_checklist_payload(
     ``collection_requests`` (every asking request) and ``answers`` (every row of the answering
     instrument, oldest first); top level ``requests``, ``sections``, ``progress`` (no
     ``id``/``name``/``description``: no single request names a merge).
+
+    Merge-only question keys: ``key`` (``measure_id``, or ``measure_id#n`` for copy n of a repeat
+    group; unique per question, where ``measure_id`` repeats across copies) and ``repeat`` (None,
+    or ``{group, index, count, label, first}``: the group's slug, the 1-based copy, the live
+    copy count, the copy's label, and True on the copy's first question in display order).
+    Every copy of a measure shows the same owner instrument, so ``id`` repeats across copies.
 
     ``visibility`` (default ``merged.evaluate()``) maps question key -> visible.
     ``question_extras(question, payload) -> dict`` adds keys per question; ``answer_payload(row)``

@@ -783,6 +783,7 @@ class ChecklistConsumerMixin:
     def _condition_rows(self, collection_request, collector, instruments, rows, requests=None):
         """What this collector's instrument: conditions read (the AnswerIndex input contract)."""
         from django_input_collection.collection.collectors import BaseCollector
+        from django_input_collection.collection.merge import filter_per_copy
         from django_input_collection.collection.repeat import read_context
         from django_input_collection.managers.collected_input import CollectedInputQuerySet
 
@@ -803,9 +804,12 @@ class ChecklistConsumerMixin:
             return rows  # the same set the answers came from: no second query
         request_ids = [getattr(r, "pk", r) for r in requests or [collection_request]]
         queryset = input_model.objects.filter(collection_request_id__in=request_ids)
-        return collector.filter_condition_inputs(queryset.filter_for_context(**context)).order_by(
-            "date_created", "id"
-        )
+        # This read sets no copy scope: a gate reads a copy only for a write collector's copy.
+        write_index = collector.context.get("repeat_index")
+        indices = None
+        if any(getattr(i, "repeat_group_id", None) is not None for i in instruments):
+            indices = set() if write_index is None else {write_index}
+        return filter_per_copy(queryset, context, indices, narrow=collector.filter_condition_inputs)
 
     def _build_sections(self, all_instruments, collector, input_by_instrument, progress) -> list:
         """Section dicts (grouped sections, then "General" for ungrouped instruments)."""

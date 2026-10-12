@@ -5,8 +5,10 @@ __date__ = "10/07/26 04:00 PM"
 __copyright__ = "Copyright 2011-2026 Pivotal Energy Solutions. All rights reserved."
 __credits__ = ["Steven Klass"]
 
+import operator
 from collections import defaultdict
 from collections.abc import Callable
+from functools import reduce
 
 from django.db.models import Prefetch
 
@@ -52,7 +54,7 @@ def load_instruments(requests) -> list:
     request_ids = [getattr(r, "pk", r) for r in requests]
     instruments = list(
         CollectionInstrument.objects.filter(collection_request_id__in=request_ids)
-        .select_related("group", "type", "response_policy", "measure")
+        .select_related("group", "type", "response_policy", "measure", "repeat_group")
         .prefetch_related(*instrument_prefetch())
         .order_by("collection_request_id", *CollectionInstrument._meta.ordering)
     )
@@ -131,7 +133,9 @@ def _load_with_subquery(request, others, order):
             Q(collection_request_id=request.pk)
             | Q(collection_request_id__in=others.order_by().values("pk"))
         )
-        .select_related("group", "type", "response_policy", "measure", "collection_request")
+        .select_related(
+            "group", "type", "response_policy", "measure", "repeat_group", "collection_request"
+        )
         .annotate(**annotations)
         .prefetch_related(*instrument_prefetch())
         .order_by("collection_request_id", *CollectionInstrument._meta.ordering)
@@ -146,6 +150,59 @@ def share_requests(instruments, requests):
         request = by_id.get(instrument.collection_request_id)
         if request is not None:
             instrument.collection_request = request
+
+
+def share_repeat_groups(instruments) -> list:
+    """One RepeatGroup object per group (select_related builds one per row), its condition tree
+    prefetched: a query per prefetch level when any instrument is repeated, none otherwise.
+
+    Instruments not loaded by ``load_instruments`` (``merge_requests(instruments=...)``) get
+    their groups in one query, so neither expansion nor a copy-scoped AnswerIndex lookup loads
+    ``instrument.repeat_group`` per instrument.
+    """
+    from django.db.models import prefetch_related_objects
+
+    repeated = [i for i in instruments if getattr(i, "repeat_group_id", None) is not None]
+    if not repeated:
+        return []
+    prefetch_related_objects(repeated, "repeat_group")  # no query when select_related loaded it
+    groups = {}
+    for instrument in repeated:
+        instrument.repeat_group = groups.setdefault(
+            instrument.repeat_group_id, instrument.repeat_group
+        )
+    prefetch_related_objects(list(groups.values()), *CONDITION_PREFETCH)
+    return list(groups.values())
+
+
+def filter_per_copy(inputs, context, indices=None, narrow=None) -> list:
+    """``narrow(inputs.filter_for_context(**context))`` rows, oldest first, with each copy
+    filtered on its own: unrepeated rows, then each repeat index in ``indices``.
+
+    A ``filter_for_context`` that keeps the newest row per instrument (as
+    UserLatestCollectedInputQuerySet does) would otherwise keep one row across all of an
+    instrument's copies. ``indices`` None (no repeat group): one plain filter, as before. The
+    partitions are OR'd into one query; if they can't be combined (e.g. a union()ed
+    filter), each is read on its own.
+    """
+    narrow = narrow or (lambda queryset: queryset)
+    if indices is None:
+        return _ordered(narrow(inputs.filter_for_context(**context)))
+    partitions = [{"repeat_index__isnull": True}, *({"repeat_index": n} for n in sorted(indices))]
+    parts = [narrow(inputs.filter(**rows).filter_for_context(**context)) for rows in partitions]
+    try:
+        combined = reduce(operator.or_, parts)
+    except (TypeError, AssertionError):  # Django refuses to combine these querysets
+        rows = [row for part in parts for row in part]
+        return sorted(rows, key=lambda row: (row.date_created, row.pk))
+    return _ordered(combined)
+
+
+def copy_indices(instruments, rows):
+    """The repeat indices ``rows`` hold, or None when no instrument is repeated."""
+    if not any(getattr(i, "repeat_group_id", None) is not None for i in instruments):
+        return None
+    return {row.repeat_index for row in rows if getattr(row, "repeat_index", None) is not None}
 
 
 def first_owner(measure_id, instruments, answer):
@@ -184,17 +241,17 @@ def _newest_answers(rows, instruments) -> tuple[dict, dict]:
 
 def _filters_nothing(collector, queryset) -> bool:
     return (
-        not collector.context
+        not read_context(collector.context)  # a write copy never narrows a gate read
         and collector.condition_cache_key() is None
         and type(queryset).filter_for_context is CollectedInputQuerySet.filter_for_context
     )
 
 
-def _indexes(requests, collectors, inputs, rows, build):
+def _indexes(requests, collectors, inputs, rows, build, indices=None):
     """request id -> AnswerIndex over ``inputs`` as that request's collector filters them.
 
     Collectors that filter alike share one index (one read; none when the filter is a no-op),
-    bound to that filter key.
+    bound to that filter key. ``indices`` (``copy_indices``) filters each copy on its own.
     """
     by_key, indexes = {}, {}
     for request in requests:
@@ -204,10 +261,13 @@ def _indexes(requests, collectors, inputs, rows, build):
             if _filters_nothing(collector, inputs):
                 by_key[key] = build(rows, collector)
             else:
-                filtered = inputs.filter_for_context(**read_context(collector.context))
-                by_key[key] = build(
-                    _ordered(collector.filter_condition_inputs(filtered)), collector
+                filtered = filter_per_copy(
+                    inputs,
+                    read_context(collector.context),
+                    indices,
+                    narrow=collector.filter_condition_inputs,
                 )
+                by_key[key] = build(filtered, collector)
         indexes[request.pk] = by_key[key]
     return indexes
 
@@ -237,10 +297,17 @@ def merge_requests(
     instruments don't cover falls back to the database lookup, which reads its own request
     first, not the newest across requests. "Condition reads the displayed answer" then holds
     only for covered requests.
+
+    Repeat groups: each group's live copies are resolved once by its request's collector
+    (``resolve_repeat``) and each repeated measure becomes one question per copy, keyed
+    ``measure#n`` (see MergedChecklist). Each collector's index reads every copy's rows through
+    its filters copy by copy (``filter_per_copy``); a ``condition_inputs`` override must keep
+    each copy's rows the same way.
     """
     requests = list(requests)
     complete = instruments is None
     instruments = load_instruments(requests) if complete else list(instruments)
+    share_repeat_groups(instruments)
     by_request = defaultdict(list)
     for instrument in instruments:
         by_request[instrument.collection_request_id].append(instrument)
@@ -259,7 +326,8 @@ def merge_requests(
         shared = build(_ordered(condition_inputs))
         indexes = dict.fromkeys((request.pk for request in requests), shared)
     else:
-        indexes = _indexes(requests, collectors, inputs, rows, build)
+        indices = copy_indices(instruments, rows)
+        indexes = _indexes(requests, collectors, inputs, rows, build, indices)
     return MergedChecklist(
         requests, collectors, by_request, answers, indexes, owner, answer_rows=answer_rows
     )
