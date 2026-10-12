@@ -9,7 +9,7 @@ __credits__ = ["Steven Klass"]
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
 
-from .repeat import CurrentCopy, copy_scope, question_key, set_repeat_anchor
+from .repeat import CurrentCopy, copy_scope, parse_key, question_key, set_repeat_anchor
 from .resolvers import read_pass
 
 GENERAL = "General"
@@ -109,6 +109,7 @@ class MergedChecklist:
         self.index = next(iter(indexes.values())) if len(shared) == 1 else None
         self._position = {request.pk: n for n, request in enumerate(self.requests)}
         self._children_map = None
+        self._measure_of_pk_map = None
         self._entries = self._entries_by_measure(by_request)
         self._group_states, self._group_anchor_key = self._resolve_groups()
         self.groups = {}  # slug -> GroupState; request priority: the first slug wins
@@ -329,8 +330,14 @@ class MergedChecklist:
             return True
         return False if results and all(r is False for r in results) else None
 
-    def dependents(self, measure_id) -> list[str]:
-        """Measures whose visibility depends, directly or transitively, on ``measure_id``."""
+    def dependents(self, key) -> list[str]:
+        """Question keys whose visibility depends, directly or transitively, on ``key``.
+
+        Inside a copy (``measure#n``) a dependent in the same group is that copy's sibling only.
+        A count source or group-condition source reaches every live copy of its group. "Same
+        group" is the same slug: each merged request has its own RepeatGroup row (and pk).
+        """
+        measure_id, index = parse_key(key)
         children = self._children()
         seen, todo = set(), [measure_id]
         while todo:
@@ -338,15 +345,53 @@ class MergedChecklist:
                 if child not in seen and child != measure_id:
                     seen.add(child)
                     todo.append(child)
-        return sorted(seen)
+        source_state = self._group_states.get(self._owner_group.get(measure_id))
+        source_slug = source_state.group.slug if source_state is not None else None
+        found = []
+        for question in self.questions.values():
+            if question.measure_id not in seen:
+                continue
+            repeat = question.repeat
+            if index is not None and repeat is not None and repeat.group_slug == source_slug:
+                if repeat.index != index:
+                    continue  # another copy's sibling
+            found.append(question.key)
+        return sorted(found)
 
-    def _children(self) -> dict:
-        if self._children_map is None:
-            measure_of_pk = {
+    def count_dependents(self, measure_id) -> list[str]:
+        """Slugs of the groups whose count or group conditions read ``measure_id``."""
+        return sorted(
+            slug
+            for slug, state in self.groups.items()
+            if measure_id in self._group_sources(state.group)
+        )
+
+    def _measure_of_pk(self) -> dict:
+        if self._measure_of_pk_map is None:
+            self._measure_of_pk_map = {
                 str(i.pk): measure_id
                 for measure_id, instruments in self._entries.items()
                 for i in instruments
             }
+        return self._measure_of_pk_map
+
+    def _group_sources(self, group) -> set:
+        """Measures a group's count and its group conditions read (prefetched: no queries)."""
+        measure_of_pk = self._measure_of_pk()
+        sources = set()
+        kind, _, name = group.count_source.partition(":")
+        if kind == "instrument":
+            sources.add(name)
+        for condition in group.conditions.all():
+            kind, _, source = condition.data_getter.partition(":")
+            if kind == "instrument":
+                sources.add(measure_of_pk.get(source, source))
+        return sources
+
+    def _children(self) -> dict:
+        """measure -> measures gated on it; a group's count/condition sources gate its members."""
+        if self._children_map is None:
+            measure_of_pk = self._measure_of_pk()
             children = defaultdict(set)
             for measure_id, instruments in self._entries.items():
                 for instrument in instruments:
@@ -354,6 +399,10 @@ class MergedChecklist:
                         kind, _, source = condition.data_getter.partition(":")
                         if kind == "instrument":
                             children[measure_of_pk.get(source, source)].add(measure_id)
+            for group_id, state in self._group_states.items():
+                members = {m for m, owner in self._owner_group.items() if owner == group_id}
+                for source in self._group_sources(state.group):
+                    children[source] |= members
             self._children_map = children
         return self._children_map
 

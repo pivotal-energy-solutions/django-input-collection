@@ -12,7 +12,6 @@ from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
-from ..collection import collectors
 from ..collection.exceptions import UnknownRepeatSource
 from ..collection.merge import filter_per_copy, merge_requests
 from ..collection.repeat import Copy
@@ -364,3 +363,61 @@ class FilterPerCopyTests(TestCase):
                 get_input_model().objects.all(), {}, {1, 2}, narrow=lambda qs: qs.union(qs)
             )
         self.assertEqual(found, self.rows)
+
+
+class DependentsTests(TestCase):
+    def setUp(self):
+        self.request, self.group, self.found = doors(count=2)
+        self.merged = merge(self.request)[0]
+
+    def test_a_copy_reaches_its_own_siblings_only(self):
+        self.assertEqual(self.merged.dependents("door-glazed#2"), ["door-glazing-area#2"])
+        self.assertEqual(self.merged.dependents("door-type#1"), [])
+
+    def test_the_count_reaches_every_copy(self):
+        expected = sorted(
+            f"{measure}#{n}"
+            for measure in ("door-type", "door-glazed", "door-glazing-area")
+            for n in (1, 2)
+        )
+        self.assertEqual(self.merged.dependents("door-count"), expected)
+        self.assertEqual(self.merged.count_dependents("door-count"), ["doors"])
+        self.assertEqual(self.merged.count_dependents("after-doors"), [])
+
+    def test_a_group_condition_source_reaches_every_copy(self):
+        answer(question(self.request, "has-doors", group="Doors", order=0), "yes")
+        group_gate(self.group, "has-doors")
+        merged = merge(self.request)[0]
+        self.assertEqual(len(merged.dependents("has-doors")), 6)
+        self.assertEqual(merged.count_dependents("has-doors"), ["doors"])
+
+    def test_an_outside_gate_reaches_every_copy_of_its_member(self):
+        question(self.request, "frame-type", group="Doors", order=0, responses=("yes", "no"))
+        gate(self.found["door-type"], "frame-type")
+        merged = merge(self.request)[0]
+        self.assertEqual(merged.dependents("frame-type"), ["door-type#1", "door-type#2"])
+
+    def test_dependents_add_no_queries(self):
+        with self.assertNumQueries(0):
+            self.merged.dependents("door-count")
+            self.merged.count_dependents("door-count")
+
+
+class TwoRequestDependentsTests(TestCase):
+    """Siblings match by group slug: each request's same-slug RepeatGroup has its own pk."""
+
+    def test_a_copy_reaches_its_own_siblings_across_same_slug_groups(self):
+        a, group_a, _found_a = doors(count=2)
+        b, group_b, found_b = doors(count=2)
+        self.assertNotEqual(group_a.pk, group_b.pk)
+
+        def owner(measure_id, instruments, answer):
+            # door-glazing-area shows b's instrument, so its copies carry b's group pk
+            # while their gate source (door-glazed) is owned by a's group.
+            return instruments[1] if measure_id == "door-glazing-area" else instruments[0]
+
+        merged = merge_requests([a, b], collectors=coop(a, b), owner=owner)
+        self.assertEqual(merged.questions["door-glazing-area#2"].repeat.group_id, group_b.pk)
+        self.assertEqual(merged.questions["door-glazed#2"].repeat.group_id, group_a.pk)
+        self.assertEqual(merged.dependents("door-glazed#2"), ["door-glazing-area#2"])
+        self.assertEqual(merged.count_dependents("door-count"), ["doors"])
