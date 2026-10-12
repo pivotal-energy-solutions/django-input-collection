@@ -14,6 +14,7 @@ _should_log, log_method = app.get_verbose_logging
 __all__ = [
     "Measure",
     "CollectionRequest",
+    "RepeatGroup",
     "CollectionGroup",
     "CollectionInstrumentType",
     "CollectionInstrument",
@@ -86,6 +87,42 @@ class CollectionRequest(DatesModel, models.Model):
         }
 
 
+class RepeatGroup(DatesModel, models.Model):
+    """
+    A set of one request's questions asked once per copy. ``count_source`` says how many copies
+    there are: "instrument:<measure>" (an earlier integer answer) or "simulation-set:<name>"
+    (resolved by an overriding collector). Copies share their instruments; an answer names its
+    copy in ``CollectedInput.repeat_index``.
+    """
+
+    collection_request = models.ForeignKey(
+        "CollectionRequest", related_name="repeat_groups", on_delete=models.CASCADE
+    )
+    slug = models.SlugField(max_length=100)  # the JSON repeat "id"
+    name = models.CharField(max_length=256, blank=True)  # for the "{group name} {n}" default label
+    count_source = models.CharField(
+        max_length=512
+    )  # "instrument:<measure>" | "simulation-set:<name>"
+    max_count = models.PositiveSmallIntegerField()
+    label = models.CharField(max_length=256, blank=True)  # template: {n}, {label}
+    order = models.IntegerField(default=0)
+
+    # Also available:
+    #
+    # self.instruments.all()  # CollectionInstrument.repeat_group
+    # self.conditions.all()  # Conditions gating the whole group
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["collection_request", "slug"], name="unique_repeat_group_slug_per_request"
+            )
+        ]
+
+    def __str__(self):
+        return self.slug
+
+
 class CollectionInstrumentType(DatesModel, models.Model):
     id = models.CharField(max_length=100, primary_key=True)
 
@@ -116,6 +153,13 @@ class CollectionInstrument(DatesModel, models.Model):
         blank=True,
         null=True,
         related_name="group_instruments",
+        on_delete=models.SET_NULL,
+    )
+    repeat_group = models.ForeignKey(
+        "RepeatGroup",
+        null=True,
+        blank=True,
+        related_name="instruments",
         on_delete=models.SET_NULL,
     )
     type = models.ForeignKey(
@@ -343,6 +387,8 @@ class AbstractCollectedInput(DatesModel, models.Model):
         related_name="collectedinput_set",
         on_delete=models.CASCADE,
     )
+    # null = not a repeated question; 1..N = the copy of its instrument's RepeatGroup
+    repeat_index = models.PositiveSmallIntegerField(null=True, blank=True, db_index=True)
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL

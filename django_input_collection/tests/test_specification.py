@@ -315,6 +315,7 @@ class InstrumentTests(TestCase):
                 "user",
                 "collector_class",
                 "collection_request",
+                "repeat_index",
             },
         )
         self.assertIsNotNone(data["instruments"][11]["collected_inputs"][0]["id"])
@@ -340,6 +341,7 @@ class InstrumentTests(TestCase):
                 "user",
                 "collector_class",
                 "collection_request",
+                "repeat_index",
             },
         )
         self.assertIsNotNone(data["instruments"][11]["collected_inputs"][1]["id"])
@@ -1015,6 +1017,7 @@ class InstrumentTests(TestCase):
                 "user",
                 "collector_class",
                 "collection_request",
+                "repeat_index",
             },
         )
         self.assertIsNotNone(data["instruments"][10]["collected_inputs"][0]["id"])
