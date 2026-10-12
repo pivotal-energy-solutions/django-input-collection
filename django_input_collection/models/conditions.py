@@ -50,27 +50,55 @@ class Condition(DatesModel, models.Model):
     # dependent instrument is unlocked.
 
     instrument = models.ForeignKey(
-        "CollectionInstrument", related_name="conditions", on_delete=models.CASCADE
+        "CollectionInstrument",
+        related_name="conditions",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    # A group condition gates a whole RepeatGroup instead of one instrument (exactly one is set).
+    repeat_group = models.ForeignKey(
+        "RepeatGroup",
+        related_name="conditions",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
     condition_group = models.ForeignKey(
         "ConditionGroup", on_delete=models.CASCADE, limit_choices_to={"parent_groups": None}
     )
     data_getter = models.CharField(max_length=512)
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(instrument__isnull=False, repeat_group__isnull=True)
+                    | models.Q(instrument__isnull=True, repeat_group__isnull=False)
+                ),
+                name="condition_instrument_xor_repeat_group",
+            )
+        ]
+
     def __str__(self):
+        target = self.instrument if self.instrument_id is not None else self.repeat_group
         return "[%(instrument)r depends on resolver=%(resolver)r via %(condition_group)r]" % {
-            "instrument": self.instrument,
+            "instrument": target,
             "resolver": self.data_getter.split(":")[0],
             "condition_group": self.condition_group,
         }
 
-    def resolve(self, **kwargs):
+    def resolve(self, anchor=None, **kwargs):
         """
         Finds a resolver class for ``self.data_getter`` and returns a 3-tuple of the resolver,
-        the data yielded by the it, and any error raised during attribute traversal.
+        the data yielded by the it, and any error raised during attribute traversal. A group
+        condition (no instrument) resolves against ``anchor``, its group's first instrument.
         """
         kwargs.update(kwargs.pop("context", None) or {})
-        resolver, data_info, error = resolvers.resolve(self.instrument, self.data_getter, **kwargs)
+        instrument = self.instrument if self.instrument_id is not None else anchor
+        if instrument is None:
+            raise ValueError(f"Condition {self.pk} gates a repeat group: resolve it with an anchor")
+        resolver, data_info, error = resolvers.resolve(instrument, self.data_getter, **kwargs)
 
         if resolver and (not isinstance(data_info, dict) or "data" not in data_info):
             raise ValueError(
@@ -86,6 +114,8 @@ class Condition(DatesModel, models.Model):
         ``collection.matchers.test_condition_case()``.
         """
         resolver_kwargs = {}
+        if "anchor" in kwargs:
+            resolver_kwargs["anchor"] = kwargs.pop("anchor")
         if "raise_exception" in kwargs:
             resolver_kwargs["raise_exception"] = kwargs.pop("raise_exception")
         if "context" in kwargs:

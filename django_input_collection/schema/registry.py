@@ -78,6 +78,10 @@ class ConditionResolverRegistry:
         if condition_type == "instrument":
             return f"instrument:{source}"
 
+        # Built-in bound type: an attribute of the repeat copy's bound object
+        if condition_type == "bound":
+            return f"bound:{source}"
+
         # Check registered resolvers
         resolver = cls._import_resolvers.get(condition_type)
         if resolver:
@@ -106,7 +110,7 @@ class ConditionResolverRegistry:
     @classmethod
     def get_registered_types(cls) -> set[str]:
         """Return all registered condition types."""
-        return set(cls._import_resolvers.keys()) | {"instrument"}
+        return set(cls._import_resolvers.keys()) | {"instrument", "bound"}
 
 
 class BoundResponseRegistry:

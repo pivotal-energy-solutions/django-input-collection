@@ -11,6 +11,7 @@ from typing import Callable
 from rest_framework import serializers
 
 from ..collection.methods import EVIDENCE_KINDS, EVIDENCE_TYPE
+from .items import iter_questions, iter_rules
 
 log = logging.getLogger(__name__)
 
@@ -71,8 +72,9 @@ class ConditionValidatorRegistry:
         Returns:
             Tuple of (is_valid, error_message or None)
         """
-        # Built-in instrument type - no validation (validated in ChecklistSchemaSerializer)
-        if condition_type == "instrument":
+        # Built-in types: instrument sources are validated in ChecklistSchemaSerializer, bound
+        # sources against their repeat group there too.
+        if condition_type in ("instrument", "bound"):
             return True, None
 
         # Check registered validators
@@ -164,7 +166,7 @@ class ConditionRuleSerializer(serializers.Serializer):
     """
 
     # Default supported types - can be extended via registry
-    DEFAULT_CONDITION_TYPES = ["instrument", "simulation"]
+    DEFAULT_CONDITION_TYPES = ["instrument", "simulation", "bound"]
 
     type = serializers.CharField(
         help_text="Condition type: 'instrument' for question references, or custom type"
@@ -515,6 +517,85 @@ class QuestionSerializer(serializers.Serializer):
                 )
 
 
+REPEAT_SOURCE_KINDS = ("instrument", "simulation-set")
+
+
+def _sections_error(message):
+    return serializers.ValidationError({"sections": message})
+
+
+class SectionItemField(serializers.Field):
+    """One entry of a section's (or a repeat's) ``questions``: a question, or ``{"repeat": {...}}``."""
+
+    default_error_messages = {"invalid": "Expected a question or a repeat object"}
+
+    def to_internal_value(self, data):
+        if not isinstance(data, dict):
+            self.fail("invalid")
+        if "repeat" in data:
+            if set(data) != {"repeat"}:
+                raise serializers.ValidationError("A repeat item holds only 'repeat'")
+            serializer = RepeatSerializer(data=data["repeat"])
+            if not serializer.is_valid():
+                raise serializers.ValidationError({"repeat": serializer.errors})
+            return {"repeat": serializer.validated_data}
+        serializer = QuestionSerializer(data=data)
+        if not serializer.is_valid():
+            raise serializers.ValidationError(serializer.errors)
+        return serializer.validated_data
+
+    def to_representation(self, value):
+        return value
+
+
+class RepeatCountSerializer(serializers.Serializer):
+    source = serializers.CharField(
+        help_text="instrument:<integer measure> or simulation-set:<registered set name>"
+    )
+
+    def validate_source(self, value):
+        kind, _, name = value.partition(":")
+        if kind not in REPEAT_SOURCE_KINDS or not name:
+            raise serializers.ValidationError(
+                "count source must be instrument:<measure> or simulation-set:<name>"
+            )
+        return value
+
+
+class RepeatSerializer(serializers.Serializer):
+    """A repeat group: ``questions`` asked once per copy; N copies from ``count.source``."""
+
+    id = serializers.SlugField(help_text="Unique within the checklist (RepeatGroup.slug)")
+    name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Group name for the default copy label; defaults to the section name",
+    )
+    count = RepeatCountSerializer()
+    max_count = serializers.IntegerField(
+        min_value=1,
+        max_value=32767,
+        error_messages={"required": "max_count required"},
+        help_text="Copies past it are not shown",
+    )
+    label = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Copy heading template: {n} ordinal, {label} bound object's label",
+    )
+    conditions = QuestionConditionSerializer(
+        many=True, required=False, help_text="Gate the whole group (sources outside it only)"
+    )
+    questions = serializers.ListField(child=SectionItemField(), allow_empty=False)
+
+    def validate_questions(self, items):
+        if any("repeat" in item for item in items):
+            raise serializers.ValidationError("nested repeat: a repeat cannot hold a repeat")
+        return items
+
+
 class SectionSerializer(serializers.Serializer):
     """
     A section/group of questions in the checklist.
@@ -525,7 +606,9 @@ class SectionSerializer(serializers.Serializer):
         required=False,
         help_text="URL-safe identifier (auto-generated from name if not provided)",
     )
-    questions = QuestionSerializer(many=True, help_text="Questions in this section")
+    questions = serializers.ListField(
+        child=SectionItemField(), help_text="Questions and repeat items in this section"
+    )
     order = serializers.IntegerField(
         required=False,
         help_text="Section ordering (auto-assigned if not provided)",
@@ -581,25 +664,25 @@ class CollectionSchemaSerializer(serializers.Serializer):
         """Cross-field validation"""
         sections = data.get("sections", [])
         response_sets = data.get("response_sets", {})
+        self._validate_repeats(sections)
 
         # Collect all measure_ids and their responses for validation
         all_measure_ids = set()
         duplicate_ids = set()
         question_responses = {}  # measure_id -> list of valid response values
 
-        for section in sections:
-            for question in section.get("questions", []):
-                measure_id = question.get("measure_id")
-                if measure_id in all_measure_ids:
-                    duplicate_ids.add(measure_id)
-                all_measure_ids.add(measure_id)
+        for question, _repeat in iter_questions(sections):
+            measure_id = question.get("measure_id")
+            if measure_id in all_measure_ids:
+                duplicate_ids.add(measure_id)
+            all_measure_ids.add(measure_id)
 
-                # Collect valid responses for this question
-                responses = question.get("responses", [])
-                response_set_name = question.get("response_set")
-                if response_set_name and response_set_name in response_sets:
-                    responses = response_sets[response_set_name]
-                question_responses[measure_id] = responses
+            # Collect valid responses for this question
+            responses = question.get("responses", [])
+            response_set_name = question.get("response_set")
+            if response_set_name and response_set_name in response_sets:
+                responses = response_sets[response_set_name]
+            question_responses[measure_id] = responses
 
         if duplicate_ids:
             raise serializers.ValidationError(
@@ -611,31 +694,121 @@ class CollectionSchemaSerializer(serializers.Serializer):
 
         # Validate instrument condition sources reference valid measure_ids
         # Validate response_set references
-        for section in sections:
-            for question in section.get("questions", []):
-                # Validate response_set reference
-                response_set_name = question.get("response_set")
-                if response_set_name and response_set_name not in response_sets:
-                    raise serializers.ValidationError(
-                        {
-                            "sections": (
-                                f"Question '{question.get('measure_id')}' references "
-                                f"unknown response_set: '{response_set_name}'"
-                            )
-                        }
-                    )
+        for question, _repeat in iter_questions(sections):
+            # Validate response_set reference
+            response_set_name = question.get("response_set")
+            if response_set_name and response_set_name not in response_sets:
+                raise serializers.ValidationError(
+                    {
+                        "sections": (
+                            f"Question '{question.get('measure_id')}' references "
+                            f"unknown response_set: '{response_set_name}'"
+                        )
+                    }
+                )
 
-                # Validate instrument conditions
-                for condition in question.get("conditions", []):
-                    self._validate_condition(
-                        condition,
-                        question.get("measure_id"),
-                        all_measure_ids,
-                        question_responses,
-                        value_match_types,
-                    )
+            # Validate instrument conditions
+            for condition in question.get("conditions", []):
+                self._validate_condition(
+                    condition,
+                    question.get("measure_id"),
+                    all_measure_ids,
+                    question_responses,
+                    value_match_types,
+                )
 
         return data
+
+    def _validate_repeats(self, sections):
+        """Repeat rules (spec §3): one group per measure, counts, and where conditions may read."""
+        group_of, types, repeats = {}, {}, []
+        for section in sections:
+            for item in section.get("questions", []):
+                repeat = item.get("repeat")
+                if repeat is None:
+                    self._place(group_of, item["measure_id"], None)
+                    types[item["measure_id"]] = item.get("type", "open")
+                    continue
+                if any(seen["id"] == repeat["id"] for seen in repeats):
+                    raise _sections_error(f"duplicate repeat id: '{repeat['id']}'")
+                repeats.append(repeat)
+                for question in repeat.get("questions", []):
+                    self._place(group_of, question["measure_id"], repeat["id"])
+                    types[question["measure_id"]] = question.get("type", "open")
+        for section in sections:
+            for item in section.get("questions", []):
+                if "repeat" not in item:
+                    self._validate_outside_rules(item, group_of)
+        for repeat in repeats:
+            self._validate_repeat(repeat, group_of, types)
+
+    @staticmethod
+    def _place(group_of, measure_id, repeat_id):
+        if measure_id in group_of and (group_of[measure_id] is not None or repeat_id is not None):
+            raise _sections_error(
+                f"measure in two groups: '{measure_id}' is in more than one place and a repeat"
+            )
+        group_of[measure_id] = repeat_id
+
+    @staticmethod
+    def _validate_outside_rules(question, group_of):
+        measure_id = question["measure_id"]
+        for rule in iter_rules(question.get("conditions", [])):
+            source = rule.get("source")
+            if rule.get("type") == "bound":
+                raise _sections_error(
+                    f"bound condition requires simulation-set: '{measure_id}' is not in a "
+                    f"simulation-set: repeat"
+                )
+            if rule.get("type") == "instrument" and group_of.get(source) is not None:
+                raise _sections_error(
+                    f"outside condition on repeated measure: '{measure_id}' reads '{source}' "
+                    f"inside repeat '{group_of[source]}'"
+                )
+
+    @staticmethod
+    def _validate_repeat(repeat, group_of, types):
+        repeat_id = repeat["id"]
+        kind, _, name = repeat["count"]["source"].partition(":")
+        if kind == "instrument":
+            if group_of.get(name) is not None:
+                raise _sections_error(
+                    f"count instrument inside group: repeat '{repeat_id}' counts '{name}', "
+                    f"which is inside repeat '{group_of[name]}'"
+                )
+            if types.get(name) != "integer":
+                raise _sections_error(
+                    f"count instrument not integer: repeat '{repeat_id}' counts '{name}', "
+                    f"which is not an integer question of this checklist"
+                )
+        for rule in iter_rules(repeat.get("conditions", [])):
+            source = rule.get("source")
+            in_a_group = rule.get("type") == "instrument" and group_of.get(source) is not None
+            if rule.get("type") == "bound" or in_a_group:
+                raise _sections_error(
+                    f"group condition uses in-group or bound source: repeat '{repeat_id}' "
+                    f"reads {rule.get('type')}:{source}"
+                )
+            if rule.get("type") == "instrument" and source not in group_of:
+                raise _sections_error(
+                    f"Repeat '{repeat_id}' has condition referencing unknown measure_id: '{source}'"
+                )
+        for question in repeat.get("questions", []):
+            for rule in iter_rules(question.get("conditions", [])):
+                source = rule.get("source")
+                if rule.get("type") == "bound" and kind != "simulation-set":
+                    raise _sections_error(
+                        f"bound condition requires simulation-set: '{question['measure_id']}' "
+                        f"is in repeat '{repeat_id}', counted by {repeat['count']['source']}"
+                    )
+                if rule.get("type") == "instrument" and group_of.get(source) not in (
+                    None,
+                    repeat_id,
+                ):
+                    raise _sections_error(
+                        f"outside condition on repeated measure: '{question['measure_id']}' "
+                        f"reads '{source}' inside repeat '{group_of[source]}'"
+                    )
 
     def _validate_condition(
         self, condition, question_id, all_measure_ids, question_responses, value_match_types

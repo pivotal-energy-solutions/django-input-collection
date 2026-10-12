@@ -13,6 +13,7 @@ from django.utils.text import slugify
 
 from django_input_collection.models import CollectionRequest
 
+from .items import iter_questions
 from .registry import ConditionResolverRegistry, BoundResponseRegistry
 
 log = logging.getLogger(__name__)
@@ -134,10 +135,14 @@ class CollectionRequestExporter:
         return json.dumps(schema, indent=2)
 
     def _export_sections(self, collection_request: CollectionRequest) -> list:
-        """Export instruments grouped by section."""
+        """Export instruments grouped by section; a repeat group's instruments become one
+        ``{"repeat": {...}}`` item where its first instrument sits."""
         sections = {}
+        repeat_items = {}  # RepeatGroup pk -> its item
 
-        instruments = collection_request.collectioninstrument_set.all().order_by("order")
+        instruments = collection_request.collectioninstrument_set.select_related(
+            "repeat_group"
+        ).order_by("order")
 
         for instrument in instruments:
             # Get section from group
@@ -153,9 +158,35 @@ class CollectionRequestExporter:
                 }
 
             question = self._export_instrument(instrument)
-            sections[section_slug]["questions"].append(question)
+            repeat_group = instrument.repeat_group
+            if repeat_group is None:
+                sections[section_slug]["questions"].append(question)
+                continue
+            item = repeat_items.get(repeat_group.pk)
+            if item is None:
+                item = {"repeat": self._export_repeat(repeat_group)}
+                repeat_items[repeat_group.pk] = item
+                sections[section_slug]["questions"].append(item)
+            item["repeat"]["questions"].append(question)
 
         return list(sections.values())
+
+    def _export_repeat(self, repeat_group) -> dict:
+        """A RepeatGroup as a JSON repeat item body (its questions are appended by the caller)."""
+        repeat = {
+            "id": repeat_group.slug,
+            "count": {"source": repeat_group.count_source},
+            "max_count": repeat_group.max_count,
+        }
+        if repeat_group.name:
+            repeat["name"] = repeat_group.name
+        if repeat_group.label:
+            repeat["label"] = repeat_group.label
+        conditions = self._export_condition_rows(repeat_group.conditions.all())
+        if conditions:
+            repeat["conditions"] = conditions
+        repeat["questions"] = []
+        return repeat
 
     def _export_instrument(self, instrument) -> dict:
         """Export a single instrument to question format."""
@@ -209,8 +240,12 @@ class CollectionRequestExporter:
         return instrument.get_choices()  # binding order
 
     def _export_conditions(self, instrument) -> list:
+        """Export conditions for an instrument (see ``_export_condition_rows``)."""
+        return self._export_condition_rows(instrument.conditions.all())
+
+    def _export_condition_rows(self, rows) -> list:
         """
-        Export conditions for an instrument.
+        Export condition rows (an instrument's or a repeat group's).
 
         Groups conditions by their ConditionGroup to preserve AND/OR logic.
         - If a ConditionGroup has multiple conditions (multiple data_getters),
@@ -223,7 +258,7 @@ class CollectionRequestExporter:
         seen_groups = {}
 
         # First pass: group conditions by their ConditionGroup
-        for condition in instrument.conditions.all():
+        for condition in rows:
             group = condition.condition_group
             if not group:
                 continue
@@ -316,6 +351,8 @@ class CollectionRequestExporter:
 
         if condition_type == "instrument":
             return {"type": "instrument", "source": path}
+        if condition_type == "bound":
+            return {"type": "bound", "source": path}
         else:
             # Try registry for reverse resolution (path -> slug)
             slug = ConditionResolverRegistry.resolve_export(condition_type, path)
@@ -373,13 +410,12 @@ class CollectionRequestExporter:
 
         # Collect all response patterns
         response_patterns = Counter()
-        for section in sections:
-            for question in section.get("questions", []):
-                responses = question.get("responses", [])
-                if responses:
-                    # Use tuple for hashability
-                    pattern = tuple(responses)
-                    response_patterns[pattern] += 1
+        for question, _repeat in iter_questions(sections):
+            responses = question.get("responses", [])
+            if responses:
+                # Use tuple for hashability
+                pattern = tuple(responses)
+                response_patterns[pattern] += 1
 
         # Create named sets for patterns appearing 2+ times
         response_sets = {}
@@ -405,14 +441,13 @@ class CollectionRequestExporter:
 
         # Update questions to reference sets instead of inline arrays
         if pattern_to_name:
-            for section in sections:
-                for question in section.get("questions", []):
-                    responses = question.get("responses", [])
-                    if responses:
-                        pattern = tuple(responses)
-                        if pattern in pattern_to_name:
-                            question["response_set"] = pattern_to_name[pattern]
-                            del question["responses"]
+            for question, _repeat in iter_questions(sections):
+                responses = question.get("responses", [])
+                if responses:
+                    pattern = tuple(responses)
+                    if pattern in pattern_to_name:
+                        question["response_set"] = pattern_to_name[pattern]
+                        del question["responses"]
 
         return response_sets
 

@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 from django.utils.html import format_html, format_html_join
 
 from . import models
+from .collection.repeat import repeat_anchor
 
 
 log = logging.getLogger(__name__)
@@ -164,7 +165,11 @@ class ConditionAdmin(admin.ModelAdmin):
             '<div style="width: 200px;"><a href="{}">{}</a><hr><div>{}{}</div></div>',
             *[
                 instance.pk,
-                instance.instrument,
+                (
+                    instance.instrument
+                    if instance.instrument_id is not None
+                    else f"repeat: {instance.repeat_group.slug}"
+                ),
                 mark_safe(app_results + (" &bullet; " if app_results else "")),
                 mark_safe(builtin_results),
             ],
@@ -182,7 +187,10 @@ class ConditionAdmin(admin.ModelAdmin):
         if instance.pk is None:
             return "(Unsaved)"
 
-        resolver, data, error = instance.resolve(raise_exception=False)
+        kwargs = {}
+        if instance.repeat_group_id is not None:
+            kwargs["anchor"] = repeat_anchor(instance.repeat_group)
+        resolver, data, error = instance.resolve(raise_exception=False, **kwargs)
         if resolver:
             return format_html(
                 "<dt>{}</dt><dd>{}{}</dd>",
@@ -227,14 +235,20 @@ class ConditionAdmin(admin.ModelAdmin):
 
         from .collection.collectors import registry
 
-        collection_request = instance.instrument.collection_request
+        target = instance.instrument or instance.repeat_group
+        collection_request = target.collection_request
+        kwargs = {}
+        if instance.repeat_group_id is not None:
+            kwargs["anchor"] = repeat_anchor(instance.repeat_group)
         statuses = []
         context = {"user": self.request.user}
 
         for collector_class in sorted(registry.values(), key=lambda c: (c.__module__, c.__name__)):
             try:
                 collector = collector_class(collection_request=collection_request, context=context)
-                status = collector.is_condition_successful(instance, raise_exception=False)
+                status = collector.is_condition_successful(
+                    instance, raise_exception=False, **kwargs
+                )
             except Exception as e:
                 log.exception(e)
                 status = e

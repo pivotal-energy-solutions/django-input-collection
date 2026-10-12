@@ -17,6 +17,7 @@ from django_input_collection.models import (
     CollectionInstrumentType,
     Measure,
     CollectionGroup,
+    RepeatGroup,
     ResponsePolicy,
     SuggestedResponse,
 )
@@ -26,6 +27,7 @@ from django_input_collection.models.conditions import (
     Case,
 )
 
+from .items import iter_questions
 from .registry import ConditionResolverRegistry, BoundResponseRegistry
 
 log = logging.getLogger(__name__)
@@ -123,30 +125,48 @@ class CollectionRequestBuilder:
         else:
             collection_request = CollectionRequest.objects.create()
 
-        # Build sections and instruments
+        # Build sections and instruments; a repeat item's questions take their place in order.
         order = 0
+        group_conditions = []  # (RepeatGroup, its JSON conditions)
+        seen_groups = set()
         for section_data in schema.get("sections", []):
             # Use section name as group ID (CollectionGroup only has id field)
             section_name = section_data["name"]
             section_group = self._get_or_create_group(section_name)
 
-            for question_data in section_data.get("questions", []):
-                order += 1
-                instrument = self._build_instrument(
-                    collection_request=collection_request,
-                    question=question_data,
-                    section_group=section_group,
-                    order=question_data.get("order", order),
-                )
-                self._instrument_cache[question_data["measure_id"]] = instrument
+            for item in section_data.get("questions", []):
+                repeat_group, questions = None, [item]
+                if "repeat" in item:
+                    repeat = item["repeat"]
+                    repeat_group = self._build_repeat_group(
+                        collection_request, repeat, section_name, order + 1
+                    )
+                    seen_groups.add(repeat_group.slug)
+                    group_conditions.append((repeat_group, repeat.get("conditions", [])))
+                    questions = repeat["questions"]
+                for question_data in questions:
+                    order += 1
+                    instrument = self._build_instrument(
+                        collection_request=collection_request,
+                        question=question_data,
+                        section_group=section_group,
+                        order=question_data.get("order", order),
+                        repeat_group=repeat_group,
+                    )
+                    self._instrument_cache[question_data["measure_id"]] = instrument
+
+        # Groups no longer listed go; their answers stay as rows nothing reads (spec §5.5).
+        collection_request.repeat_groups.exclude(slug__in=seen_groups).delete()
 
         # Build conditions (second pass - all instruments must exist first)
-        for section_data in schema.get("sections", []):
-            for question_data in section_data.get("questions", []):
-                conditions = question_data.get("conditions", [])
-                if conditions:
-                    instrument = self._instrument_cache[question_data["measure_id"]]
-                    self._build_conditions(instrument, conditions)
+        for question_data, _repeat in iter_questions(schema.get("sections", [])):
+            conditions = question_data.get("conditions", [])
+            if conditions:
+                instrument = self._instrument_cache[question_data["measure_id"]]
+                self._build_conditions(instrument, conditions)
+        for repeat_group, conditions in group_conditions:
+            repeat_group.conditions.all().delete()  # a rebuild replaces them
+            self._build_conditions(None, conditions, repeat_group=repeat_group)
 
         return collection_request
 
@@ -190,6 +210,23 @@ class CollectionRequestBuilder:
         group, _ = CollectionGroup.objects.get_or_create(id=name)
         return group
 
+    def _build_repeat_group(
+        self, collection_request: CollectionRequest, repeat: dict, section_name: str, order: int
+    ) -> RepeatGroup:
+        """Create or update the request's RepeatGroup for a JSON ``repeat`` item, by its id."""
+        group, _ = RepeatGroup.objects.update_or_create(
+            collection_request=collection_request,
+            slug=repeat["id"],
+            defaults={
+                "name": repeat.get("name") or section_name,
+                "count_source": repeat["count"]["source"],
+                "max_count": repeat["max_count"],
+                "label": repeat.get("label") or "",
+                "order": order,
+            },
+        )
+        return group
+
     def _get_or_create_type(self, type_id: str) -> CollectionInstrumentType:
         """Get or create a CollectionInstrumentType."""
         mapped_type = self.TYPE_MAP.get(type_id, "open")
@@ -228,6 +265,7 @@ class CollectionRequestBuilder:
         question: dict,
         section_group: CollectionGroup,
         order: int,
+        repeat_group: RepeatGroup | None = None,
     ) -> CollectionInstrument:
         """Build a single CollectionInstrument from question data."""
         measure = self._get_or_create_measure(question["measure_id"])
@@ -260,6 +298,7 @@ class CollectionRequestBuilder:
             context=question.get("context") or {},
             constraints=self._stored_constraints(question),
             order=order,
+            repeat_group=repeat_group,
             test_requirement_type=question.get("test_requirement_type", "all-pass"),
         )
 
@@ -279,7 +318,7 @@ class CollectionRequestBuilder:
         response, _ = SuggestedResponse.objects.get_or_create(data=data)
         return response
 
-    def _build_conditions(self, instrument: CollectionInstrument, conditions: list):
+    def _build_conditions(self, instrument, conditions: list, *, repeat_group=None):
         """
         Build conditions for an instrument.
 
@@ -288,6 +327,7 @@ class CollectionRequestBuilder:
         - Group: {"logic": "any", "rules": [...]}
 
         Format is detected by presence of "rules" key (group) or "type" key (simple).
+        A group condition passes instrument=None and repeat_group=<RepeatGroup>.
         """
         for condition_data in conditions:
             # Detect format: group format has "rules", simple format has "type"
@@ -295,12 +335,12 @@ class CollectionRequestBuilder:
 
             if is_group_format:
                 # Group format: multiple rules with explicit logic
-                self._build_condition_group(instrument, condition_data)
+                self._build_condition_group(instrument, condition_data, repeat_group=repeat_group)
             else:
                 # Simple format: single rule, implicit all-pass
-                self._build_simple_condition(instrument, condition_data)
+                self._build_simple_condition(instrument, condition_data, repeat_group=repeat_group)
 
-    def _build_simple_condition(self, instrument: CollectionInstrument, condition_data: dict):
+    def _build_simple_condition(self, instrument, condition_data: dict, repeat_group=None):
         """Build a single condition from simple format."""
         condition_type = condition_data["type"]
         source = condition_data["source"]
@@ -321,11 +361,12 @@ class CollectionRequestBuilder:
 
         Condition.objects.get_or_create(
             instrument=instrument,
+            repeat_group=repeat_group,
             condition_group=condition_group,
             data_getter=data_getter,
         )
 
-    def _build_condition_group(self, instrument: CollectionInstrument, condition_data: dict):
+    def _build_condition_group(self, instrument, condition_data: dict, repeat_group=None):
         """
         Build conditions from group format with AND/OR logic.
 
@@ -377,6 +418,7 @@ class CollectionRequestBuilder:
             # Create Condition linking instrument to group via this data_getter
             Condition.objects.get_or_create(
                 instrument=instrument,
+                repeat_group=repeat_group,
                 condition_group=condition_group,
                 data_getter=data_getter,
             )

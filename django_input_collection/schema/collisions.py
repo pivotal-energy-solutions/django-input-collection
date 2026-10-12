@@ -10,6 +10,7 @@ __credits__ = ["Steven Klass"]
 
 from dataclasses import dataclass, field
 
+from .items import iter_questions
 from .registry import BoundResponseRegistry
 
 COLLISION_FIELDS = ("type", "responses", "response_flags", "required", "text", "provides_for")
@@ -69,20 +70,19 @@ def signatures_from_schema(schema: dict) -> dict:
     """Signatures as ``CollectionRequestBuilder.build`` would store them; no queries."""
     response_sets = schema.get("response_sets", {})
     found = {}
-    for section in schema.get("sections", []):
-        for q in section.get("questions", []):
-            responses = q.get("responses") or response_sets.get(q.get("response_set"), [])
-            responses = tuple(str(r) for r in responses)
-            found[q["measure_id"]] = MeasureSignature(
-                type=_schema_type(q),
-                responses=responses,
-                response_flags=_schema_flags(q, responses),
-                required=bool(q.get("required", True)),
-                text=q.get("text") or "",
-                provides_for=provides_for(q.get("context")),
-                description=q.get("description") or "",
-                help=q.get("help_text") or "",
-            )
+    for q, _repeat in iter_questions(schema.get("sections", [])):
+        responses = q.get("responses") or response_sets.get(q.get("response_set"), [])
+        responses = tuple(str(r) for r in responses)
+        found[q["measure_id"]] = MeasureSignature(
+            type=_schema_type(q),
+            responses=responses,
+            response_flags=_schema_flags(q, responses),
+            required=bool(q.get("required", True)),
+            text=q.get("text") or "",
+            provides_for=provides_for(q.get("context")),
+            description=q.get("description") or "",
+            help=q.get("help_text") or "",
+        )
     return found
 
 

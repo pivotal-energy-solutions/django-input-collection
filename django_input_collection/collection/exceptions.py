@@ -12,3 +12,7 @@ class ResolverException(Exception):
 
 class ResolverRegistrationException(ResolverException):
     message = "Resolver cannot be registered."
+
+
+class UnknownRepeatSource(CollectorException):
+    message = "Repeat group count source has no resolver in this collector."

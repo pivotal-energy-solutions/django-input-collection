@@ -2,6 +2,7 @@ import importlib
 import hashlib
 from inspect import isclass
 import json
+from contextlib import nullcontext
 
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
@@ -10,7 +11,9 @@ from django.db.models import Model, F
 from ..encoders import CollectionSpecificationJSONEncoder
 from ..models import AbstractBoundSuggestedResponse
 from .matchers import matchers
-from .resolvers import read_pass, resolving_for
+from .repeat import Copy, CurrentCopy, copy_scope, current_copy, render_label, repeat_anchor
+from .resolvers import memoize, read_pass, resolving_for
+from .resolvers import resolve as resolve_data_getter
 from . import specifications, CollectionRequestQueryMinimizerMixin
 from . import methods
 from . import utils
@@ -407,10 +410,16 @@ class BaseCollector(object, metaclass=CollectorType):
         """
         Like ``is_instrument_allowed()``, except that it tests only the given condition.  Using this
         method instead of ``condition.test()`` directly has the benefit of allowing the collector
-        to implicitly send ``key_input``, ``key_case``, and ``resolver_fallback_data``.
+        to implicitly send ``key_input``, ``key_case``, and ``resolver_fallback_data``. A group
+        condition (no instrument) needs ``anchor=`` (its group's first instrument).
         """
         if "resolver_fallback_data" not in kwargs:
-            kwargs["resolver_fallback_data"] = self.make_payload_data(condition.instrument, None)
+            instrument = (
+                condition.instrument
+                if condition.instrument_id is not None
+                else kwargs.get("anchor")
+            )
+            kwargs["resolver_fallback_data"] = self.make_payload_data(instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
         with resolving_for(self):
@@ -426,14 +435,114 @@ class BaseCollector(object, metaclass=CollectorType):
             kwargs["resolver_fallback_data"] = self.make_payload_data(instrument, None)
         key_input = self.extract_data_input
         key_case = self.get_conditional_check_value
-        with resolving_for(self):
+        with resolving_for(self), self._write_copy_scope(instrument):
             return instrument.test_conditions(
                 key_input=key_input, key_case=key_case, context=self.context, **kwargs
             )
 
+    def _write_copy_scope(self, instrument):
+        """A write collector (context ``repeat_index``) tests a repeated instrument in that copy.
+
+        A copy already in scope (the merged engine's) wins; an unrepeated instrument has none.
+        """
+        index = self.context.get("repeat_index")
+        group_id = getattr(instrument, "repeat_group_id", None)
+        if index is None or group_id is None or current_copy() is not None:
+            return nullcontext()
+        group = instrument.repeat_group
+        return copy_scope(CurrentCopy(group_id=group_id, group_slug=group.slug, index=index))
+
     def is_measure_allowed(self, measure, **kwargs):
         instrument = self.get_instrument(measure)
         return self.is_instrument_allowed(instrument, **kwargs)
+
+    # Repeat groups
+    def resolve_repeat(self, group) -> list:
+        """The live copies of ``group`` (list[Copy]), once per read pass.
+
+        Tests the group conditions first (``test_repeat_conditions``): failing ones mean no
+        copies and clamped False, and ``_resolve_repeat`` is not called. Otherwise it calls
+        ``_resolve_repeat(group) -> (copies, clamped)``, memoises the copies for the read pass
+        and records clamping (``note_repeat_clamped``).
+
+        Extension point: subclasses override ``_resolve_repeat``, calling ``super()`` for
+        "instrument:", and never override ``resolve_repeat`` / ``repeat_clamped``, so group
+        conditions, memoisation and clamping stay applied to every source.
+        """
+
+        def compute():
+            if self.test_repeat_conditions(group):
+                copies, clamped = self._resolve_repeat(group)
+            else:
+                copies, clamped = [], False
+            self.note_repeat_clamped(group, clamped)
+            return list(copies)
+
+        # Keyed on the collector itself (identity hash), not id(self): the pass cache's reference
+        # keeps it alive, so a later collector can never reuse its id and inherit its copies.
+        return memoize(("resolve_repeat", self, group.pk), compute)
+
+    def _resolve_repeat(self, group) -> tuple[list, bool]:
+        """(copies, clamped) for ``group``'s count source; group conditions are already tested.
+
+        "instrument:<measure>" counts by the newest unrepeated answer, as an int clamped to
+        [0, max_count]; no answer or a non-integer answer means no copies. Any other source
+        raises UnknownRepeatSource.
+        """
+        kind, _, measure = group.count_source.partition(":")
+        if kind != "instrument" or not measure:
+            raise exceptions.UnknownRepeatSource(
+                f"Repeat group {group.slug!r} has count source {group.count_source!r}; "
+                f"{type(self).__name__} resolves only instrument:<measure>"
+            )
+        count = self.read_repeat_count(group, measure)
+        if count is None or count < 1:
+            return [], False
+        live = min(count, group.max_count)
+        copies = [
+            Copy(n, render_label(group.label, n=n, group_name=group.name))
+            for n in range(1, live + 1)
+        ]
+        return copies, count > group.max_count
+
+    def read_repeat_count(self, group, measure):
+        """The newest unrepeated answer to ``measure`` as an int; None if unanswered or not an int.
+
+        Reads through the condition resolver path, so it is served by a read pass's AnswerIndex
+        and cache like any ``instrument:`` gate.
+        """
+        with copy_scope(None), resolving_for(self):
+            _resolver, data_info, error = resolve_data_getter(
+                repeat_anchor(group), f"instrument:{measure}", **self.context
+            )
+        values = (data_info or {}).get("data") or []
+        if error is not None or not values:
+            return None
+        value = self.extract_data_input(values[-1])  # oldest first: the last is the newest
+        try:
+            return int(str(value).strip())
+        except (TypeError, ValueError):
+            return None
+
+    def test_repeat_conditions(self, group) -> bool:
+        """True when every condition on ``group`` passes (none: True). Evaluated outside any
+        copy, against the group's first instrument (the anchor)."""
+        conditions = list(group.conditions.all())
+        if not conditions:
+            return True
+        anchor = repeat_anchor(group)
+        with copy_scope(None):
+            return all(
+                self.is_condition_successful(condition, anchor=anchor, context=self.context)
+                for condition in conditions
+            )
+
+    def repeat_clamped(self, group) -> bool:
+        """True when the last ``resolve_repeat(group)`` count exceeded ``group.max_count``."""
+        return self.__dict__.get("_repeat_clamped", {}).get(group.pk, False)
+
+    def note_repeat_clamped(self, group, clamped) -> None:
+        self.__dict__.setdefault("_repeat_clamped", {})[group.pk] = bool(clamped)
 
     def is_input_allowed(self, instrument, user=None):
         """
@@ -662,6 +771,9 @@ class BaseCollector(object, metaclass=CollectorType):
                 "version": ".".join(map(str, BaseCollector.__version__)),
             },
         )
+        if "repeat_index" in self.context:
+            # A write collector's copy: the row names it, so limits and reads stay per copy.
+            payload.setdefault("repeat_index", self.context["repeat_index"])
         return payload
 
     def make_payload_data(self, instrument, data, **kwargs):

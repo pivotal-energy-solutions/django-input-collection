@@ -12,6 +12,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 
 from django_input_collection.schema import CollectionSchemaSerializer
+from django_input_collection.schema.items import iter_questions
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  Version: {schema.get('version', '1.0')}")
 
         sections = schema.get("sections", [])
-        total_questions = sum(len(s.get("questions", [])) for s in sections)
+        total_questions = sum(1 for _question in iter_questions(sections))
 
         self.stdout.write(f"  Sections: {len(sections)}")
         self.stdout.write(f"  Questions: {total_questions}")
@@ -73,19 +74,18 @@ class Command(BaseCommand):
         # Count conditions by type
         instrument_conditions = 0
         other_conditions = 0
-        for section in sections:
-            for question in section.get("questions", []):
-                for cond in question.get("conditions", []):
-                    if cond.get("type") == "instrument":
+        for question, _repeat in iter_questions(sections):
+            for cond in question.get("conditions", []):
+                if cond.get("type") == "instrument":
+                    instrument_conditions += 1
+                elif cond.get("type"):
+                    other_conditions += 1
+                # Handle group format
+                for rule in cond.get("rules", []):
+                    if rule.get("type") == "instrument":
                         instrument_conditions += 1
-                    elif cond.get("type"):
+                    elif rule.get("type"):
                         other_conditions += 1
-                    # Handle group format
-                    for rule in cond.get("rules", []):
-                        if rule.get("type") == "instrument":
-                            instrument_conditions += 1
-                        elif rule.get("type"):
-                            other_conditions += 1
 
         if instrument_conditions or other_conditions:
             self.stdout.write("  Conditions:")
@@ -103,7 +103,7 @@ class Command(BaseCommand):
             self.stdout.write("")
             self.stdout.write("  Sections:")
             for section in sections:
-                questions = section.get("questions", [])
+                questions = [q for q, _repeat in iter_questions([section])]
                 self.stdout.write(f"    - {section['name']}: {len(questions)} questions")
                 if verbose:
                     for q in questions:
