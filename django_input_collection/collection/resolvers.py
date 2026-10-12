@@ -146,9 +146,9 @@ def resolve(instrument, spec, fallback=None, raise_exception=True, **context):
                 "data": fallback,
             }
             log.debug(
-                "Resolver %r raised an exception for instrument=%d, kwargs=%r, lookup=%r: %s",
+                "Resolver %r raised an exception for instrument=%r, kwargs=%r, lookup=%r: %s",
                 resolver.__class__,
-                instrument.pk,
+                getattr(instrument, "pk", None),
                 kwargs,
                 spec,
                 error,
@@ -274,7 +274,7 @@ class InstrumentResolver(Resolver):
                 filter_key = None
                 if collector is not None:
                     filter_key = _hook("condition_cache_key", collector.condition_cache_key)
-                copy_key = None if copy is None else (copy.group_id, copy.index)
+                copy_key = None if copy is None else (copy.group_slug, copy.index)
                 key = (tuple(requests), filter_key, parent_pk, measure, _freeze(context), copy_key)
             except TypeError:
                 key = None  # Unkeyable context: resolve uncached rather than risk a collision

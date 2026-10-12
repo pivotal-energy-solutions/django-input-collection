@@ -397,6 +397,12 @@ class DependentsTests(TestCase):
         merged = merge(self.request)[0]
         self.assertEqual(merged.dependents("frame-type"), ["door-type#1", "door-type#2"])
 
+    def test_a_zero_count_has_no_copies_but_still_a_dependent_group(self):
+        answer(self.found["door-count"], "0")
+        merged = merge(self.request)[0]
+        self.assertEqual(merged.dependents("door-count"), [])
+        self.assertEqual(merged.count_dependents("door-count"), ["doors"])
+
     def test_dependents_add_no_queries(self):
         with self.assertNumQueries(0):
             self.merged.dependents("door-count")

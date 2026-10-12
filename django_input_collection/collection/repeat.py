@@ -67,7 +67,7 @@ def parse_key(key: str) -> tuple[str, int | None]:
         raise ValueError(f"Question key {key!r} has no measure")
     if not separator:
         return measure_id, None
-    if not index.isdigit() or int(index) < 1:
+    if not (index.isascii() and index.isdigit()) or int(index) < 1:
         raise ValueError(f"Question key {key!r} needs a copy number of 1 or more")
     return measure_id, int(index)
 

@@ -34,7 +34,16 @@ class QuestionKeyTests(SimpleTestCase):
         self.assertEqual(parse_key("door-type#2"), ("door-type", 2))
 
     def test_bad_keys_raise(self):
-        for key in ("door-type#0", "door-type#x", "door-type#", "#2", "door-type#-1", "a#1#2", ""):
+        for key in (
+            "door-type#0",
+            "door-type#x",
+            "door-type#",
+            "#2",
+            "door-type#-1",
+            "a#1#2",
+            "",
+            "m#\u0663",
+        ):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 parse_key(key)
 
