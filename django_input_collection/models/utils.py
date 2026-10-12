@@ -108,8 +108,9 @@ def clone_collection_request(collection_request):
     groups = list(collection_request.repeat_groups.all())
     group_map = {}  # original RepeatGroup pk -> cloned pk
     for group in groups:
-        # RepeatGroup carries no timestamps, so there is nothing to exclude.
-        group_map[group.pk] = lazy_clone(group, exclude=[], collection_request_id=cloned.id).pk
+        group_map[group.pk] = lazy_clone(
+            group, exclude=common_excludes, collection_request_id=cloned.id
+        ).pk
 
     instrument_map = {}  # original instrument pk -> cloned pk
     for instrument in collection_request.collectioninstrument_set.all():
