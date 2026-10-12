@@ -22,6 +22,7 @@ __all__ = [
     "Resolver",
     "InstrumentResolver",
     "AttributeResolver",
+    "BoundResolver",
     "DebugResolver",
 ]
 
@@ -393,6 +394,26 @@ class AttributeResolver(Resolver):
             return self.resolve_dotted_path(obj, remainder)
 
         return obj
+
+
+class BoundResolver(Resolver):
+    """
+    Accepts a dotted attribute path resolved on the object the current repeat copy is bound to
+    (``current_copy().binding``, set by the merged engine for simulation-set copies). Returns the
+    ``{"input": [value]}`` shape, so every match type works unchanged. With no copy or no binding
+    it raises; the schema loaders reject ``bound:`` where that could happen.
+    """
+
+    name = "bound"
+    pattern = r"(?P<dotted_path>.+)"
+
+    def resolve(self, instrument, dotted_path, **context):
+        copy = current_copy()
+        binding = copy.binding if copy is not None else None
+        if binding is None:
+            raise ValueError(f"bound:{dotted_path} needs a repeat copy bound to an object")
+        value = AttributeResolver().resolve_dotted_path(binding, dotted_path)
+        return {"data": {"input": [value]}}
 
 
 class DebugResolver(Resolver):
