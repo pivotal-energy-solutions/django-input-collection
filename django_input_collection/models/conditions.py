@@ -24,6 +24,28 @@ log = logging.getLogger(__name__)
 _should_log, log_method = app.get_verbose_logging
 
 
+def cascade_without_nulling(collector, field, sub_objs, using):
+    """``CASCADE`` without first nulling the FK.
+
+    For a nullable FK on a backend that can't defer constraint checks (MySQL/MariaDB), Django's
+    ``CASCADE`` runs ``UPDATE ... SET <fk> = NULL`` on the rows before deleting them, whenever
+    anything listens for deletes (so they can't be fast-deleted). A ``Condition`` with neither an
+    instrument nor a repeat group breaks ``condition_instrument_xor_repeat_group``, so that
+    UPDATE fails. Nothing a Condition gates points back at it, so there's no cycle to break.
+    ``nullable=False`` records the dependency, so the conditions are deleted first.
+
+    ``DB_CASCADE`` would avoid the UPDATE too, but Django requires the whole reference chain to
+    be database-level, and every other FK here is python-level.
+    """
+    collector.collect(
+        sub_objs,
+        source=field.remote_field.model,
+        source_attr=field.name,
+        nullable=False,
+        fail_on_restricted=False,
+    )
+
+
 def set_substitutions(d):
     def decorator(f):
         f.__dict__.update(substitutions=d)
@@ -52,7 +74,7 @@ class Condition(DatesModel, models.Model):
     instrument = models.ForeignKey(
         "CollectionInstrument",
         related_name="conditions",
-        on_delete=models.CASCADE,
+        on_delete=cascade_without_nulling,
         null=True,
         blank=True,
     )
@@ -60,7 +82,7 @@ class Condition(DatesModel, models.Model):
     repeat_group = models.ForeignKey(
         "RepeatGroup",
         related_name="conditions",
-        on_delete=models.CASCADE,
+        on_delete=cascade_without_nulling,
         null=True,
         blank=True,
     )
