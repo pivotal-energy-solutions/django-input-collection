@@ -97,57 +97,87 @@ def clone_response_policy(response_policy, isolate=None, **kwargs):
     return policy
 
 
+_CLONE_EXCLUDES = ("id", "date_created", "date_modified")
+
+
+def _bulk_clone(model, rows, updates):
+    """
+    Inserts a copy of each ``.values()`` row with ``updates(row)`` applied, in one query where the
+    database hands back the new pks, and returns those pks in ``rows`` order.
+    """
+    from django.db import connections
+
+    objs = []
+    for row in rows:
+        attrs = {k: v for k, v in row.items() if k not in _CLONE_EXCLUDES}
+        attrs.update(updates(row))
+        objs.append(model(**attrs))
+    using = model.objects.db
+    if connections[using].features.can_return_rows_from_bulk_insert:
+        return [obj.pk for obj in model.objects.bulk_create(objs)]
+    for obj in objs:
+        obj.save(force_insert=True)
+    return [obj.pk for obj in objs]
+
+
 def clone_collection_request(collection_request):
     """A copy of ``collection_request``: its repeat groups, instruments (re-pointed at the cloned
-    groups), instrument and group conditions, and bound responses."""
-    from . import CollectionInstrument, CollectionRequest
+    groups), instrument and group conditions, and bound responses.
 
-    common_excludes = ["date_created", "date_modified"]
-    cloned = lazy_clone(collection_request, exclude=common_excludes)
+    Each kind is read once and inserted in bulk, so a checklist costs a handful of queries rather
+    than a few per instrument."""
+    from . import CollectionInstrument, Condition, RepeatGroup
 
-    groups = list(collection_request.repeat_groups.all())
-    group_map = {}  # original RepeatGroup pk -> cloned pk
-    for group in groups:
-        group_map[group.pk] = lazy_clone(
-            group, exclude=common_excludes, collection_request_id=cloned.id
-        ).pk
+    BoundResponse = CollectionInstrument._meta.get_field("bound_suggested_responses").related_model
+    cloned = lazy_clone(collection_request, exclude=["date_created", "date_modified"])
 
-    instrument_map = {}  # original instrument pk -> cloned pk
-    for instrument in collection_request.collectioninstrument_set.all():
-        cloned_instrument = lazy_clone(
-            instrument,
-            exclude=common_excludes,
-            **{
-                "collection_request_id": cloned.id,
-                "repeat_group_id": group_map.get(instrument.repeat_group_id),
-            },
+    groups = list(collection_request.repeat_groups.order_by("pk").values())
+    new_group_pks = _bulk_clone(
+        RepeatGroup, groups, lambda row: {"collection_request_id": cloned.id}
+    )
+    group_map = {row["id"]: pk for row, pk in zip(groups, new_group_pks)}
+
+    instruments = list(collection_request.collectioninstrument_set.order_by("pk").values())
+    new_instrument_pks = _bulk_clone(
+        CollectionInstrument,
+        instruments,
+        lambda row: {
+            "collection_request_id": cloned.id,
+            "repeat_group_id": group_map.get(row["repeat_group_id"]),
+        },
+    )
+    instrument_map = {row["id"]: pk for row, pk in zip(instruments, new_instrument_pks)}
+
+    bound = list(
+        BoundResponse.objects.filter(collection_instrument_id__in=instrument_map)
+        .order_by("pk")
+        .values()
+    )
+    _bulk_clone(
+        BoundResponse,
+        bound,
+        lambda row: {"collection_instrument_id": instrument_map[row["collection_instrument_id"]]},
+    )
+
+    # Every instrument is in the map before conditions are copied: an ``instrument:<pk>`` getter
+    # names a (gate) instrument that may come after the one it gates. A condition belongs to one
+    # instrument or one repeat group, never both.
+    conditions = list(
+        Condition.objects.filter(
+            Q(instrument_id__in=instrument_map) | Q(repeat_group_id__in=group_map)
         )
-        instrument_map[instrument.pk] = cloned_instrument.id
-        for bound_response in instrument.bound_suggested_responses.all():
-            lazy_clone(bound_response, collection_instrument_id=cloned_instrument.id)
-
-    # Conditions last: an ``instrument:<pk>`` getter names a (gate) instrument that may be cloned
-    # after the one it gates, so every instrument must be in the map first.
-    for instrument in collection_request.collectioninstrument_set.all():
-        for condition in instrument.conditions.all():
-            lazy_clone(
-                condition,
-                exclude=common_excludes,
-                **{
-                    "instrument_id": instrument_map[instrument.pk],
-                    "data_getter": _remap_instrument_pk(condition.data_getter, instrument_map),
-                },
-            )
-    for group in groups:
-        for condition in group.conditions.all():
-            lazy_clone(
-                condition,
-                exclude=common_excludes,
-                **{
-                    "repeat_group_id": group_map[group.pk],
-                    "data_getter": _remap_instrument_pk(condition.data_getter, instrument_map),
-                },
-            )
+        .order_by("pk")
+        .values()
+    )
+    _bulk_clone(
+        Condition,
+        conditions,
+        lambda row: {
+            "instrument_id": instrument_map.get(row["instrument_id"]),
+            "repeat_group_id": group_map.get(row["repeat_group_id"]),
+            "data_getter": _remap_instrument_pk(row["data_getter"], instrument_map),
+        },
+    )
 
     return cloned
 

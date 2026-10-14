@@ -131,3 +131,45 @@ class CloneInstrumentConditionTests(TestCase):
 
         cloned_child = cloned.collectioninstrument_set.get(measure_id="child")
         self.assertEqual(cloned_child.conditions.get().data_getter, "instrument:gate")
+
+
+class CloneQueryCountTests(TestCase):
+    """A clone reads and inserts each kind of row in bulk, so its cost is flat in checklist size."""
+
+    def queries_to_clone(self, size):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from .checklists import build_checklist
+
+        request = factories.CollectionRequestFactory.create()
+        build_checklist(size, collection_request=request, prefix=f"s{size}", answer=False)
+        with CaptureQueriesContext(connection) as queries:
+            cloned = clone_collection_request(request)
+        self.assertEqual(
+            cloned.collectioninstrument_set.count(), request.collectioninstrument_set.count()
+        )
+        return len(queries)
+
+    def test_a_bigger_checklist_costs_no_more_queries(self):
+        self.assertEqual(self.queries_to_clone(3), self.queries_to_clone(12))
+
+    def test_bound_responses_and_conditions_follow_their_instrument(self):
+        from .checklists import build_checklist
+
+        request = factories.CollectionRequestFactory.create()
+        build_checklist(4, collection_request=request, prefix="b", answer=False)
+        cloned = clone_collection_request(request)
+        for original in request.collectioninstrument_set.order_by("measure_id"):
+            copy = cloned.collectioninstrument_set.get(measure_id=original.measure_id)
+            self.assertEqual(
+                list(
+                    copy.bound_suggested_responses.values_list("suggested_response_id", flat=True)
+                ),
+                list(
+                    original.bound_suggested_responses.values_list(
+                        "suggested_response_id", flat=True
+                    )
+                ),
+            )
+            self.assertEqual(copy.conditions.count(), original.conditions.count())
